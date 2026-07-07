@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles } from 'lucide-react';
-// ---------- Design tokens ----------
-// Palette: warm terracotta pot + deep botanical green + soft parchment
-// Named for the actual subject: plants, sunlight, soil, terracotta pots
+import React, { useState, useEffect } from 'react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2 } from 'lucide-react';
+import { supabase } from './supabaseClient';
+
 const colors = {
-  bg: '#F7F4EC',        // unbleached linen — like potting paper
-  ink: '#232017',       // near-black, warm (soil)
-  fern: '#3A5A40',      // deep leaf green — primary
+  bg: '#F7F4EC',
+  ink: '#232017',
+  fern: '#3A5A40',
   fernDark: '#28402C',
-  clay: '#C1652F',      // terracotta pot — accent
+  clay: '#C1652F',
   clayLight: '#E8DCC8',
-  gold: '#D4A24C',      // sunlight
+  gold: '#D4A24C',
   line: '#DDD5C0',
   card: '#FFFFFF',
 };
+
 function Screen({ children }) {
   return (
     <div style={{
@@ -26,6 +26,7 @@ function Screen({ children }) {
     </div>
   );
 }
+
 function StatusBar() {
   return (
     <div style={{ height: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', fontSize: 12, fontFamily: 'Inter, sans-serif', color: colors.ink, fontWeight: 600 }}>
@@ -34,6 +35,7 @@ function StatusBar() {
     </div>
   );
 }
+
 function TabBar({ active, onNav }) {
   const tabs = [
     { id: 'home', icon: Home, label: 'Szukaj' },
@@ -63,6 +65,7 @@ function TabBar({ active, onNav }) {
     </div>
   );
 }
+
 function Pill({ children, tone = 'fern' }) {
   const bg = tone === 'fern' ? colors.fern : tone === 'clay' ? colors.clay : colors.gold;
   return (
@@ -72,7 +75,7 @@ function Pill({ children, tone = 'fern' }) {
     }}>{children}</span>
   );
 }
-// ---------- Screens ----------
+
 function HomeScreen({ onSelectHost }) {
   const hosts = [
     { name: 'Marta K.', dist: '1.2 km', rating: 4.9, reviews: 23, plants: 3, price: 15, light: 'Pełne słońce' },
@@ -85,6 +88,7 @@ function HomeScreen({ onSelectHost }) {
         <div style={{ fontSize: 11, color: colors.clay, fontWeight: 700, letterSpacing: 1.5, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>Warszawa · Mokotów</div>
         <h1 style={{ fontSize: 28, color: colors.ink, margin: '4px 0 2px', fontWeight: 600 }}>Komu zostawisz<br/>swoje rośliny?</h1>
       </div>
+
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10, background: colors.card,
         border: `1.5px solid ${colors.line}`, borderRadius: 16, padding: '12px 16px', marginBottom: 20
@@ -92,14 +96,17 @@ function HomeScreen({ onSelectHost }) {
         <Search size={18} color="#A9A08B" />
         <span style={{ color: '#A9A08B', fontFamily: 'Inter, sans-serif', fontSize: 14 }}>Szukaj hosta w okolicy...</span>
       </div>
+
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, overflowX: 'auto' }}>
         <Pill tone="fern">W pobliżu</Pill>
         <Pill tone="gold">Najwyżej oceniani</Pill>
         <Pill tone="clay">Dostępni teraz</Pill>
       </div>
+
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>
         12 hostów w pobliżu
       </div>
+
       {hosts.map((h, i) => (
         <div key={i} onClick={onSelectHost} style={{
           background: colors.card, borderRadius: 18, padding: 16, marginBottom: 12,
@@ -129,6 +136,7 @@ function HomeScreen({ onSelectHost }) {
     </div>
   );
 }
+
 function HostDetailScreen({ onBack, onBook }) {
   return (
     <div style={{ flex: 1, overflow: 'auto' }}>
@@ -146,6 +154,7 @@ function HostDetailScreen({ onBack, onBook }) {
           <div style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Inter, sans-serif', fontSize: 13 }}>Mokotów, Warszawa · 1.2 km</div>
         </div>
       </div>
+
       <div style={{ padding: 20 }}>
         <div style={{ display: 'flex', gap: 20, marginBottom: 20, fontFamily: 'Inter, sans-serif' }}>
           <div>
@@ -161,20 +170,24 @@ function HostDetailScreen({ onBack, onBook }) {
             <div style={{ fontSize: 11, color: '#A9A08B' }}>za roślinę/tydz.</div>
           </div>
         </div>
+
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#4A4638', lineHeight: 1.6, marginBottom: 20 }}>
           Mieszkanie z dużym, południowym oknem. Doświadczenie z roślinami tropikalnymi i sukulentami. Wysyłam cotygodniowe zdjęcia rośliny.
         </p>
+
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          <Pill tone="gold">  Pełne słońce</Pill>
+          <Pill tone="gold">☀️ Pełne słońce</Pill>
           <Pill tone="fern">Doświadczenie 3 lata</Pill>
           <Pill tone="clay">Zdjęcia co tydzień</Pill>
         </div>
+
         <div style={{ background: colors.clayLight, borderRadius: 16, padding: 16, marginBottom: 20 }}>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Ostatnia opinia</div>
           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#5A5445', margin: 0, fontStyle: 'italic' }}>
             "Monstera wróciła zdrowsza niż wyjechała. Codzienne zdjęcia uspokoiły mnie podczas wyjazdu." — Kasia
           </p>
         </div>
+
         <button onClick={onBook} style={{
           width: '100%', padding: 16, borderRadius: 16, background: colors.clay, color: '#fff',
           border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer'
@@ -183,12 +196,35 @@ function HostDetailScreen({ onBack, onBook }) {
     </div>
   );
 }
-function AddPlantScreen() {
+
+function AddPlantScreen({ onPlantAdded }) {
   const [step, setStep] = useState(1);
+  const [plantName, setPlantName] = useState('Monstera Deliciosa');
+  const [sunlight, setSunlight] = useState('Pełne słońce');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    const { error } = await supabase
+      .from('plants')
+      .insert([{ name: plantName, sunlight: sunlight, owner: 'Krystian' }]);
+    setSaving(false);
+    if (error) {
+      setError('Nie udało się zapisać: ' + error.message);
+    } else {
+      setSaved(true);
+      if (onPlantAdded) onPlantAdded();
+    }
+  };
+
   return (
     <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column' }}>
       <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>Dodaj roślinę</h2>
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 20 }}>Krok {step} z 2</div>
+
       {step === 1 && (
         <>
           <div style={{
@@ -205,17 +241,18 @@ function AddPlantScreen() {
           }}>Dalej</button>
         </>
       )}
-      {step === 2 && (
+
+      {step === 2 && !saved && (
         <>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>Poziom nasłonecznienia u Ciebie w domu</div>
-          {['Pełne słońce', 'Półcień', 'Cień'].map((l, i) => (
-            <div key={l} style={{
+          {['Pełne słońce', 'Półcień', 'Cień'].map((l) => (
+            <div key={l} onClick={() => setSunlight(l)} style={{
               display: 'flex', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14,
-              border: `1.5px solid ${i === 0 ? colors.gold : colors.line}`, marginBottom: 10,
-              background: i === 0 ? '#FFF8EC' : colors.card
+              border: `1.5px solid ${sunlight === l ? colors.gold : colors.line}`, marginBottom: 10,
+              background: sunlight === l ? '#FFF8EC' : colors.card, cursor: 'pointer'
             }}>
-              <Sun size={18} color={i === 0 ? colors.gold : '#A9A08B'} />
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: i === 0 ? 700 : 500 }}>{l}</span>
+              <Sun size={18} color={sunlight === l ? colors.gold : '#A9A08B'} />
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: sunlight === l ? 700 : 500 }}>{l}</span>
             </div>
           ))}
           <div style={{
@@ -224,23 +261,45 @@ function AddPlantScreen() {
           }}>
             <Sparkles size={18} color={colors.fern} style={{ flexShrink: 0, marginTop: 2 }} />
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.fernDark, lineHeight: 1.5 }}>
-              <b>Rozpoznano: Monstera Deliciosa.</b> Podlewaj co 7–10 dni, unikaj bezpośredniego słońca. Pełny przewodnik pielęgnacji dostępny w wersji Premium.
+              <b>Rozpoznano: {plantName}.</b> Podlewaj co 7–10 dni, unikaj bezpośredniego słońca. Pełny przewodnik pielęgnacji dostępny w wersji Premium.
             </div>
           </div>
-          <button style={{
+          {error && (
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>
+          )}
+          <button onClick={handleSave} disabled={saving} style={{
             width: '100%', padding: 16, borderRadius: 16, background: colors.fern, color: '#fff',
-            border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer'
-          }}>Dodaj do profilu</button>
+            border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15,
+            cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+          }}>
+            {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
+            {saving ? 'Zapisywanie...' : 'Dodaj do profilu'}
+          </button>
         </>
+      )}
+
+      {saved && (
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14
+        }}>
+          <div style={{ width: 64, height: 64, borderRadius: 32, background: colors.fern, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Check size={32} color="#fff" />
+          </div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 16, color: colors.ink }}>Roślina dodana!</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7261', textAlign: 'center' }}>Sprawdź ją w zakładce Profil</div>
+        </div>
       )}
     </div>
   );
 }
+
 function ScanScreen() {
   return (
     <div style={{ flex: 1, padding: 20 }}>
       <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>Rozpoznaj roślinę</h2>
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>Zdjęcie + poziom światła → pełny przewodnik pielęgnacji</div>
+
       <div style={{
         aspectRatio: '4/5', background: `linear-gradient(160deg, ${colors.fern}22, ${colors.gold}22)`,
         borderRadius: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -251,6 +310,7 @@ function ScanScreen() {
         </div>
         <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: colors.ink, fontSize: 15 }}>Zrób lub wgraj zdjęcie</span>
       </div>
+
       <div style={{
         border: `1.5px solid ${colors.gold}`, background: '#FFF8EC', borderRadius: 16, padding: 16,
         display: 'flex', gap: 12, alignItems: 'center'
@@ -264,7 +324,140 @@ function ScanScreen() {
     </div>
   );
 }
-function ProfileScreen() {
+
+function weatherFromCode(code) {
+  if (code === 0) return { Icon: Sun, label: 'Bezchmurnie', tone: colors.gold };
+  if ([1, 2].includes(code)) return { Icon: CloudSun, label: 'Częściowe zachmurzenie', tone: colors.gold };
+  if (code === 3) return { Icon: Cloud, label: 'Pochmurno', tone: '#8A8574' };
+  if ([45, 48].includes(code)) return { Icon: Cloud, label: 'Mgła', tone: '#8A8574' };
+  if (code >= 51 && code <= 82) return { Icon: CloudRain, label: 'Opady', tone: '#5A7BA6' };
+  return { Icon: Cloud, label: 'Zmiennie', tone: '#8A8574' };
+}
+
+function WeatherWidget() {
+  const [state, setState] = useState({ loading: true, error: null, data: null, place: '' });
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const lat = 52.208, lon = 21.038;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code&hourly=temperature_2m,relative_humidity_2m,weather_code&forecast_days=2&timezone=Europe%2FWarsaw`;
+        const res = await fetch(url);
+        const json = await res.json();
+        if (!cancelled) setState({ loading: false, error: null, data: json, place: 'Mokotów, Warszawa' });
+      } catch (e) {
+        if (!cancelled) setState({ loading: false, error: 'Nie udało się pobrać pogody', data: null, place: '' });
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (state.loading) {
+    return (
+      <div style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 18, padding: 20, marginBottom: 20, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>
+        Ładowanie pogody dla Twojej lokalizacji...
+      </div>
+    );
+  }
+  if (state.error || !state.data) {
+    return (
+      <div style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 18, padding: 20, marginBottom: 20, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.clay }}>
+        {state.error || 'Brak danych pogodowych'}
+      </div>
+    );
+  }
+
+  const { current, hourly } = state.data;
+  const nowInfo = weatherFromCode(current.weather_code);
+  const NowIcon = nowInfo.Icon;
+
+  const nowIso = state.data.current.time;
+  const startIdx = Math.max(0, hourly.time.findIndex(t => t === nowIso));
+  const nextHours = hourly.time.slice(startIdx, startIdx + 6).map((t, i) => ({
+    time: t,
+    temp: hourly.temperature_2m[startIdx + i],
+    humidity: hourly.relative_humidity_2m[startIdx + i],
+    code: hourly.weather_code[startIdx + i],
+  }));
+
+  return (
+    <div style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 18, padding: 18, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+        <MapPin size={13} color="#A9A08B" />
+        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', fontWeight: 600 }}>{state.place} · warunki dla Twoich roślin</span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '10px 0 16px' }}>
+        <div style={{
+          width: 56, height: 56, borderRadius: 16, background: `${nowInfo.tone}1A`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+        }}>
+          <NowIcon size={28} color={nowInfo.tone} />
+        </div>
+        <div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: colors.ink, lineHeight: 1 }}>{Math.round(current.temperature_2m)}°C</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#7A7261', marginTop: 2 }}>{nowInfo.label}</div>
+        </div>
+        <div style={{ marginLeft: 'auto', textAlign: 'right', fontFamily: 'Inter, sans-serif' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#5A7BA6', fontWeight: 700, fontSize: 14 }}>
+            <Droplets size={14} /> {current.relative_humidity_2m}%
+          </div>
+          <div style={{ fontSize: 10.5, color: '#A9A08B' }}>wilgotność</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
+        {nextHours.map((h, i) => {
+          const info = weatherFromCode(h.code);
+          const HIcon = info.Icon;
+          const hour = new Date(h.time).getHours();
+          return (
+            <div key={i} style={{
+              flex: '0 0 auto', width: 54, background: colors.bg, borderRadius: 12, padding: '10px 6px',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontFamily: 'Inter, sans-serif'
+            }}>
+              <span style={{ fontSize: 10.5, color: '#A9A08B', fontWeight: 600 }}>{i === 0 ? 'Teraz' : `${hour}:00`}</span>
+              <HIcon size={16} color={info.tone} />
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: colors.ink }}>{Math.round(h.temp)}°</span>
+              <span style={{ fontSize: 9.5, color: '#5A7BA6', display: 'flex', alignItems: 'center', gap: 2 }}><Droplets size={9}/>{h.humidity}%</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {current.relative_humidity_2m < 35 && (
+        <div style={{ marginTop: 12, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.clay, display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+          <Sparkles size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+          Niska wilgotność powietrza — rozważ zraszanie liści.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProfileScreen({ refreshKey }) {
+  const [plants, setPlants] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPlants() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('plants')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!cancelled) {
+        if (!error && data) setPlants(data);
+        setLoading(false);
+      }
+    }
+    loadPlants();
+    return () => { cancelled = true; };
+  }, [refreshKey]);
+
   return (
     <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
@@ -274,13 +467,29 @@ function ProfileScreen() {
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B' }}>Mokotów, Warszawa</div>
         </div>
       </div>
+
+      <WeatherWidget />
+
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Twoje rośliny</div>
-      {['Monstera Deliciosa', 'Fikus Benjamina'].map(p => (
-        <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 12, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 12, marginBottom: 10 }}>
+
+      {loading && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>
+      )}
+
+      {!loading && plants.length === 0 && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Nie masz jeszcze żadnych roślin — dodaj pierwszą w zakładce "Dodaj".</div>
+      )}
+
+      {!loading && plants.map(p => (
+        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 12, marginBottom: 10 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: colors.clayLight }} />
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, color: colors.ink }}>{p}</span>
+          <div>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, color: colors.ink }}>{p.name}</div>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B' }}>{p.sunlight}</div>
+          </div>
         </div>
       ))}
+
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, margin: '20px 0 10px', textTransform: 'uppercase', letterSpacing: 0.5 }}>Chcesz zostać hostem?</div>
       <div style={{ background: colors.fern, borderRadius: 16, padding: 16, color: '#fff' }}>
         <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>Zarabiaj na wolnym miejscu w domu</div>
@@ -289,20 +498,23 @@ function ProfileScreen() {
     </div>
   );
 }
-// ---------- App shell ----------
+
 export default function App() {
   const [tab, setTab] = useState('home');
-  const [view, setView] = useState('list'); // list | detail
+  const [view, setView] = useState('list');
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const renderTab = () => {
     if (tab === 'home') {
       return view === 'list'
         ? <HomeScreen onSelectHost={() => setView('detail')} />
         : <HostDetailScreen onBack={() => setView('list')} onBook={() => setView('list')} />;
     }
-    if (tab === 'add') return <AddPlantScreen />;
+    if (tab === 'add') return <AddPlantScreen onPlantAdded={() => setRefreshKey(k => k + 1)} />;
     if (tab === 'scan') return <ScanScreen />;
-    if (tab === 'profile') return <ProfileScreen />;
+    if (tab === 'profile') return <ProfileScreen refreshKey={refreshKey} />;
   };
+
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#EDE7DA', padding: 40 }}>
       <Screen>
