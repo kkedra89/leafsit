@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2 } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -75,6 +75,102 @@ function Pill({ children, tone = 'fern' }) {
     }}>{children}</span>
   );
 }
+
+// ---------- AUTH SCREEN ----------
+
+function AuthScreen() {
+  const [mode, setMode] = useState('login'); // login | signup
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [info, setInfo] = useState(null);
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError(null);
+    setInfo(null);
+    if (mode === 'login') {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) setError(error.message);
+    } else {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) setError(error.message);
+      else setInfo('Konto utworzone! Możesz się teraz zalogować.');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{
+          width: 56, height: 56, borderRadius: 18, background: colors.fern, margin: '0 auto 14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <Sparkles size={26} color="#fff" />
+        </div>
+        <h1 style={{ fontSize: 24, color: colors.ink, fontWeight: 600, margin: 0 }}>Leafsit</h1>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginTop: 4 }}>
+          {mode === 'login' ? 'Zaloguj się do swojego konta' : 'Załóż nowe konto'}
+        </div>
+      </div>
+
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10, background: colors.card,
+        border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: '12px 16px', marginBottom: 12
+      }}>
+        <Mail size={18} color="#A9A08B" />
+        <input
+          type="email"
+          placeholder="Adres email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          style={{ border: 'none', outline: 'none', flex: 1, fontFamily: 'Inter, sans-serif', fontSize: 14, background: 'transparent' }}
+        />
+      </div>
+
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10, background: colors.card,
+        border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: '12px 16px', marginBottom: 16
+      }}>
+        <Lock size={18} color="#A9A08B" />
+        <input
+          type="password"
+          placeholder="Hasło"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          style={{ border: 'none', outline: 'none', flex: 1, fontFamily: 'Inter, sans-serif', fontSize: 14, background: 'transparent' }}
+        />
+      </div>
+
+      {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
+      {info && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.fern, marginBottom: 12 }}>{info}</div>}
+
+      <button onClick={handleSubmit} disabled={loading || !email || !password} style={{
+        width: '100%', padding: 16, borderRadius: 16, background: colors.fern, color: '#fff',
+        border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15,
+        cursor: loading ? 'default' : 'pointer', opacity: (loading || !email || !password) ? 0.6 : 1,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16
+      }}>
+        {loading && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
+        {mode === 'login' ? 'Zaloguj się' : 'Zarejestruj się'}
+      </button>
+
+      <div style={{ textAlign: 'center', fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7261' }}>
+        {mode === 'login' ? 'Nie masz jeszcze konta?' : 'Masz już konto?'}{' '}
+        <span
+          onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(null); setInfo(null); }}
+          style={{ color: colors.clay, fontWeight: 700, cursor: 'pointer' }}
+        >
+          {mode === 'login' ? 'Zarejestruj się' : 'Zaloguj się'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ---------- MAIN SCREENS ----------
 
 function HomeScreen({ onSelectHost }) {
   const hosts = [
@@ -197,9 +293,9 @@ function HostDetailScreen({ onBack, onBook }) {
   );
 }
 
-function AddPlantScreen({ onPlantAdded }) {
+function AddPlantScreen({ userId, onPlantAdded }) {
   const [step, setStep] = useState(1);
-  const [plantName, setPlantName] = useState('Monstera Deliciosa');
+  const [plantName] = useState('Monstera Deliciosa');
   const [sunlight, setSunlight] = useState('Pełne słońce');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -210,7 +306,7 @@ function AddPlantScreen({ onPlantAdded }) {
     setError(null);
     const { error } = await supabase
       .from('plants')
-      .insert([{ name: plantName, sunlight: sunlight, owner: 'Krystian' }]);
+      .insert([{ name: plantName, sunlight: sunlight, user_id: userId }]);
     setSaving(false);
     if (error) {
       setError('Nie udało się zapisać: ' + error.message);
@@ -437,7 +533,7 @@ function WeatherWidget() {
   );
 }
 
-function ProfileScreen({ refreshKey }) {
+function ProfileScreen({ user, refreshKey, onSignOut }) {
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -448,6 +544,7 @@ function ProfileScreen({ refreshKey }) {
       const { data, error } = await supabase
         .from('plants')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       if (!cancelled) {
         if (!error && data) setPlants(data);
@@ -456,16 +553,24 @@ function ProfileScreen({ refreshKey }) {
     }
     loadPlants();
     return () => { cancelled = true; };
-  }, [refreshKey]);
+  }, [refreshKey, user.id]);
 
   return (
     <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
-        <div style={{ width: 60, height: 60, borderRadius: 30, background: colors.fern, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 22 }}>K</div>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 600, color: colors.ink }}>Krystian</div>
+        <div style={{ width: 60, height: 60, borderRadius: 30, background: colors.fern, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 22 }}>
+          {user.email.charAt(0).toUpperCase()}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: colors.ink, wordBreak: 'break-all' }}>{user.email}</div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B' }}>Mokotów, Warszawa</div>
         </div>
+        <button onClick={onSignOut} style={{
+          background: colors.clayLight, border: 'none', borderRadius: 12, padding: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+        }}>
+          <LogOut size={16} color={colors.clay} />
+        </button>
       </div>
 
       <WeatherWidget />
@@ -499,10 +604,31 @@ function ProfileScreen({ refreshKey }) {
   );
 }
 
+// ---------- APP ROOT ----------
+
 export default function App() {
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [tab, setTab] = useState('home');
   const [view, setView] = useState('list');
   const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setTab('home');
+    setView('list');
+  };
 
   const renderTab = () => {
     if (tab === 'home') {
@@ -510,17 +636,27 @@ export default function App() {
         ? <HomeScreen onSelectHost={() => setView('detail')} />
         : <HostDetailScreen onBack={() => setView('list')} onBook={() => setView('list')} />;
     }
-    if (tab === 'add') return <AddPlantScreen onPlantAdded={() => setRefreshKey(k => k + 1)} />;
+    if (tab === 'add') return <AddPlantScreen userId={session.user.id} onPlantAdded={() => setRefreshKey(k => k + 1)} />;
     if (tab === 'scan') return <ScanScreen />;
-    if (tab === 'profile') return <ProfileScreen refreshKey={refreshKey} />;
+    if (tab === 'profile') return <ProfileScreen user={session.user} refreshKey={refreshKey} onSignOut={handleSignOut} />;
   };
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#EDE7DA', padding: 40 }}>
       <Screen>
         <StatusBar />
-        {renderTab()}
-        <TabBar active={tab} onNav={(t) => { setTab(t); setView('list'); }} />
+        {authLoading ? (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Loader2 size={28} color={colors.fern} style={{ animation: 'spin 1s linear infinite' }} />
+          </div>
+        ) : !session ? (
+          <AuthScreen />
+        ) : (
+          <>
+            {renderTab()}
+            <TabBar active={tab} onNav={(t) => { setTab(t); setView('list'); }} />
+          </>
+        )}
       </Screen>
     </div>
   );
