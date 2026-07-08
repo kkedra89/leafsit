@@ -76,10 +76,8 @@ function Pill({ children, tone = 'fern' }) {
   );
 }
 
-// ---------- AUTH SCREEN ----------
-
 function AuthScreen() {
-  const [mode, setMode] = useState('login'); // login | signup
+  const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -170,14 +168,27 @@ function AuthScreen() {
   );
 }
 
-// ---------- MAIN SCREENS ----------
-
 function HomeScreen({ onSelectHost }) {
-  const hosts = [
-    { name: 'Marta K.', dist: '1.2 km', rating: 4.9, reviews: 23, plants: 3, price: 15, light: 'Pełne słońce' },
-    { name: 'Tomek W.', dist: '2.8 km', rating: 4.7, reviews: 11, plants: 5, price: 12, light: 'Półcień' },
-    { name: 'Ola i Bartek', dist: '3.1 km', rating: 5.0, reviews: 41, plants: 8, price: 18, light: 'Cień' },
-  ];
+  const [hosts, setHosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadHosts() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('hosts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!cancelled) {
+        if (!error && data) setHosts(data);
+        setLoading(false);
+      }
+    }
+    loadHosts();
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: '20px 20px 0' }}>
       <div style={{ marginBottom: 18 }}>
@@ -200,11 +211,17 @@ function HomeScreen({ onSelectHost }) {
       </div>
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>
-        12 hostów w pobliżu
+        {loading ? 'Ładowanie...' : `${hosts.length} hostów w pobliżu`}
       </div>
 
-      {hosts.map((h, i) => (
-        <div key={i} onClick={onSelectHost} style={{
+      {!loading && hosts.length === 0 && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>
+          Nie ma jeszcze żadnych hostów w Twojej okolicy.
+        </div>
+      )}
+
+      {hosts.map((h) => (
+        <div key={h.id} onClick={() => onSelectHost(h)} style={{
           background: colors.card, borderRadius: 18, padding: 16, marginBottom: 12,
           border: `1px solid ${colors.line}`, cursor: 'pointer'
         }}>
@@ -220,10 +237,10 @@ function HomeScreen({ onSelectHost }) {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={12} fill={colors.gold} color={colors.gold} /> {h.rating} ({h.reviews})</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {h.dist}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {h.location}</span>
               </div>
               <div style={{ marginTop: 6, fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, fontWeight: 600 }}>
-                {h.light} · przyjmuje {h.plants} roślin
+                {h.sunlight} · przyjmuje {h.plants_capacity} roślin
               </div>
             </div>
           </div>
@@ -233,7 +250,8 @@ function HomeScreen({ onSelectHost }) {
   );
 }
 
-function HostDetailScreen({ onBack, onBook }) {
+function HostDetailScreen({ host, onBack, onBook }) {
+  if (!host) return null;
   return (
     <div style={{ flex: 1, overflow: 'auto' }}>
       <div style={{
@@ -245,43 +263,34 @@ function HostDetailScreen({ onBack, onBook }) {
           background: 'rgba(255,255,255,0.25)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
         }}><ArrowLeft size={18} color="#fff" /></button>
         <div>
-          <div style={{ width: 64, height: 64, borderRadius: 16, background: colors.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: '#fff', marginBottom: 8, border: '3px solid rgba(255,255,255,0.4)' }}>M</div>
-          <h2 style={{ color: '#fff', margin: 0, fontSize: 22, fontWeight: 600 }}>Marta K.</h2>
-          <div style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Inter, sans-serif', fontSize: 13 }}>Mokotów, Warszawa · 1.2 km</div>
+          <div style={{ width: 64, height: 64, borderRadius: 16, background: colors.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: '#fff', marginBottom: 8, border: '3px solid rgba(255,255,255,0.4)' }}>{host.name.charAt(0)}</div>
+          <h2 style={{ color: '#fff', margin: 0, fontSize: 22, fontWeight: 600 }}>{host.name}</h2>
+          <div style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Inter, sans-serif', fontSize: 13 }}>{host.location}</div>
         </div>
       </div>
 
       <div style={{ padding: 20 }}>
         <div style={{ display: 'flex', gap: 20, marginBottom: 20, fontFamily: 'Inter, sans-serif' }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink, display: 'flex', alignItems: 'center', gap: 4 }}><Star size={16} fill={colors.gold} color={colors.gold}/> 4.9</div>
-            <div style={{ fontSize: 11, color: '#A9A08B' }}>23 opinie</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink, display: 'flex', alignItems: 'center', gap: 4 }}><Star size={16} fill={colors.gold} color={colors.gold}/> {host.rating}</div>
+            <div style={{ fontSize: 11, color: '#A9A08B' }}>{host.reviews} opinii</div>
           </div>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink }}>3</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink }}>{host.plants_capacity}</div>
             <div style={{ fontSize: 11, color: '#A9A08B' }}>miejsca wolne</div>
           </div>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink }}>15 zł</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink }}>{host.price} zł</div>
             <div style={{ fontSize: 11, color: '#A9A08B' }}>za roślinę/tydz.</div>
           </div>
         </div>
 
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#4A4638', lineHeight: 1.6, marginBottom: 20 }}>
-          Mieszkanie z dużym, południowym oknem. Doświadczenie z roślinami tropikalnymi i sukulentami. Wysyłam cotygodniowe zdjęcia rośliny.
+          {host.description}
         </p>
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          <Pill tone="gold">☀️ Pełne słońce</Pill>
-          <Pill tone="fern">Doświadczenie 3 lata</Pill>
-          <Pill tone="clay">Zdjęcia co tydzień</Pill>
-        </div>
-
-        <div style={{ background: colors.clayLight, borderRadius: 16, padding: 16, marginBottom: 20 }}>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Ostatnia opinia</div>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#5A5445', margin: 0, fontStyle: 'italic' }}>
-            "Monstera wróciła zdrowsza niż wyjechała. Codzienne zdjęcia uspokoiły mnie podczas wyjazdu." — Kasia
-          </p>
+          <Pill tone="gold">☀️ {host.sunlight}</Pill>
         </div>
 
         <button onClick={onBook} style={{
@@ -604,13 +613,12 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
   );
 }
 
-// ---------- APP ROOT ----------
-
 export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [tab, setTab] = useState('home');
   const [view, setView] = useState('list');
+  const [selectedHost, setSelectedHost] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -633,8 +641,8 @@ export default function App() {
   const renderTab = () => {
     if (tab === 'home') {
       return view === 'list'
-        ? <HomeScreen onSelectHost={() => setView('detail')} />
-        : <HostDetailScreen onBack={() => setView('list')} onBook={() => setView('list')} />;
+        ? <HomeScreen onSelectHost={(h) => { setSelectedHost(h); setView('detail'); }} />
+        : <HostDetailScreen host={selectedHost} onBack={() => setView('list')} onBook={() => setView('list')} />;
     }
     if (tab === 'add') return <AddPlantScreen userId={session.user.id} onPlantAdded={() => setRefreshKey(k => k + 1)} />;
     if (tab === 'scan') return <ScanScreen />;
