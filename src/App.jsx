@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -171,6 +171,7 @@ function AuthScreen() {
 function HomeScreen({ onSelectHost }) {
   const [hosts, setHosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -189,6 +190,14 @@ function HomeScreen({ onSelectHost }) {
     return () => { cancelled = true; };
   }, []);
 
+  const q = query.trim().toLowerCase();
+  const filteredHosts = q
+    ? hosts.filter(h =>
+        (h.name || '').toLowerCase().includes(q) ||
+        (h.location || '').toLowerCase().includes(q)
+      )
+    : hosts;
+
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: '20px 20px 0' }}>
       <div style={{ marginBottom: 18 }}>
@@ -201,7 +210,18 @@ function HomeScreen({ onSelectHost }) {
         border: `1.5px solid ${colors.line}`, borderRadius: 16, padding: '12px 16px', marginBottom: 20
       }}>
         <Search size={18} color="#A9A08B" />
-        <span style={{ color: '#A9A08B', fontFamily: 'Inter, sans-serif', fontSize: 14 }}>Szukaj hosta w okolicy...</span>
+        <input
+          type="text"
+          placeholder="Szukaj po imieniu lub lokalizacji..."
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          style={{ border: 'none', outline: 'none', flex: 1, fontFamily: 'Inter, sans-serif', fontSize: 14, background: 'transparent', color: colors.ink }}
+        />
+        {query && (
+          <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
+            <X size={16} color="#A9A08B" />
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, overflowX: 'auto' }}>
@@ -211,16 +231,16 @@ function HomeScreen({ onSelectHost }) {
       </div>
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>
-        {loading ? 'Ładowanie...' : `${hosts.length} hostów w pobliżu`}
+        {loading ? 'Ładowanie...' : `${filteredHosts.length} hostów${q ? ' pasujących do wyszukiwania' : ' w pobliżu'}`}
       </div>
 
-      {!loading && hosts.length === 0 && (
+      {!loading && filteredHosts.length === 0 && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>
-          Nie ma jeszcze żadnych hostów w Twojej okolicy.
+          {q ? `Brak hostów pasujących do "${query}".` : 'Nie ma jeszcze żadnych hostów w Twojej okolicy.'}
         </div>
       )}
 
-      {hosts.map((h) => (
+      {filteredHosts.map((h) => (
         <div key={h.id} onClick={() => onSelectHost(h)} style={{
           background: colors.card, borderRadius: 18, padding: 16, marginBottom: 12,
           border: `1px solid ${colors.line}`, cursor: 'pointer'
