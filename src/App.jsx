@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -67,7 +67,7 @@ function TabBar({ active, onNav }) {
 }
 
 function Pill({ children, tone = 'fern' }) {
-  const bg = tone === 'fern' ? colors.fern : tone === 'clay' ? colors.clay : colors.gold;
+  const bg = tone === 'fern' ? colors.fern : tone === 'clay' ? colors.clay : tone === 'gray' ? '#A9A08B' : colors.gold;
   return (
     <span style={{
       background: bg, color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 10px',
@@ -130,9 +130,7 @@ function AuthScreen() {
       </div>
 
       <TextField icon={Mail} type="email" placeholder="Adres email" value={email} onChange={e => setEmail(e.target.value)} />
-      <div style={{ marginBottom: 4 }}>
-        <TextField icon={Lock} type="password" placeholder="Hasło" value={password} onChange={e => setPassword(e.target.value)} />
-      </div>
+      <TextField icon={Lock} type="password" placeholder="Hasło" value={password} onChange={e => setPassword(e.target.value)} />
 
       {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
       {info && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.fern, marginBottom: 12 }}>{info}</div>}
@@ -141,7 +139,7 @@ function AuthScreen() {
         width: '100%', padding: 16, borderRadius: 16, background: colors.fern, color: '#fff',
         border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15,
         cursor: loading ? 'default' : 'pointer', opacity: (loading || !email || !password) ? 0.6 : 1,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, marginBottom: 16
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4, marginBottom: 16
       }}>
         {loading && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
         {mode === 'login' ? 'Zaloguj się' : 'Zarejestruj się'}
@@ -310,6 +308,151 @@ function HostDetailScreen({ host, onBack, onBook }) {
           border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer'
         }}>Zarezerwuj termin</button>
       </div>
+    </div>
+  );
+}
+
+function BookingForm({ host, userId, userEmail, onCancel, onBooked }) {
+  const [plants, setPlants] = useState([]);
+  const [plantsLoading, setPlantsLoading] = useState(true);
+  const [selectedPlantId, setSelectedPlantId] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPlants() {
+      setPlantsLoading(true);
+      const { data, error } = await supabase
+        .from('plants')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (!cancelled) {
+        if (!error && data) {
+          setPlants(data);
+          if (data.length > 0) setSelectedPlantId(data[0].id);
+        }
+        setPlantsLoading(false);
+      }
+    }
+    loadPlants();
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  const selectedPlant = plants.find(p => p.id === selectedPlantId);
+  const canSave = selectedPlantId && startDate && endDate;
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    const { error } = await supabase.from('bookings').insert([{
+      host_id: host.id,
+      renter_user_id: userId,
+      renter_email: userEmail,
+      plant_id: selectedPlantId,
+      plant_name: selectedPlant ? selectedPlant.name : '',
+      start_date: startDate,
+      end_date: endDate,
+      status: 'pending',
+    }]);
+    setSaving(false);
+    if (error) {
+      setError('Nie udało się wysłać prośby: ' + error.message);
+    } else {
+      setDone(true);
+    }
+  };
+
+  if (done) {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 20 }}>
+        <div style={{ width: 64, height: 64, borderRadius: 32, background: colors.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Clock size={30} color="#fff" />
+        </div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 16, color: colors.ink }}>Prośba wysłana!</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7261', textAlign: 'center' }}>
+          Czeka na akceptację przez {host.name}. Sprawdź status w zakładce Profil.
+        </div>
+        <button onClick={onBooked} style={{
+          padding: '12px 24px', borderRadius: 14, background: colors.fern, color: '#fff',
+          border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginTop: 8
+        }}>Wróć do listy</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <button onClick={onCancel} style={{
+          width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+        }}><ArrowLeft size={18} color={colors.ink} /></button>
+        <div>
+          <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>Zarezerwuj u {host.name}</h2>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B' }}>{host.price} zł / roślinę / tydzień</div>
+        </div>
+      </div>
+
+      {plantsLoading && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie Twoich roślin...</div>
+      )}
+
+      {!plantsLoading && plants.length === 0 && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 16 }}>
+          Nie masz jeszcze żadnych roślin. Dodaj pierwszą w zakładce "Dodaj", żeby móc zarezerwować hosta.
+        </div>
+      )}
+
+      {!plantsLoading && plants.length > 0 && (
+        <>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>Która roślina?</div>
+          {plants.map(p => (
+            <div key={p.id} onClick={() => setSelectedPlantId(p.id)} style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14,
+              border: `1.5px solid ${selectedPlantId === p.id ? colors.fern : colors.line}`, marginBottom: 10,
+              background: selectedPlantId === p.id ? '#EEF3EA' : colors.card, cursor: 'pointer'
+            }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: colors.clayLight }} />
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: selectedPlantId === p.id ? 700 : 500 }}>{p.name}</span>
+            </div>
+          ))}
+
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginTop: 16, marginBottom: 10 }}>Na jakie daty?</div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginBottom: 4 }}>Od</div>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{
+                width: '100%', border: `1.5px solid ${colors.line}`, borderRadius: 12, padding: 10,
+                fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
+              }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginBottom: 4 }}>Do</div>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{
+                width: '100%', border: `1.5px solid ${colors.line}`, borderRadius: 12, padding: 10,
+                fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
+              }} />
+            </div>
+          </div>
+
+          {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
+
+          <button onClick={handleSave} disabled={!canSave || saving} style={{
+            width: '100%', padding: 16, borderRadius: 16, background: colors.clay, color: '#fff',
+            border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15,
+            cursor: (!canSave || saving) ? 'default' : 'pointer', opacity: (!canSave || saving) ? 0.6 : 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+          }}>
+            {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
+            {saving ? 'Wysyłanie...' : 'Wyślij prośbę o rezerwację'}
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -642,6 +785,12 @@ function BecomeHostForm({ userId, onCancel, onSaved }) {
   );
 }
 
+function statusInfo(status) {
+  if (status === 'accepted') return { label: 'Zaakceptowana', tone: 'fern' };
+  if (status === 'rejected') return { label: 'Odrzucona', tone: 'clay' };
+  return { label: 'Oczekuje', tone: 'gold' };
+}
+
 function ProfileScreen({ user, refreshKey, onSignOut }) {
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -649,6 +798,12 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
   const [hostLoading, setHostLoading] = useState(true);
   const [showHostForm, setShowHostForm] = useState(false);
   const [hostRefresh, setHostRefresh] = useState(0);
+
+  const [myBookings, setMyBookings] = useState([]);
+  const [myBookingsLoading, setMyBookingsLoading] = useState(true);
+  const [incoming, setIncoming] = useState([]);
+  const [incomingLoading, setIncomingLoading] = useState(true);
+  const [bookingsRefresh, setBookingsRefresh] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -686,6 +841,48 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
     return () => { cancelled = true; };
   }, [user.id, hostRefresh]);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadMyBookings() {
+      setMyBookingsLoading(true);
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*, hosts(name, location)')
+        .eq('renter_user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (!cancelled) {
+        if (!error && data) setMyBookings(data);
+        setMyBookingsLoading(false);
+      }
+    }
+    loadMyBookings();
+    return () => { cancelled = true; };
+  }, [user.id, bookingsRefresh]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadIncoming() {
+      if (!myHost) { setIncoming([]); setIncomingLoading(false); return; }
+      setIncomingLoading(true);
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('host_id', myHost.id)
+        .order('created_at', { ascending: false });
+      if (!cancelled) {
+        if (!error && data) setIncoming(data);
+        setIncomingLoading(false);
+      }
+    }
+    loadIncoming();
+    return () => { cancelled = true; };
+  }, [myHost, bookingsRefresh]);
+
+  const respondToBooking = async (bookingId, newStatus) => {
+    await supabase.from('bookings').update({ status: newStatus }).eq('id', bookingId);
+    setBookingsRefresh(k => k + 1);
+  };
+
   if (showHostForm) {
     return (
       <BecomeHostForm
@@ -716,7 +913,57 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
 
       <WeatherWidget />
 
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Twoje rośliny</div>
+      {myHost && incoming.filter(b => b.status === 'pending').length > 0 && (
+        <>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Prośby o rezerwację ({incoming.filter(b => b.status === 'pending').length})
+          </div>
+          {incoming.filter(b => b.status === 'pending').map(b => (
+            <div key={b.id} style={{ background: colors.card, border: `1.5px solid ${colors.gold}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>{b.plant_name}</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 2 }}>od {b.renter_email}</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 10 }}>{b.start_date} → {b.end_date}</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => respondToBooking(b.id, 'accepted')} style={{
+                  flex: 1, padding: 10, borderRadius: 10, background: colors.fern, color: '#fff', border: 'none',
+                  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
+                }}><CheckCircle size={14} /> Akceptuj</button>
+                <button onClick={() => respondToBooking(b.id, 'rejected')} style={{
+                  flex: 1, padding: 10, borderRadius: 10, background: colors.clayLight, color: colors.clay, border: 'none',
+                  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
+                }}><XCircle size={14} /> Odrzuć</button>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: myHost && incoming.filter(b => b.status === 'pending').length > 0 ? 20 : 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>Twoje rezerwacje</div>
+      {myBookingsLoading && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>Ładowanie...</div>
+      )}
+      {!myBookingsLoading && myBookings.length === 0 && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>Nie masz jeszcze żadnych rezerwacji.</div>
+      )}
+      {!myBookingsLoading && myBookings.map(b => {
+        const si = statusInfo(b.status);
+        return (
+          <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+              <div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink }}>{b.plant_name}</div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>u {b.hosts?.name} · {b.hosts?.location}</div>
+              </div>
+              <Pill tone={si.tone}>{si.label}</Pill>
+            </div>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
+          </div>
+        );
+      })}
+
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>Twoje rośliny</div>
 
       {loading && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>
@@ -792,9 +1039,21 @@ export default function App() {
 
   const renderTab = () => {
     if (tab === 'home') {
-      return view === 'list'
-        ? <HomeScreen onSelectHost={(h) => { setSelectedHost(h); setView('detail'); }} />
-        : <HostDetailScreen host={selectedHost} onBack={() => setView('list')} onBook={() => setView('list')} />;
+      if (view === 'detail') {
+        return <HostDetailScreen host={selectedHost} onBack={() => setView('list')} onBook={() => setView('booking')} />;
+      }
+      if (view === 'booking') {
+        return (
+          <BookingForm
+            host={selectedHost}
+            userId={session.user.id}
+            userEmail={session.user.email}
+            onCancel={() => setView('detail')}
+            onBooked={() => setView('list')}
+          />
+        );
+      }
+      return <HomeScreen onSelectHost={(h) => { setSelectedHost(h); setView('detail'); }} />;
     }
     if (tab === 'add') return <AddPlantScreen userId={session.user.id} onPlantAdded={() => setRefreshKey(k => k + 1)} />;
     if (tab === 'scan') return <ScanScreen />;
