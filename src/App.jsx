@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -76,6 +76,21 @@ function Pill({ children, tone = 'fern' }) {
   );
 }
 
+function TextField({ icon: Icon, ...props }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10, background: colors.card,
+      border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: '12px 16px', marginBottom: 12
+    }}>
+      {Icon && <Icon size={18} color="#A9A08B" style={{ flexShrink: 0 }} />}
+      <input
+        {...props}
+        style={{ border: 'none', outline: 'none', flex: 1, fontFamily: 'Inter, sans-serif', fontSize: 14, background: 'transparent', color: colors.ink }}
+      />
+    </div>
+  );
+}
+
 function AuthScreen() {
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
@@ -114,32 +129,9 @@ function AuthScreen() {
         </div>
       </div>
 
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10, background: colors.card,
-        border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: '12px 16px', marginBottom: 12
-      }}>
-        <Mail size={18} color="#A9A08B" />
-        <input
-          type="email"
-          placeholder="Adres email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          style={{ border: 'none', outline: 'none', flex: 1, fontFamily: 'Inter, sans-serif', fontSize: 14, background: 'transparent' }}
-        />
-      </div>
-
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10, background: colors.card,
-        border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: '12px 16px', marginBottom: 16
-      }}>
-        <Lock size={18} color="#A9A08B" />
-        <input
-          type="password"
-          placeholder="Hasło"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          style={{ border: 'none', outline: 'none', flex: 1, fontFamily: 'Inter, sans-serif', fontSize: 14, background: 'transparent' }}
-        />
+      <TextField icon={Mail} type="email" placeholder="Adres email" value={email} onChange={e => setEmail(e.target.value)} />
+      <div style={{ marginBottom: 4 }}>
+        <TextField icon={Lock} type="password" placeholder="Hasło" value={password} onChange={e => setPassword(e.target.value)} />
       </div>
 
       {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
@@ -149,7 +141,7 @@ function AuthScreen() {
         width: '100%', padding: 16, borderRadius: 16, background: colors.fern, color: '#fff',
         border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15,
         cursor: loading ? 'default' : 'pointer', opacity: (loading || !email || !password) ? 0.6 : 1,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, marginBottom: 16
       }}>
         {loading && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
         {mode === 'login' ? 'Zaloguj się' : 'Zarejestruj się'}
@@ -256,7 +248,7 @@ function HomeScreen({ onSelectHost }) {
                 <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: colors.clay, fontSize: 14 }}>{h.price} zł<span style={{ fontSize: 11, color: '#A9A08B', fontWeight: 500 }}>/roślinę/tydz.</span></span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={12} fill={colors.gold} color={colors.gold} /> {h.rating} ({h.reviews})</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={12} fill={colors.gold} color={colors.gold} /> {h.rating ?? '—'} ({h.reviews ?? 0})</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {h.location}</span>
               </div>
               <div style={{ marginTop: 6, fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, fontWeight: 600 }}>
@@ -292,8 +284,8 @@ function HostDetailScreen({ host, onBack, onBook }) {
       <div style={{ padding: 20 }}>
         <div style={{ display: 'flex', gap: 20, marginBottom: 20, fontFamily: 'Inter, sans-serif' }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink, display: 'flex', alignItems: 'center', gap: 4 }}><Star size={16} fill={colors.gold} color={colors.gold}/> {host.rating}</div>
-            <div style={{ fontSize: 11, color: '#A9A08B' }}>{host.reviews} opinii</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink, display: 'flex', alignItems: 'center', gap: 4 }}><Star size={16} fill={colors.gold} color={colors.gold}/> {host.rating ?? '—'}</div>
+            <div style={{ fontSize: 11, color: '#A9A08B' }}>{host.reviews ?? 0} opinii</div>
           </div>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink }}>{host.plants_capacity}</div>
@@ -562,9 +554,101 @@ function WeatherWidget() {
   );
 }
 
+function BecomeHostForm({ userId, onCancel, onSaved }) {
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [location, setLocation] = useState('');
+  const [sunlight, setSunlight] = useState('Pełne słońce');
+  const [capacity, setCapacity] = useState('');
+  const [description, setDescription] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const canSave = name && price && location && capacity;
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    const { error } = await supabase.from('hosts').insert([{
+      user_id: userId,
+      name,
+      price: Number(price),
+      location,
+      sunlight,
+      plants_capacity: Number(capacity),
+      description,
+      rating: null,
+      reviews: 0,
+    }]);
+    setSaving(false);
+    if (error) {
+      setError('Nie udało się zapisać: ' + error.message);
+    } else {
+      onSaved();
+    }
+  };
+
+  return (
+    <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <button onClick={onCancel} style={{
+          width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+        }}><ArrowLeft size={18} color={colors.ink} /></button>
+        <h2 style={{ fontSize: 20, color: colors.ink, fontWeight: 600, margin: 0 }}>Zostań hostem</h2>
+      </div>
+
+      <TextField placeholder="Twoje imię" value={name} onChange={e => setName(e.target.value)} />
+      <TextField icon={DollarSign} type="number" placeholder="Cena za roślinę / tydzień (zł)" value={price} onChange={e => setPrice(e.target.value)} />
+      <TextField icon={MapPin} placeholder="Lokalizacja (np. Mokotów, Warszawa)" value={location} onChange={e => setLocation(e.target.value)} />
+      <TextField type="number" placeholder="Ile roślin możesz przyjąć?" value={capacity} onChange={e => setCapacity(e.target.value)} />
+
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: 4 }}>Nasłonecznienie u Ciebie</div>
+      {['Pełne słońce', 'Półcień', 'Cień'].map((l) => (
+        <div key={l} onClick={() => setSunlight(l)} style={{
+          display: 'flex', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14,
+          border: `1.5px solid ${sunlight === l ? colors.gold : colors.line}`, marginBottom: 10,
+          background: sunlight === l ? '#FFF8EC' : colors.card, cursor: 'pointer'
+        }}>
+          <Sun size={18} color={sunlight === l ? colors.gold : '#A9A08B'} />
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: sunlight === l ? 700 : 500 }}>{l}</span>
+        </div>
+      ))}
+
+      <textarea
+        placeholder="Krótki opis (opcjonalnie) — np. doświadczenie z roślinami, jak często wysyłasz zdjęcia..."
+        value={description}
+        onChange={e => setDescription(e.target.value)}
+        rows={4}
+        style={{
+          width: '100%', border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: 14,
+          fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, marginTop: 4, marginBottom: 16,
+          resize: 'none', boxSizing: 'border-box'
+        }}
+      />
+
+      {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
+
+      <button onClick={handleSave} disabled={!canSave || saving} style={{
+        width: '100%', padding: 16, borderRadius: 16, background: colors.fern, color: '#fff',
+        border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15,
+        cursor: (!canSave || saving) ? 'default' : 'pointer', opacity: (!canSave || saving) ? 0.6 : 1,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+      }}>
+        {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
+        {saving ? 'Zapisywanie...' : 'Zostań hostem'}
+      </button>
+    </div>
+  );
+}
+
 function ProfileScreen({ user, refreshKey, onSignOut }) {
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [myHost, setMyHost] = useState(null);
+  const [hostLoading, setHostLoading] = useState(true);
+  const [showHostForm, setShowHostForm] = useState(false);
+  const [hostRefresh, setHostRefresh] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -583,6 +667,34 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
     loadPlants();
     return () => { cancelled = true; };
   }, [refreshKey, user.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadMyHost() {
+      setHostLoading(true);
+      const { data, error } = await supabase
+        .from('hosts')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!cancelled) {
+        if (!error) setMyHost(data);
+        setHostLoading(false);
+      }
+    }
+    loadMyHost();
+    return () => { cancelled = true; };
+  }, [user.id, hostRefresh]);
+
+  if (showHostForm) {
+    return (
+      <BecomeHostForm
+        userId={user.id}
+        onCancel={() => setShowHostForm(false)}
+        onSaved={() => { setShowHostForm(false); setHostRefresh(k => k + 1); }}
+      />
+    );
+  }
 
   return (
     <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
@@ -624,11 +736,31 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
         </div>
       ))}
 
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, margin: '20px 0 10px', textTransform: 'uppercase', letterSpacing: 0.5 }}>Chcesz zostać hostem?</div>
-      <div style={{ background: colors.fern, borderRadius: 16, padding: 16, color: '#fff' }}>
-        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>Zarabiaj na wolnym miejscu w domu</div>
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, opacity: 0.9 }}>Ustal cenę i przyjmuj rośliny sąsiadów pod nieobecność</div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, margin: '20px 0 10px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        {myHost ? 'Twój profil hosta' : 'Chcesz zostać hostem?'}
       </div>
+
+      {hostLoading && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>
+      )}
+
+      {!hostLoading && myHost && (
+        <div style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 16, padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, color: colors.ink }}>{myHost.name}</span>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, color: colors.clay }}>{myHost.price} zł</span>
+          </div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{myHost.location} · {myHost.plants_capacity} miejsc</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, marginTop: 6 }}>Twój profil jest już widoczny na liście hostów ✓</div>
+        </div>
+      )}
+
+      {!hostLoading && !myHost && (
+        <div onClick={() => setShowHostForm(true)} style={{ background: colors.fern, borderRadius: 16, padding: 16, color: '#fff', cursor: 'pointer' }}>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>Zarabiaj na wolnym miejscu w domu</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, opacity: 0.9 }}>Ustal cenę i przyjmuj rośliny sąsiadów pod nieobecność</div>
+        </div>
+      )}
     </div>
   );
 }
