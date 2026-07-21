@@ -14,6 +14,15 @@ const colors = {
   card: '#FFFFFF',
 };
 
+// Maps a sunlight condition string to the matching icon + color,
+// so hosts with "Cień" or "Półcień" don't show a sun icon.
+function sunlightInfo(value) {
+  if (value === 'Pełne słońce') return { Icon: Sun, tone: colors.gold };
+  if (value === 'Półcień') return { Icon: CloudSun, tone: colors.gold };
+  if (value === 'Cień') return { Icon: Cloud, tone: '#8A8574' };
+  return { Icon: Sun, tone: colors.gold };
+}
+
 function Screen({ children }) {
   return (
     <div style={{
@@ -71,7 +80,8 @@ function Pill({ children, tone = 'fern' }) {
   return (
     <span style={{
       background: bg, color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 10px',
-      borderRadius: 20, fontFamily: 'Inter, sans-serif', letterSpacing: 0.3
+      borderRadius: 20, fontFamily: 'Inter, sans-serif', letterSpacing: 0.3,
+      display: 'inline-flex', alignItems: 'center', gap: 5
     }}>{children}</span>
   );
 }
@@ -230,32 +240,36 @@ function HomeScreen({ onSelectHost }) {
         </div>
       )}
 
-      {filteredHosts.map((h) => (
-        <div key={h.id} onClick={() => onSelectHost(h)} style={{
-          background: colors.card, borderRadius: 18, padding: 16, marginBottom: 12,
-          border: `1px solid ${colors.line}`, cursor: 'pointer'
-        }}>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: 14, background: `linear-gradient(135deg, ${colors.fern}, ${colors.fernDark})`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 18, flexShrink: 0
-            }}>{h.name.charAt(0)}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span style={{ fontWeight: 600, color: colors.ink, fontSize: 16 }}>{h.name}</span>
-                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: colors.clay, fontSize: 14 }}>{h.price} zł<span style={{ fontSize: 11, color: '#A9A08B', fontWeight: 500 }}>/roślinę/tydz.</span></span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={12} fill={colors.gold} color={colors.gold} /> {h.rating ?? '—'} ({h.reviews ?? 0})</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {h.location}</span>
-              </div>
-              <div style={{ marginTop: 6, fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, fontWeight: 600 }}>
-                {h.sunlight} · przyjmuje {h.plants_capacity} roślin
+      {filteredHosts.map((h) => {
+        const si = sunlightInfo(h.sunlight);
+        const SIcon = si.Icon;
+        return (
+          <div key={h.id} onClick={() => onSelectHost(h)} style={{
+            background: colors.card, borderRadius: 18, padding: 16, marginBottom: 12,
+            border: `1px solid ${colors.line}`, cursor: 'pointer'
+          }}>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 14, background: `linear-gradient(135deg, ${colors.fern}, ${colors.fernDark})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 18, flexShrink: 0
+              }}>{h.name.charAt(0)}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span style={{ fontWeight: 600, color: colors.ink, fontSize: 16 }}>{h.name}</span>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: colors.clay, fontSize: 14 }}>{h.price} zł<span style={{ fontSize: 11, color: '#A9A08B', fontWeight: 500 }}>/roślinę/tydz.</span></span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={12} fill={colors.gold} color={colors.gold} /> {h.rating ?? '—'} ({h.reviews ?? 0})</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {h.location}</span>
+                </div>
+                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, fontWeight: 600 }}>
+                  <SIcon size={13} color={si.tone} /> {h.sunlight} · przyjmuje {h.plants_capacity} roślin
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -284,6 +298,10 @@ function HostDetailScreen({ host, onBack, onBook }) {
   }, [host]);
 
   if (!host) return null;
+
+  const si = sunlightInfo(host.sunlight);
+  const SIcon = si.Icon;
+
   return (
     <div style={{ flex: 1, overflow: 'auto' }}>
       <div style={{
@@ -322,7 +340,7 @@ function HostDetailScreen({ host, onBack, onBook }) {
         </p>
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          <Pill tone="gold">☀️ {host.sunlight}</Pill>
+          <Pill tone="gold"><SIcon size={13} color="#fff" /> {host.sunlight}</Pill>
         </div>
 
         <button onClick={onBook} style={{
@@ -861,16 +879,20 @@ function BecomeHostForm({ userId, onCancel, onSaved }) {
       <TextField type="number" placeholder="Ile roślin możesz przyjąć?" value={capacity} onChange={e => setCapacity(e.target.value)} />
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: 4 }}>Nasłonecznienie u Ciebie</div>
-      {['Pełne słońce', 'Półcień', 'Cień'].map((l) => (
-        <div key={l} onClick={() => setSunlight(l)} style={{
-          display: 'flex', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14,
-          border: `1.5px solid ${sunlight === l ? colors.gold : colors.line}`, marginBottom: 10,
-          background: sunlight === l ? '#FFF8EC' : colors.card, cursor: 'pointer'
-        }}>
-          <Sun size={18} color={sunlight === l ? colors.gold : '#A9A08B'} />
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: sunlight === l ? 700 : 500 }}>{l}</span>
-        </div>
-      ))}
+      {['Pełne słońce', 'Półcień', 'Cień'].map((l) => {
+        const si = sunlightInfo(l);
+        const SIcon = si.Icon;
+        return (
+          <div key={l} onClick={() => setSunlight(l)} style={{
+            display: 'flex', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14,
+            border: `1.5px solid ${sunlight === l ? colors.gold : colors.line}`, marginBottom: 10,
+            background: sunlight === l ? '#FFF8EC' : colors.card, cursor: 'pointer'
+          }}>
+            <SIcon size={18} color={sunlight === l ? si.tone : '#A9A08B'} />
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: sunlight === l ? 700 : 500 }}>{l}</span>
+          </div>
+        );
+      })}
 
       <textarea
         placeholder="Krótki opis (opcjonalnie) — np. doświadczenie z roślinami, jak często wysyłasz zdjęcia..."
