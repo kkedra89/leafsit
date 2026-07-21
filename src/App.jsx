@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -605,8 +605,6 @@ function ReviewForm({ booking, userId, onCancel, onSaved }) {
   );
 }
 
-// Compresses/resizes the photo in the browser before sending it anywhere,
-// so uploads stay fast and cheap regardless of the original photo size.
 function resizeImage(file, maxSize = 800) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -635,6 +633,28 @@ function resizeImage(file, maxSize = 800) {
   });
 }
 
+// Turns "- Podlewanie: co 7 dni\n- Światło: ..." into styled rows
+// instead of a raw wall of text.
+function CareGuide({ text }) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {lines.map((line, i) => {
+        const match = line.match(/^-?\s*\*{0,2}([^:]+)\*{0,2}:\s*(.+)$/);
+        if (!match) {
+          return <div key={i} style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#4A4638' }}>{line}</div>;
+        }
+        return (
+          <div key={i}>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, fontWeight: 700, color: colors.fern, textTransform: 'uppercase', letterSpacing: 0.4 }}>{match[1]}</div>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13.5, color: '#4A4638', lineHeight: 1.5 }}>{match[2]}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function AddPlantScreen({ userId, onPlantAdded }) {
   const fileInputRef = useRef(null);
   const [photoDataUrl, setPhotoDataUrl] = useState(null);
@@ -646,12 +666,20 @@ function AddPlantScreen({ userId, onPlantAdded }) {
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
 
+  const [showPremium, setShowPremium] = useState(false);
+  const [premiumSunlight, setPremiumSunlight] = useState('Pełne słońce');
+  const [generatingGuide, setGeneratingGuide] = useState(false);
+  const [guideError, setGuideError] = useState(null);
+  const [careGuide, setCareGuide] = useState(null);
+
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIdentifyError(null);
     setPlantName('');
     setConfidence(null);
+    setCareGuide(null);
+    setShowPremium(false);
 
     const resized = await resizeImage(file);
     setPhotoDataUrl(resized);
@@ -678,12 +706,39 @@ function AddPlantScreen({ userId, onPlantAdded }) {
     setIdentifying(false);
   };
 
+  const handleGenerateGuide = async () => {
+    setGeneratingGuide(true);
+    setGuideError(null);
+    try {
+      const res = await fetch('/api/plant-care', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plantName, sunlight: premiumSunlight }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGuideError(data.error || 'Nie udało się wygenerować porady.');
+      } else {
+        setCareGuide(data.guide);
+      }
+    } catch (err) {
+      setGuideError('Błąd połączenia z generatorem porad.');
+    }
+    setGeneratingGuide(false);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setError(null);
     const { error } = await supabase
       .from('plants')
-      .insert([{ name: plantName, user_id: userId, photo_url: photoDataUrl }]);
+      .insert([{
+        name: plantName,
+        user_id: userId,
+        photo_url: photoDataUrl,
+        sunlight: careGuide ? premiumSunlight : null,
+        care_guide: careGuide,
+      }]);
     setSaving(false);
     if (error) {
       setError('Nie udało się zapisać: ' + error.message);
@@ -694,7 +749,7 @@ function AddPlantScreen({ userId, onPlantAdded }) {
   };
 
   return (
-    <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
       <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>Dodaj roślinę</h2>
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 20 }}>Zrób zdjęcie, a rozpoznamy gatunek</div>
 
@@ -712,7 +767,7 @@ function AddPlantScreen({ userId, onPlantAdded }) {
           aspectRatio: '1', background: photoDataUrl ? '#000' : colors.clayLight, borderRadius: 20,
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
           border: photoDataUrl ? 'none' : `2px dashed ${colors.clay}`, marginBottom: 20, cursor: 'pointer',
-          overflow: 'hidden', position: 'relative'
+          overflow: 'hidden', position: 'relative', flexShrink: 0
         }}>
           {photoDataUrl ? (
             <>
@@ -747,16 +802,72 @@ function AddPlantScreen({ userId, onPlantAdded }) {
         <>
           <div style={{
             display: 'flex', gap: 10, alignItems: 'flex-start', background: '#EEF3EA', borderRadius: 14,
-            padding: 14, marginBottom: 20
+            padding: 14, marginBottom: 16
           }}>
             <Sparkles size={18} color={colors.fern} style={{ flexShrink: 0, marginTop: 2 }} />
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.fernDark, lineHeight: 1.5 }}>
-              <b>Rozpoznano: {plantName}</b> {confidence != null && `(pewność ${confidence}%)`}. Podlewaj regularnie, obserwuj reakcję liści na światło. Pełny przewodnik pielęgnacji dostępny w wersji Premium.
+              <b>Rozpoznano: {plantName}</b> {confidence != null && `(pewność ${confidence}%)`}
             </div>
           </div>
 
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 8 }}>Nazwa nie zgadza się? Popraw ją:</div>
           <TextField value={plantName} onChange={e => setPlantName(e.target.value)} />
+
+          {!careGuide && !showPremium && (
+            <button onClick={() => setShowPremium(true)} style={{
+              width: '100%', padding: 14, borderRadius: 16, background: `linear-gradient(135deg, ${colors.gold}, ${colors.clay})`,
+              color: '#fff', border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16
+            }}>
+              <Crown size={16} /> Odblokuj pełny przewodnik Premium
+            </button>
+          )}
+
+          {showPremium && !careGuide && (
+            <div style={{ background: colors.card, border: `1.5px solid ${colors.gold}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <Crown size={16} color={colors.gold} />
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink }}>Przewodnik Premium (demo — 9 zł)</span>
+              </div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 10 }}>Jaki poziom nasłonecznienia ma ta roślina u Ciebie?</div>
+              {['Pełne słońce', 'Półcień', 'Cień'].map((l) => {
+                const si = sunlightInfo(l);
+                const SIcon = si.Icon;
+                return (
+                  <div key={l} onClick={() => setPremiumSunlight(l)} style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12,
+                    border: `1.5px solid ${premiumSunlight === l ? colors.gold : colors.line}`, marginBottom: 8,
+                    background: premiumSunlight === l ? '#FFF8EC' : colors.bg, cursor: 'pointer'
+                  }}>
+                    <SIcon size={16} color={premiumSunlight === l ? si.tone : '#A9A08B'} />
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, fontWeight: premiumSunlight === l ? 700 : 500 }}>{l}</span>
+                  </div>
+                );
+              })}
+
+              {guideError && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.clay, marginTop: 8, marginBottom: 4 }}>{guideError}</div>}
+
+              <button onClick={handleGenerateGuide} disabled={generatingGuide} style={{
+                width: '100%', padding: 12, borderRadius: 12, background: colors.fern, color: '#fff', border: 'none',
+                fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, cursor: generatingGuide ? 'default' : 'pointer',
+                opacity: generatingGuide ? 0.7 : 1, marginTop: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+              }}>
+                {generatingGuide && <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />}
+                {generatingGuide ? 'Generuję poradę...' : 'Wygeneruj przewodnik'}
+              </button>
+            </div>
+          )}
+
+          {careGuide && (
+            <div style={{ background: '#FFF8EC', border: `1.5px solid ${colors.gold}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <Crown size={16} color={colors.gold} />
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink }}>Twój przewodnik pielęgnacji</span>
+              </div>
+              <CareGuide text={careGuide} />
+            </div>
+          )}
 
           {error && (
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>
@@ -1047,6 +1158,8 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
   const [reviewingBooking, setReviewingBooking] = useState(null);
   const [reviewsRefresh, setReviewsRefresh] = useState(0);
 
+  const [expandedPlantId, setExpandedPlantId] = useState(null);
+
   useEffect(() => {
     let cancelled = false;
     async function loadPlants() {
@@ -1256,13 +1369,27 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
       )}
 
       {!loading && plants.map(p => (
-        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 12, marginBottom: 10 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: colors.clayLight, overflow: 'hidden', flexShrink: 0 }}>
-            {p.photo_url && <img src={p.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+        <div key={p.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, marginBottom: 10, overflow: 'hidden' }}>
+          <div onClick={() => p.care_guide && setExpandedPlantId(expandedPlantId === p.id ? null : p.id)} style={{
+            display: 'flex', alignItems: 'center', gap: 12, padding: 12, cursor: p.care_guide ? 'pointer' : 'default'
+          }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: colors.clayLight, overflow: 'hidden', flexShrink: 0 }}>
+              {p.photo_url && <img src={p.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, color: colors.ink }}>{p.name}</div>
+              {p.care_guide && (
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.gold, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3, marginTop: 2 }}>
+                  <Crown size={11} /> Przewodnik Premium
+                </div>
+              )}
+            </div>
           </div>
-          <div>
-            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, color: colors.ink }}>{p.name}</div>
-          </div>
+          {expandedPlantId === p.id && p.care_guide && (
+            <div style={{ padding: '0 16px 16px' }}>
+              <CareGuide text={p.care_guide} />
+            </div>
+          )}
         </div>
       ))}
 
