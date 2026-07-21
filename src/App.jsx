@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -14,8 +14,6 @@ const colors = {
   card: '#FFFFFF',
 };
 
-// Maps a sunlight condition string to the matching icon + color,
-// so hosts with "Cień" or "Półcień" don't show a sun icon.
 function sunlightInfo(value) {
   if (value === 'Pełne słońce') return { Icon: Sun, tone: colors.gold };
   if (value === 'Półcień') return { Icon: CloudSun, tone: colors.gold };
@@ -480,7 +478,9 @@ function BookingForm({ host, userId, userEmail, onCancel, onBooked }) {
               border: `1.5px solid ${selectedPlantId === p.id ? colors.fern : colors.line}`, marginBottom: 10,
               background: selectedPlantId === p.id ? '#EEF3EA' : colors.card, cursor: 'pointer'
             }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: colors.clayLight }} />
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: colors.clayLight, overflow: 'hidden', flexShrink: 0 }}>
+                {p.photo_url && <img src={p.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+              </div>
               <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: selectedPlantId === p.id ? 700 : 500 }}>{p.name}</span>
             </div>
           ))}
@@ -605,19 +605,85 @@ function ReviewForm({ booking, userId, onCancel, onSaved }) {
   );
 }
 
+// Compresses/resizes the photo in the browser before sending it anywhere,
+// so uploads stay fast and cheap regardless of the original photo size.
+function resizeImage(file, maxSize = 800) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxSize) {
+          height = Math.round((height * maxSize) / width);
+          width = maxSize;
+        } else if (height > maxSize) {
+          width = Math.round((width * maxSize) / height);
+          height = maxSize;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function AddPlantScreen({ userId, onPlantAdded }) {
-  const [plantName] = useState('Monstera Deliciosa');
+  const fileInputRef = useRef(null);
+  const [photoDataUrl, setPhotoDataUrl] = useState(null);
+  const [identifying, setIdentifying] = useState(false);
+  const [identifyError, setIdentifyError] = useState(null);
+  const [plantName, setPlantName] = useState('');
+  const [confidence, setConfidence] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState(null);
-  const [photoTaken, setPhotoTaken] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIdentifyError(null);
+    setPlantName('');
+    setConfidence(null);
+
+    const resized = await resizeImage(file);
+    setPhotoDataUrl(resized);
+
+    setIdentifying(true);
+    try {
+      const res = await fetch('/api/identify-plant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: resized }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setIdentifyError(data.error || 'Nie udało się rozpoznać rośliny.');
+      } else if (!data.name) {
+        setIdentifyError('Nie rozpoznano gatunku. Spróbuj wyraźniejszego zdjęcia liścia.');
+      } else {
+        setPlantName(data.name);
+        setConfidence(data.confidence);
+      }
+    } catch (err) {
+      setIdentifyError('Błąd połączenia z rozpoznawaniem roślin.');
+    }
+    setIdentifying(false);
+  };
 
   const handleSave = async () => {
     setSaving(true);
     setError(null);
     const { error } = await supabase
       .from('plants')
-      .insert([{ name: plantName, user_id: userId }]);
+      .insert([{ name: plantName, user_id: userId, photo_url: photoDataUrl }]);
     setSaving(false);
     if (error) {
       setError('Nie udało się zapisać: ' + error.message);
@@ -632,20 +698,52 @@ function AddPlantScreen({ userId, onPlantAdded }) {
       <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>Dodaj roślinę</h2>
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 20 }}>Zrób zdjęcie, a rozpoznamy gatunek</div>
 
-      {!photoTaken && !saved && (
-        <>
-          <div onClick={() => setPhotoTaken(true)} style={{
-            aspectRatio: '1', background: colors.clayLight, borderRadius: 20, display: 'flex',
-            flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
-            border: `2px dashed ${colors.clay}`, marginBottom: 20, cursor: 'pointer'
-          }}>
-            <Camera size={40} color={colors.clay} />
-            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: colors.clay, fontSize: 14 }}>Zrób zdjęcie rośliny</span>
-          </div>
-        </>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+
+      {!saved && (
+        <div onClick={() => fileInputRef.current?.click()} style={{
+          aspectRatio: '1', background: photoDataUrl ? '#000' : colors.clayLight, borderRadius: 20,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
+          border: photoDataUrl ? 'none' : `2px dashed ${colors.clay}`, marginBottom: 20, cursor: 'pointer',
+          overflow: 'hidden', position: 'relative'
+        }}>
+          {photoDataUrl ? (
+            <>
+              <img src={photoDataUrl} alt="Twoja roślina" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: identifying ? 0.5 : 1 }} />
+              <div style={{ position: 'absolute', bottom: 10, right: 10, background: 'rgba(0,0,0,0.5)', borderRadius: 10, padding: 8, display: 'flex' }}>
+                <RefreshCw size={16} color="#fff" />
+              </div>
+            </>
+          ) : (
+            <>
+              <Camera size={40} color={colors.clay} />
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: colors.clay, fontSize: 14 }}>Zrób zdjęcie rośliny</span>
+            </>
+          )}
+        </div>
       )}
 
-      {photoTaken && !saved && (
+      {identifying && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>
+          <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Rozpoznaję gatunek...
+        </div>
+      )}
+
+      {identifyError && !identifying && (
+        <div style={{
+          display: 'flex', gap: 10, alignItems: 'flex-start', background: '#FFF3EC', borderRadius: 14,
+          padding: 14, marginBottom: 20, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay
+        }}>{identifyError}</div>
+      )}
+
+      {plantName && !identifying && !saved && (
         <>
           <div style={{
             display: 'flex', gap: 10, alignItems: 'flex-start', background: '#EEF3EA', borderRadius: 14,
@@ -653,13 +751,17 @@ function AddPlantScreen({ userId, onPlantAdded }) {
           }}>
             <Sparkles size={18} color={colors.fern} style={{ flexShrink: 0, marginTop: 2 }} />
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.fernDark, lineHeight: 1.5 }}>
-              <b>Rozpoznano: {plantName}.</b> Podlewaj co 7–10 dni, unikaj bezpośredniego słońca. Pełny przewodnik pielęgnacji dostępny w wersji Premium.
+              <b>Rozpoznano: {plantName}</b> {confidence != null && `(pewność ${confidence}%)`}. Podlewaj regularnie, obserwuj reakcję liści na światło. Pełny przewodnik pielęgnacji dostępny w wersji Premium.
             </div>
           </div>
+
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 8 }}>Nazwa nie zgadza się? Popraw ją:</div>
+          <TextField value={plantName} onChange={e => setPlantName(e.target.value)} />
+
           {error && (
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>
           )}
-          <button onClick={handleSave} disabled={saving} style={{
+          <button onClick={handleSave} disabled={saving || !plantName} style={{
             width: '100%', padding: 16, borderRadius: 16, background: colors.fern, color: '#fff',
             border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15,
             cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1,
@@ -1155,7 +1257,9 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
 
       {!loading && plants.map(p => (
         <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 12, marginBottom: 10 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: colors.clayLight }} />
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: colors.clayLight, overflow: 'hidden', flexShrink: 0 }}>
+            {p.photo_url && <img src={p.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+          </div>
           <div>
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, color: colors.ink }}>{p.name}</div>
           </div>
