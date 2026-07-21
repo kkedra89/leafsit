@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -261,6 +261,28 @@ function HomeScreen({ onSelectHost }) {
 }
 
 function HostDetailScreen({ host, onBack, onBook }) {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadReviews() {
+      if (!host) return;
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('host_id', host.id)
+        .order('created_at', { ascending: false });
+      if (!cancelled) {
+        if (!error && data) setReviews(data);
+        setLoading(false);
+      }
+    }
+    loadReviews();
+    return () => { cancelled = true; };
+  }, [host]);
+
   if (!host) return null;
   return (
     <div style={{ flex: 1, overflow: 'auto' }}>
@@ -305,8 +327,31 @@ function HostDetailScreen({ host, onBack, onBook }) {
 
         <button onClick={onBook} style={{
           width: '100%', padding: 16, borderRadius: 16, background: colors.clay, color: '#fff',
-          border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer'
+          border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer', marginBottom: 24
         }}>Zarezerwuj termin</button>
+
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Opinie</div>
+
+        {loading && (
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>
+        )}
+
+        {!loading && reviews.length === 0 && (
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ten host nie ma jeszcze żadnych opinii.</div>
+        )}
+
+        {!loading && reviews.map(r => (
+          <div key={r.id} style={{ background: colors.clayLight, borderRadius: 16, padding: 16, marginBottom: 10 }}>
+            <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
+              {[1,2,3,4,5].map(n => (
+                <Star key={n} size={13} fill={n <= r.rating ? colors.gold : 'none'} color={colors.gold} />
+              ))}
+            </div>
+            {r.comment && (
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#5A5445', margin: 0, fontStyle: 'italic' }}>{r.comment}</p>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -457,20 +502,104 @@ function BookingForm({ host, userId, userEmail, onCancel, onBooked }) {
   );
 }
 
+function ReviewForm({ booking, userId, onCancel, onSaved }) {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    const { error } = await supabase.from('reviews').insert([{
+      host_id: booking.host_id,
+      booking_id: booking.id,
+      renter_user_id: userId,
+      rating,
+      comment,
+    }]);
+    if (error) {
+      setSaving(false);
+      setError('Nie udało się zapisać opinii: ' + error.message);
+      return;
+    }
+    const { data: hostReviews } = await supabase
+      .from('reviews')
+      .select('rating')
+      .eq('host_id', booking.host_id);
+    if (hostReviews && hostReviews.length > 0) {
+      const avg = hostReviews.reduce((sum, r) => sum + r.rating, 0) / hostReviews.length;
+      await supabase.from('hosts').update({
+        rating: Math.round(avg * 10) / 10,
+        reviews: hostReviews.length,
+      }).eq('id', booking.host_id);
+    }
+    setSaving(false);
+    onSaved();
+  };
+
+  return (
+    <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <button onClick={onCancel} style={{
+          width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+        }}><ArrowLeft size={18} color={colors.ink} /></button>
+        <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>Oceń hosta</h2>
+      </div>
+
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7261', marginBottom: 20 }}>
+        Twoja roślina: {booking.plant_name}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
+        {[1, 2, 3, 4, 5].map(n => (
+          <button key={n} onClick={() => setRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+            <Star size={32} fill={n <= rating ? colors.gold : 'none'} color={colors.gold} />
+          </button>
+        ))}
+      </div>
+
+      <textarea
+        placeholder="Jak przebiegła współpraca? (opcjonalnie)"
+        value={comment}
+        onChange={e => setComment(e.target.value)}
+        rows={4}
+        style={{
+          width: '100%', border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: 14,
+          fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, marginBottom: 16,
+          resize: 'none', boxSizing: 'border-box'
+        }}
+      />
+
+      {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
+
+      <button onClick={handleSave} disabled={saving} style={{
+        width: '100%', padding: 16, borderRadius: 16, background: colors.fern, color: '#fff',
+        border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15,
+        cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+      }}>
+        {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
+        {saving ? 'Zapisywanie...' : 'Wyślij opinię'}
+      </button>
+    </div>
+  );
+}
+
 function AddPlantScreen({ userId, onPlantAdded }) {
-  const [step, setStep] = useState(1);
   const [plantName] = useState('Monstera Deliciosa');
-  const [sunlight, setSunlight] = useState('Pełne słońce');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(null);
+  const [photoTaken, setPhotoTaken] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     setError(null);
     const { error } = await supabase
       .from('plants')
-      .insert([{ name: plantName, sunlight: sunlight, user_id: userId }]);
+      .insert([{ name: plantName, user_id: userId }]);
     setSaving(false);
     if (error) {
       setError('Nie udało się zapisać: ' + error.message);
@@ -483,11 +612,11 @@ function AddPlantScreen({ userId, onPlantAdded }) {
   return (
     <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column' }}>
       <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>Dodaj roślinę</h2>
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 20 }}>Krok {step} z 2</div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 20 }}>Zrób zdjęcie, a rozpoznamy gatunek</div>
 
-      {step === 1 && (
+      {!photoTaken && !saved && (
         <>
-          <div style={{
+          <div onClick={() => setPhotoTaken(true)} style={{
             aspectRatio: '1', background: colors.clayLight, borderRadius: 20, display: 'flex',
             flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
             border: `2px dashed ${colors.clay}`, marginBottom: 20, cursor: 'pointer'
@@ -495,29 +624,14 @@ function AddPlantScreen({ userId, onPlantAdded }) {
             <Camera size={40} color={colors.clay} />
             <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: colors.clay, fontSize: 14 }}>Zrób zdjęcie rośliny</span>
           </div>
-          <button onClick={() => setStep(2)} style={{
-            width: '100%', padding: 16, borderRadius: 16, background: colors.fern, color: '#fff',
-            border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer'
-          }}>Dalej</button>
         </>
       )}
 
-      {step === 2 && !saved && (
+      {photoTaken && !saved && (
         <>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>Poziom nasłonecznienia u Ciebie w domu</div>
-          {['Pełne słońce', 'Półcień', 'Cień'].map((l) => (
-            <div key={l} onClick={() => setSunlight(l)} style={{
-              display: 'flex', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14,
-              border: `1.5px solid ${sunlight === l ? colors.gold : colors.line}`, marginBottom: 10,
-              background: sunlight === l ? '#FFF8EC' : colors.card, cursor: 'pointer'
-            }}>
-              <Sun size={18} color={sunlight === l ? colors.gold : '#A9A08B'} />
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: sunlight === l ? 700 : 500 }}>{l}</span>
-            </div>
-          ))}
           <div style={{
             display: 'flex', gap: 10, alignItems: 'flex-start', background: '#EEF3EA', borderRadius: 14,
-            padding: 14, marginTop: 10, marginBottom: 20
+            padding: 14, marginBottom: 20
           }}>
             <Sparkles size={18} color={colors.fern} style={{ flexShrink: 0, marginTop: 2 }} />
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.fernDark, lineHeight: 1.5 }}>
@@ -805,6 +919,10 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
   const [incomingLoading, setIncomingLoading] = useState(true);
   const [bookingsRefresh, setBookingsRefresh] = useState(0);
 
+  const [reviewedBookingIds, setReviewedBookingIds] = useState(new Set());
+  const [reviewingBooking, setReviewingBooking] = useState(null);
+  const [reviewsRefresh, setReviewsRefresh] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
     async function loadPlants() {
@@ -878,6 +996,21 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
     return () => { cancelled = true; };
   }, [myHost, bookingsRefresh]);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadMyReviews() {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('booking_id')
+        .eq('renter_user_id', user.id);
+      if (!cancelled && !error && data) {
+        setReviewedBookingIds(new Set(data.map(r => r.booking_id)));
+      }
+    }
+    loadMyReviews();
+    return () => { cancelled = true; };
+  }, [user.id, reviewsRefresh]);
+
   const respondToBooking = async (bookingId, newStatus) => {
     await supabase.from('bookings').update({ status: newStatus }).eq('id', bookingId);
     setBookingsRefresh(k => k + 1);
@@ -889,6 +1022,17 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
         userId={user.id}
         onCancel={() => setShowHostForm(false)}
         onSaved={() => { setShowHostForm(false); setHostRefresh(k => k + 1); }}
+      />
+    );
+  }
+
+  if (reviewingBooking) {
+    return (
+      <ReviewForm
+        booking={reviewingBooking}
+        userId={user.id}
+        onCancel={() => setReviewingBooking(null)}
+        onSaved={() => { setReviewingBooking(null); setReviewsRefresh(k => k + 1); }}
       />
     );
   }
@@ -949,6 +1093,7 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
       )}
       {!myBookingsLoading && myBookings.map(b => {
         const si = statusInfo(b.status);
+        const alreadyReviewed = reviewedBookingIds.has(b.id);
         return (
           <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
@@ -959,6 +1104,19 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
               <Pill tone={si.tone}>{si.label}</Pill>
             </div>
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
+
+            {b.status === 'accepted' && !alreadyReviewed && (
+              <button onClick={() => setReviewingBooking(b)} style={{
+                marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.gold, color: '#fff',
+                border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+              }}><MessageCircle size={14} /> Zostaw opinię</button>
+            )}
+            {b.status === 'accepted' && alreadyReviewed && (
+              <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Check size={13} /> Opinia wystawiona
+              </div>
+            )}
           </div>
         );
       })}
@@ -978,7 +1136,6 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
           <div style={{ width: 40, height: 40, borderRadius: 10, background: colors.clayLight }} />
           <div>
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, color: colors.ink }}>{p.name}</div>
-            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B' }}>{p.sunlight}</div>
           </div>
         </div>
       ))}
