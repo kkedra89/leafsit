@@ -633,8 +633,6 @@ function resizeImage(file, maxSize = 800) {
   });
 }
 
-// Turns "- Podlewanie: co 7 dni\n- Światło: ..." into styled rows
-// instead of a raw wall of text.
 function CareGuide({ text }) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   return (
@@ -655,7 +653,9 @@ function CareGuide({ text }) {
   );
 }
 
-function AddPlantScreen({ userId, onPlantAdded }) {
+const PENDING_PLANT_KEY = 'leafsit_pending_plant';
+
+function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHandled }) {
   const fileInputRef = useRef(null);
   const [photoDataUrl, setPhotoDataUrl] = useState(null);
   const [identifying, setIdentifying] = useState(false);
@@ -668,9 +668,52 @@ function AddPlantScreen({ userId, onPlantAdded }) {
 
   const [showPremium, setShowPremium] = useState(false);
   const [premiumSunlight, setPremiumSunlight] = useState('Pełne słońce');
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [generatingGuide, setGeneratingGuide] = useState(false);
   const [guideError, setGuideError] = useState(null);
   const [careGuide, setCareGuide] = useState(null);
+
+  // Runs once, only if we just came back from a Stripe redirect.
+  useEffect(() => {
+    if (!premiumReturn) return;
+    const saved = sessionStorage.getItem(PENDING_PLANT_KEY);
+    let restoredName = premiumReturn.plant || '';
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setPhotoDataUrl(parsed.photoDataUrl || null);
+        setConfidence(parsed.confidence ?? null);
+        if (parsed.plantName) restoredName = parsed.plantName;
+      } catch (e) { /* ignore malformed cache */ }
+    }
+    setPlantName(restoredName);
+    setPremiumSunlight(premiumReturn.sunlight || 'Pełne słońce');
+    setShowPremium(true);
+    setVerifyingPayment(true);
+
+    (async () => {
+      try {
+        const res = await fetch('/api/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: premiumReturn.sessionId }),
+        });
+        const data = await res.json();
+        if (data.paid) {
+          sessionStorage.removeItem(PENDING_PLANT_KEY);
+          await generateGuide(restoredName, premiumReturn.sunlight || 'Pełne słońce');
+        } else {
+          setGuideError('Nie udało się potwierdzić płatności. Spróbuj ponownie.');
+        }
+      } catch (err) {
+        setGuideError('Błąd sprawdzania płatności.');
+      }
+      setVerifyingPayment(false);
+      onPremiumReturnHandled();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
@@ -706,14 +749,14 @@ function AddPlantScreen({ userId, onPlantAdded }) {
     setIdentifying(false);
   };
 
-  const handleGenerateGuide = async () => {
+  const generateGuide = async (name, sunlight) => {
     setGeneratingGuide(true);
     setGuideError(null);
     try {
       const res = await fetch('/api/plant-care', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plantName, sunlight: premiumSunlight }),
+        body: JSON.stringify({ plantName: name, sunlight }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -725,6 +768,29 @@ function AddPlantScreen({ userId, onPlantAdded }) {
       setGuideError('Błąd połączenia z generatorem porad.');
     }
     setGeneratingGuide(false);
+  };
+
+  const handleUnlockPremium = async () => {
+    setCheckoutLoading(true);
+    setGuideError(null);
+    sessionStorage.setItem(PENDING_PLANT_KEY, JSON.stringify({ photoDataUrl, plantName, confidence }));
+    try {
+      const res = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plantName, sunlight: premiumSunlight, origin: window.location.origin }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setGuideError(data.error || 'Nie udało się utworzyć płatności.');
+        setCheckoutLoading(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      setGuideError('Błąd połączenia z systemem płatności.');
+      setCheckoutLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -810,8 +876,12 @@ function AddPlantScreen({ userId, onPlantAdded }) {
             </div>
           </div>
 
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 8 }}>Nazwa nie zgadza się? Popraw ją:</div>
-          <TextField value={plantName} onChange={e => setPlantName(e.target.value)} />
+          {!premiumReturn && (
+            <>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 8 }}>Nazwa nie zgadza się? Popraw ją:</div>
+              <TextField value={plantName} onChange={e => setPlantName(e.target.value)} />
+            </>
+          )}
 
           {!careGuide && !showPremium && (
             <button onClick={() => setShowPremium(true)} style={{
@@ -827,35 +897,55 @@ function AddPlantScreen({ userId, onPlantAdded }) {
             <div style={{ background: colors.card, border: `1.5px solid ${colors.gold}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <Crown size={16} color={colors.gold} />
-                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink }}>Przewodnik Premium (demo — 9 zł)</span>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink }}>Przewodnik Premium — 9 zł</span>
               </div>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 10 }}>Jaki poziom nasłonecznienia ma ta roślina u Ciebie?</div>
-              {['Pełne słońce', 'Półcień', 'Cień'].map((l) => {
-                const si = sunlightInfo(l);
-                const SIcon = si.Icon;
-                return (
-                  <div key={l} onClick={() => setPremiumSunlight(l)} style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12,
-                    border: `1.5px solid ${premiumSunlight === l ? colors.gold : colors.line}`, marginBottom: 8,
-                    background: premiumSunlight === l ? '#FFF8EC' : colors.bg, cursor: 'pointer'
+
+              {verifyingPayment && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', padding: '8px 0' }}>
+                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Sprawdzam płatność...
+                </div>
+              )}
+
+              {!verifyingPayment && (
+                <>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 10 }}>Jaki poziom nasłonecznienia ma ta roślina u Ciebie?</div>
+                  {['Pełne słońce', 'Półcień', 'Cień'].map((l) => {
+                    const si = sunlightInfo(l);
+                    const SIcon = si.Icon;
+                    return (
+                      <div key={l} onClick={() => setPremiumSunlight(l)} style={{
+                        display: 'flex', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12,
+                        border: `1.5px solid ${premiumSunlight === l ? colors.gold : colors.line}`, marginBottom: 8,
+                        background: premiumSunlight === l ? '#FFF8EC' : colors.bg, cursor: 'pointer'
+                      }}>
+                        <SIcon size={16} color={premiumSunlight === l ? si.tone : '#A9A08B'} />
+                        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, fontWeight: premiumSunlight === l ? 700 : 500 }}>{l}</span>
+                      </div>
+                    );
+                  })}
+
+                  {guideError && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.clay, marginTop: 8, marginBottom: 4 }}>{guideError}</div>}
+
+                  <button onClick={handleUnlockPremium} disabled={checkoutLoading} style={{
+                    width: '100%', padding: 12, borderRadius: 12, background: colors.fern, color: '#fff', border: 'none',
+                    fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, cursor: checkoutLoading ? 'default' : 'pointer',
+                    opacity: checkoutLoading ? 0.7 : 1, marginTop: 10,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                   }}>
-                    <SIcon size={16} color={premiumSunlight === l ? si.tone : '#A9A08B'} />
-                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, fontWeight: premiumSunlight === l ? 700 : 500 }}>{l}</span>
+                    {checkoutLoading && <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />}
+                    {checkoutLoading ? 'Przekierowuję do płatności...' : 'Zapłać 9 zł i odblokuj przewodnik'}
+                  </button>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, color: '#A9A08B', textAlign: 'center', marginTop: 8 }}>
+                    Tryb testowy — użyj karty 4242 4242 4242 4242, dowolna data i CVC
                   </div>
-                );
-              })}
+                </>
+              )}
+            </div>
+          )}
 
-              {guideError && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.clay, marginTop: 8, marginBottom: 4 }}>{guideError}</div>}
-
-              <button onClick={handleGenerateGuide} disabled={generatingGuide} style={{
-                width: '100%', padding: 12, borderRadius: 12, background: colors.fern, color: '#fff', border: 'none',
-                fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, cursor: generatingGuide ? 'default' : 'pointer',
-                opacity: generatingGuide ? 0.7 : 1, marginTop: 10,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
-              }}>
-                {generatingGuide && <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />}
-                {generatingGuide ? 'Generuję poradę...' : 'Wygeneruj przewodnik'}
-              </button>
+          {generatingGuide && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 16 }}>
+              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Generuję Twój przewodnik...
             </div>
           )}
 
@@ -863,7 +953,7 @@ function AddPlantScreen({ userId, onPlantAdded }) {
             <div style={{ background: '#FFF8EC', border: `1.5px solid ${colors.gold}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <Crown size={16} color={colors.gold} />
-                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink }}>Twój przewodnik pielęgnacji</span>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink }}>Twój przewodnik pielęgnacji (opłacony ✓)</span>
               </div>
               <CareGuide text={careGuide} />
             </div>
@@ -1422,6 +1512,25 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
   );
 }
 
+// Parses ?premium_paid=1&plant=...&sunlight=...&session_id=... from a Stripe redirect,
+// and strips those params from the URL so a page refresh doesn't re-trigger anything.
+function readPremiumReturnFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('premium_paid') === '1' && params.get('session_id')) {
+    const result = {
+      plant: params.get('plant') || '',
+      sunlight: params.get('sunlight') || '',
+      sessionId: params.get('session_id'),
+    };
+    window.history.replaceState({}, '', window.location.pathname);
+    return result;
+  }
+  if (params.get('premium_cancelled') === '1') {
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+  return null;
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -1429,8 +1538,14 @@ export default function App() {
   const [view, setView] = useState('list');
   const [selectedHost, setSelectedHost] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [premiumReturn, setPremiumReturn] = useState(null);
 
   useEffect(() => {
+    const pending = readPremiumReturnFromUrl();
+    if (pending) {
+      setPremiumReturn(pending);
+      setTab('add');
+    }
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setAuthLoading(false);
@@ -1465,7 +1580,16 @@ export default function App() {
       }
       return <HomeScreen onSelectHost={(h) => { setSelectedHost(h); setView('detail'); }} />;
     }
-    if (tab === 'add') return <AddPlantScreen userId={session.user.id} onPlantAdded={() => setRefreshKey(k => k + 1)} />;
+    if (tab === 'add') {
+      return (
+        <AddPlantScreen
+          userId={session.user.id}
+          onPlantAdded={() => setRefreshKey(k => k + 1)}
+          premiumReturn={premiumReturn}
+          onPremiumReturnHandled={() => setPremiumReturn(null)}
+        />
+      );
+    }
     if (tab === 'scan') return <ScanScreen />;
     if (tab === 'profile') return <ProfileScreen user={session.user} refreshKey={refreshKey} onSignOut={handleSignOut} />;
   };
