@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -19,6 +19,15 @@ function sunlightInfo(value) {
   if (value === 'Półcień') return { Icon: CloudSun, tone: colors.gold };
   if (value === 'Cień') return { Icon: Cloud, tone: '#8A8574' };
   return { Icon: Sun, tone: colors.gold };
+}
+
+// Straight-line distance between two GPS points, in kilometers.
+function distanceKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function Screen({ children }) {
@@ -170,6 +179,8 @@ function HomeScreen({ onSelectHost }) {
   const [hosts, setHosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [myCoords, setMyCoords] = useState(null);
+  const [locStatus, setLocStatus] = useState('idle'); // idle | loading | granted | denied
 
   useEffect(() => {
     let cancelled = false;
@@ -188,20 +199,53 @@ function HomeScreen({ onSelectHost }) {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    if (!navigator.geolocation) { setLocStatus('denied'); return; }
+    setLocStatus('loading');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setMyCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude }); setLocStatus('granted'); },
+      () => setLocStatus('denied'),
+      { timeout: 8000 }
+    );
+  }, []);
+
   const q = query.trim().toLowerCase();
-  const filteredHosts = q
+  let list = q
     ? hosts.filter(h =>
         (h.name || '').toLowerCase().includes(q) ||
         (h.location || '').toLowerCase().includes(q)
       )
     : hosts;
 
+  list = list.map(h => {
+    const hasCoords = myCoords && h.latitude != null && h.longitude != null;
+    const dist = hasCoords ? distanceKm(myCoords.lat, myCoords.lon, h.latitude, h.longitude) : null;
+    return { ...h, __dist: dist };
+  });
+
+  if (myCoords) {
+    list = [...list].sort((a, b) => {
+      if (a.__dist == null && b.__dist == null) return 0;
+      if (a.__dist == null) return 1;
+      if (b.__dist == null) return -1;
+      return a.__dist - b.__dist;
+    });
+  }
+
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: '20px 20px 0' }}>
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 11, color: colors.clay, fontWeight: 700, letterSpacing: 1.5, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>Warszawa · Mokotów</div>
+        <div style={{ fontSize: 11, color: colors.clay, fontWeight: 700, letterSpacing: 1.5, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 5 }}>
+          {locStatus === 'granted' ? <><Navigation size={11} /> Twoja okolica</> : 'Warszawa · Mokotów'}
+        </div>
         <h1 style={{ fontSize: 28, color: colors.ink, margin: '4px 0 2px', fontWeight: 600 }}>Komu zostawisz<br/>swoje rośliny?</h1>
       </div>
+
+      {locStatus === 'denied' && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginBottom: 14 }}>
+          Brak dostępu do lokalizacji — hosty pokazane bez sortowania po odległości.
+        </div>
+      )}
 
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10, background: colors.card,
@@ -229,16 +273,16 @@ function HomeScreen({ onSelectHost }) {
       </div>
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>
-        {loading ? 'Ładowanie...' : `${filteredHosts.length} hostów${q ? ' pasujących do wyszukiwania' : ' w pobliżu'}`}
+        {loading ? 'Ładowanie...' : `${list.length} hostów${q ? ' pasujących do wyszukiwania' : ' w pobliżu'}`}
       </div>
 
-      {!loading && filteredHosts.length === 0 && (
+      {!loading && list.length === 0 && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>
           {q ? `Brak hostów pasujących do "${query}".` : 'Nie ma jeszcze żadnych hostów w Twojej okolicy.'}
         </div>
       )}
 
-      {filteredHosts.map((h) => {
+      {list.map((h) => {
         const si = sunlightInfo(h.sunlight);
         const SIcon = si.Icon;
         return (
@@ -258,7 +302,9 @@ function HomeScreen({ onSelectHost }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={12} fill={colors.gold} color={colors.gold} /> {h.rating ?? '—'} ({h.reviews ?? 0})</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {h.location}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <MapPin size={12} /> {h.__dist != null ? `${h.__dist < 1 ? Math.round(h.__dist * 1000) + ' m' : h.__dist.toFixed(1) + ' km'}` : h.location}
+                  </span>
                 </div>
                 <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, fontWeight: 600 }}>
                   <SIcon size={13} color={si.tone} /> {h.sunlight} · przyjmuje {h.plants_capacity} roślin
@@ -341,6 +387,13 @@ function HostDetailScreen({ host, onBack, onBook }) {
           <Pill tone="gold"><SIcon size={13} color="#fff" /> {host.sunlight}</Pill>
         </div>
 
+        <div style={{
+          background: colors.clayLight, borderRadius: 14, padding: 14, marginBottom: 24,
+          fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#5A5445', lineHeight: 1.5
+        }}>
+          Dokładny adres i numer telefonu hosta zobaczysz dopiero po zaakceptowaniu Twojej rezerwacji — dla bezpieczeństwa obu stron.
+        </div>
+
         <button onClick={onBook} style={{
           width: '100%', padding: 16, borderRadius: 16, background: colors.clay, color: '#fff',
           border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer', marginBottom: 24
@@ -379,6 +432,7 @@ function BookingForm({ host, userId, userEmail, onCancel, onBooked }) {
   const [selectedPlantId, setSelectedPlantId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [renterPhone, setRenterPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
@@ -414,6 +468,7 @@ function BookingForm({ host, userId, userEmail, onCancel, onBooked }) {
       host_id: host.id,
       renter_user_id: userId,
       renter_email: userEmail,
+      renter_phone: renterPhone || null,
       plant_id: selectedPlantId,
       plant_name: selectedPlant ? selectedPlant.name : '',
       start_date: startDate,
@@ -502,6 +557,10 @@ function BookingForm({ host, userId, userEmail, onCancel, onBooked }) {
               }} />
             </div>
           </div>
+
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>Twój telefon (opcjonalnie)</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginBottom: 8 }}>Host zobaczy go dopiero po zaakceptowaniu — ułatwi ustalenie godziny odbioru</div>
+          <TextField icon={Phone} type="tel" placeholder="np. 500 100 200" value={renterPhone} onChange={e => setRenterPhone(e.target.value)} />
 
           {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
 
@@ -664,7 +723,6 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
   const [guideError, setGuideError] = useState(null);
   const [careGuide, setCareGuide] = useState(null);
 
-  // Runs once, only if we just came back from a Stripe redirect.
   useEffect(() => {
     if (!premiumReturn) return;
     const saved = sessionStorage.getItem(PENDING_PLANT_KEY);
@@ -1126,13 +1184,39 @@ function BecomeHostForm({ userId, onCancel, onSaved }) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [location, setLocation] = useState('');
+  const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
   const [sunlight, setSunlight] = useState('Pełne słońce');
   const [capacity, setCapacity] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  const [coords, setCoords] = useState(null);
+  const [locLoading, setLocLoading] = useState(false);
+  const [locError, setLocError] = useState(null);
+
   const canSave = name && price && location && capacity;
+
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      setLocError('Twoja przeglądarka nie obsługuje lokalizacji.');
+      return;
+    }
+    setLocLoading(true);
+    setLocError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        setLocLoading(false);
+      },
+      () => {
+        setLocError('Nie udało się pobrać lokalizacji. Sprawdź uprawnienia przeglądarki.');
+        setLocLoading(false);
+      },
+      { timeout: 8000 }
+    );
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -1142,11 +1226,15 @@ function BecomeHostForm({ userId, onCancel, onSaved }) {
       name,
       price: Number(price),
       location,
+      address: address || null,
+      phone: phone || null,
       sunlight,
       plants_capacity: Number(capacity),
       description,
       rating: null,
       reviews: 0,
+      latitude: coords ? coords.lat : null,
+      longitude: coords ? coords.lon : null,
     }]);
     setSaving(false);
     if (error) {
@@ -1168,7 +1256,21 @@ function BecomeHostForm({ userId, onCancel, onSaved }) {
 
       <TextField placeholder="Twoje imię" value={name} onChange={e => setName(e.target.value)} />
       <TextField icon={DollarSign} type="number" placeholder="Cena za roślinę / tydzień (zł)" value={price} onChange={e => setPrice(e.target.value)} />
-      <TextField icon={MapPin} placeholder="Lokalizacja (np. Mokotów, Warszawa)" value={location} onChange={e => setLocation(e.target.value)} />
+      <TextField icon={MapPin} placeholder="Okolica (np. Mokotów, Warszawa)" value={location} onChange={e => setLocation(e.target.value)} />
+      <TextField icon={Phone} type="tel" placeholder="Telefon (opcjonalnie, widoczny po akceptacji)" value={phone} onChange={e => setPhone(e.target.value)} />
+      <TextField placeholder="Dokładny adres (opcjonalnie, widoczny po akceptacji)" value={address} onChange={e => setAddress(e.target.value)} />
+
+      <button onClick={handleUseLocation} disabled={locLoading} style={{
+        width: '100%', padding: 12, borderRadius: 12, background: coords ? '#EEF3EA' : colors.clayLight,
+        border: `1.5px solid ${coords ? colors.fern : colors.line}`, color: coords ? colors.fern : colors.ink,
+        fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, cursor: locLoading ? 'default' : 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12
+      }}>
+        {locLoading ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Navigation size={15} />}
+        {locLoading ? 'Pobieram lokalizację...' : coords ? 'Lokalizacja zapisana ✓' : 'Użyj mojej lokalizacji (dla odległości)'}
+      </button>
+      {locError && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.clay, marginBottom: 12 }}>{locError}</div>}
+
       <TextField type="number" placeholder="Ile roślin możesz przyjąć?" value={capacity} onChange={e => setCapacity(e.target.value)} />
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: 4 }}>Nasłonecznienie u Ciebie</div>
@@ -1218,6 +1320,17 @@ function statusInfo(status) {
   if (status === 'accepted') return { label: 'Zaakceptowana', tone: 'fern' };
   if (status === 'rejected') return { label: 'Odrzucona', tone: 'clay' };
   return { label: 'Oczekuje', tone: 'gold' };
+}
+
+function ContactBlock({ title, name, phone, address }) {
+  if (!phone && !address) return null;
+  return (
+    <div style={{ marginTop: 10, background: '#EEF3EA', borderRadius: 10, padding: 10 }}>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, fontWeight: 700, color: colors.fern, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4 }}>{title}</div>
+      {phone && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink, display: 'flex', alignItems: 'center', gap: 5 }}><Phone size={12} /> {phone}</div>}
+      {address && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink, display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}><MapPin size={12} /> {address}</div>}
+    </div>
+  );
 }
 
 function ProfileScreen({ user, refreshKey, onSignOut }) {
@@ -1282,7 +1395,7 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
       setMyBookingsLoading(true);
       const { data, error } = await supabase
         .from('bookings')
-        .select('*, hosts(name, location)')
+        .select('*, hosts(name, location, phone, address)')
         .eq('renter_user_id', user.id)
         .order('created_at', { ascending: false });
       if (!cancelled) {
@@ -1354,6 +1467,9 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
     );
   }
 
+  const pendingIncoming = incoming.filter(b => b.status === 'pending');
+  const acceptedIncoming = incoming.filter(b => b.status === 'accepted');
+
   return (
     <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
@@ -1374,12 +1490,12 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
 
       <WeatherWidget />
 
-      {myHost && incoming.filter(b => b.status === 'pending').length > 0 && (
+      {myHost && pendingIncoming.length > 0 && (
         <>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Prośby o rezerwację ({incoming.filter(b => b.status === 'pending').length})
+            Prośby o rezerwację ({pendingIncoming.length})
           </div>
-          {incoming.filter(b => b.status === 'pending').map(b => (
+          {pendingIncoming.map(b => (
             <div key={b.id} style={{ background: colors.card, border: `1.5px solid ${colors.gold}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>{b.plant_name}</div>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 2 }}>od {b.renter_email}</div>
@@ -1401,7 +1517,24 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
         </>
       )}
 
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: myHost && incoming.filter(b => b.status === 'pending').length > 0 ? 20 : 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>Twoje rezerwacje</div>
+      {myHost && acceptedIncoming.length > 0 && (
+        <>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: pendingIncoming.length > 0 ? 20 : 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Zaakceptowane rezerwacje ({acceptedIncoming.length})
+          </div>
+          {acceptedIncoming.map(b => (
+            <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>{b.plant_name}</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
+              <ContactBlock title="Kontakt do właściciela rośliny" phone={b.renter_phone} address={null} />
+              {!b.renter_phone && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: 6 }}>Email: {b.renter_email}</div>}
+              {b.renter_phone && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: 2 }}>Email: {b.renter_email}</div>}
+            </div>
+          ))}
+        </>
+      )}
+
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: (myHost && (pendingIncoming.length > 0 || acceptedIncoming.length > 0)) ? 20 : 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>Twoje rezerwacje</div>
       {myBookingsLoading && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>Ładowanie...</div>
       )}
@@ -1421,6 +1554,10 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
               <Pill tone={si.tone}>{si.label}</Pill>
             </div>
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
+
+            {b.status === 'accepted' && (
+              <ContactBlock title="Kontakt do hosta" phone={b.hosts?.phone} address={b.hosts?.address} />
+            )}
 
             {b.status === 'accepted' && !alreadyReviewed && (
               <button onClick={() => setReviewingBooking(b)} style={{
@@ -1488,7 +1625,9 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
             <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, color: colors.clay }}>{myHost.price} zł</span>
           </div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{myHost.location} · {myHost.plants_capacity} miejsc</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, marginTop: 6 }}>Twój profil jest już widoczny na liście hostów ✓</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, marginTop: 6 }}>
+            Twój profil jest już widoczny na liście hostów ✓{myHost.latitude != null ? ' · lokalizacja GPS zapisana' : ''}
+          </div>
         </div>
       )}
 
@@ -1502,8 +1641,6 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
   );
 }
 
-// Parses ?premium_paid=1&plant=...&sunlight=...&session_id=... from a Stripe redirect,
-// and strips those params from the URL so a page refresh doesn't re-trigger anything.
 function readPremiumReturnFromUrl() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('premium_paid') === '1' && params.get('session_id')) {
