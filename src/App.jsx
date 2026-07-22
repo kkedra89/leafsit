@@ -541,17 +541,7 @@ function ReviewForm({ booking, userId, onCancel, onSaved }) {
       setError('Nie udało się zapisać opinii: ' + error.message);
       return;
     }
-    const { data: hostReviews } = await supabase
-      .from('reviews')
-      .select('rating')
-      .eq('host_id', booking.host_id);
-    if (hostReviews && hostReviews.length > 0) {
-      const avg = hostReviews.reduce((sum, r) => sum + r.rating, 0) / hostReviews.length;
-      await supabase.from('hosts').update({
-        rating: Math.round(avg * 10) / 10,
-        reviews: hostReviews.length,
-      }).eq('id', booking.host_id);
-    }
+    await supabase.rpc('update_host_rating', { host_id_param: booking.host_id });
     setSaving(false);
     onSaved();
   };
