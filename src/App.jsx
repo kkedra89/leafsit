@@ -69,7 +69,7 @@ function resizeImage(file, maxSize = 800) {
 
 function Screen({ children }) {
   return (
-    <div style={{
+    <div className="app-screen" style={{
       width: 390, height: 780, background: colors.bg, borderRadius: 40,
       overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column',
       fontFamily: "'Fraunces', Georgia, serif", boxShadow: '0 20px 60px rgba(35,32,23,0.25)',
@@ -1878,7 +1878,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#EDE7DA', padding: 40 }}>
+    <div className="app-outer" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#EDE7DA', padding: 40 }}>
       <Screen>
         <StatusBar />
         {authLoading ? (
