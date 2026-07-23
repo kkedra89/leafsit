@@ -33,6 +33,13 @@ function displayNameOf(user) {
   return user?.user_metadata?.full_name || user?.email || '';
 }
 
+// e.g. "12 lip 2026"
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 function Screen({ children }) {
   return (
     <div style={{
@@ -424,14 +431,18 @@ function HostDetailScreen({ host, onBack, onBook }) {
 
         {!loading && reviews.map(r => (
           <div key={r.id} style={{ background: colors.clayLight, borderRadius: 16, padding: 16, marginBottom: 10 }}>
-            <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
-              {[1,2,3,4,5].map(n => (
-                <Star key={n} size={13} fill={n <= r.rating ? colors.gold : 'none'} color={colors.gold} />
-              ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <div style={{ display: 'flex', gap: 2 }}>
+                {[1,2,3,4,5].map(n => (
+                  <Star key={n} size={13} fill={n <= r.rating ? colors.gold : 'none'} color={colors.gold} />
+                ))}
+              </div>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, color: '#A9A08B' }}>{formatDate(r.created_at)}</span>
             </div>
             {r.comment && (
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#5A5445', margin: 0, fontStyle: 'italic' }}>{r.comment}</p>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#5A5445', margin: '0 0 6px', fontStyle: 'italic' }}>{r.comment}</p>
             )}
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#7A7261', fontWeight: 600 }}>— {r.renter_name || 'Anonimowy gość'}</div>
           </div>
         ))}
       </div>
@@ -593,7 +604,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
   );
 }
 
-function ReviewForm({ booking, userId, onCancel, onSaved }) {
+function ReviewForm({ booking, userId, userName, onCancel, onSaved }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
@@ -606,6 +617,7 @@ function ReviewForm({ booking, userId, onCancel, onSaved }) {
       host_id: booking.host_id,
       booking_id: booking.id,
       renter_user_id: userId,
+      renter_name: userName || null,
       rating,
       comment,
     }]);
@@ -1492,6 +1504,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
       <ReviewForm
         booking={reviewingBooking}
         userId={user.id}
+        userName={displayNameOf(user) !== user.email ? displayNameOf(user) : null}
         onCancel={() => setReviewingBooking(null)}
         onSaved={() => { setReviewingBooking(null); setReviewsRefresh(k => k + 1); }}
       />
