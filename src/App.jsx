@@ -33,11 +33,38 @@ function displayNameOf(user) {
   return user?.user_metadata?.full_name || user?.email || '';
 }
 
-// e.g. "12 lip 2026"
 function formatDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function resizeImage(file, maxSize = 800) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxSize) {
+          height = Math.round((height * maxSize) / width);
+          width = maxSize;
+        } else if (height > maxSize) {
+          width = Math.round((width * maxSize) / height);
+          height = maxSize;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 function Screen({ children }) {
@@ -680,34 +707,6 @@ function ReviewForm({ booking, userId, userName, onCancel, onSaved }) {
   );
 }
 
-function resizeImage(file, maxSize = 800) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > height && width > maxSize) {
-          height = Math.round((height * maxSize) / width);
-          width = maxSize;
-        } else if (height > maxSize) {
-          width = Math.round((width * maxSize) / height);
-          height = maxSize;
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.85));
-      };
-      img.onerror = reject;
-      img.src = e.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 function CareGuide({ text }) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   return (
@@ -1063,31 +1062,112 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
   );
 }
 
+// Standalone, "no strings attached" identification tool — doesn't save
+// anything anywhere, just: photo in, species name out. For someone who
+// just wants to know what plant they're looking at.
 function ScanScreen() {
-  return (
-    <div style={{ flex: 1, padding: 20 }}>
-      <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>Rozpoznaj roślinę</h2>
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>Zdjęcie + poziom światła → pełny przewodnik pielęgnacji</div>
+  const fileInputRef = useRef(null);
+  const [photoDataUrl, setPhotoDataUrl] = useState(null);
+  const [identifying, setIdentifying] = useState(false);
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
 
-      <div style={{
-        aspectRatio: '4/5', background: `linear-gradient(160deg, ${colors.fern}22, ${colors.gold}22)`,
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setResult(null);
+
+    const resized = await resizeImage(file);
+    setPhotoDataUrl(resized);
+
+    setIdentifying(true);
+    try {
+      const res = await fetch('/api/identify-plant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: resized }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Nie udało się rozpoznać rośliny.');
+      } else if (!data.name) {
+        setError('Nie rozpoznano gatunku. Spróbuj wyraźniejszego zdjęcia liścia.');
+      } else {
+        setResult(data);
+      }
+    } catch (err) {
+      setError('Błąd połączenia z rozpoznawaniem roślin.');
+    }
+    setIdentifying(false);
+  };
+
+  return (
+    <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
+      <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>Rozpoznaj roślinę</h2>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>Szybkie sprawdzenie gatunku — bez zapisywania w profilu</div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+
+      <div onClick={() => fileInputRef.current?.click()} style={{
+        aspectRatio: '4/5', background: photoDataUrl ? '#000' : `linear-gradient(160deg, ${colors.fern}22, ${colors.gold}22)`,
         borderRadius: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: 14, marginBottom: 20, border: `1px solid ${colors.line}`
+        gap: 14, marginBottom: 20, border: photoDataUrl ? 'none' : `1px solid ${colors.line}`, cursor: 'pointer',
+        overflow: 'hidden', position: 'relative'
       }}>
-        <div style={{ width: 88, height: 88, borderRadius: 44, background: colors.card, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(0,0,0,0.08)' }}>
-          <Camera size={36} color={colors.fern} />
-        </div>
-        <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: colors.ink, fontSize: 15 }}>Zrób lub wgraj zdjęcie</span>
+        {photoDataUrl ? (
+          <img src={photoDataUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: identifying ? 0.5 : 1 }} />
+        ) : (
+          <>
+            <div style={{ width: 88, height: 88, borderRadius: 44, background: colors.card, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(0,0,0,0.08)' }}>
+              <Camera size={36} color={colors.fern} />
+            </div>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: colors.ink, fontSize: 15 }}>Zrób lub wgraj zdjęcie</span>
+          </>
+        )}
       </div>
+
+      {identifying && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>
+          <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Rozpoznaję gatunek...
+        </div>
+      )}
+
+      {error && !identifying && (
+        <div style={{
+          display: 'flex', gap: 10, alignItems: 'flex-start', background: '#FFF3EC', borderRadius: 14,
+          padding: 14, marginBottom: 20, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay
+        }}>{error}</div>
+      )}
+
+      {result && !identifying && (
+        <div style={{
+          display: 'flex', gap: 10, alignItems: 'flex-start', background: '#EEF3EA', borderRadius: 14,
+          padding: 16, marginBottom: 20
+        }}>
+          <Sparkles size={18} color={colors.fern} style={{ flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, color: colors.fernDark }}>{result.name}</div>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, marginTop: 2 }}>Pewność rozpoznania: {result.confidence}%</div>
+          </div>
+        </div>
+      )}
 
       <div style={{
         border: `1.5px solid ${colors.gold}`, background: '#FFF8EC', borderRadius: 16, padding: 16,
         display: 'flex', gap: 12, alignItems: 'center'
       }}>
-        <Sparkles size={22} color={colors.gold} style={{ flexShrink: 0 }} />
+        <Crown size={20} color={colors.gold} style={{ flexShrink: 0 }} />
         <div style={{ fontFamily: 'Inter, sans-serif' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: colors.ink }}>Wersja Premium</div>
-          <div style={{ fontSize: 12, color: '#7A7261', marginTop: 2 }}>Pełny plan podlewania, nawożenia i przesadzania — 9 zł jednorazowo</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: colors.ink }}>Chcesz dodać ją do swoich roślin?</div>
+          <div style={{ fontSize: 12, color: '#7A7261', marginTop: 2 }}>Przejdź do zakładki "Dodaj" — tam też odblokujesz pełny przewodnik Premium.</div>
         </div>
       </div>
     </div>
