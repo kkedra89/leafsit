@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     }
 
     const apiKey = process.env.PLANTNET_API_KEY;
-    const url = `https://my-api.plantnet.org/v2/identify/all?api-key=${apiKey}`;
+const url = `https://my-api.plantnet.org/v2/identify/all?api-key=${apiKey}&lang=pl`;
 
     const formData = new FormData();
     const byteString = Buffer.from(imageBase64.split(',')[1], 'base64');

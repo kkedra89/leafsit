@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -21,13 +21,16 @@ function sunlightInfo(value) {
   return { Icon: Sun, tone: colors.gold };
 }
 
-// Straight-line distance between two GPS points, in kilometers.
 function distanceKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function displayNameOf(user) {
+  return user?.user_metadata?.full_name || user?.email || '';
 }
 
 function Screen({ children }) {
@@ -110,6 +113,7 @@ function TextField({ icon: Icon, ...props }) {
 
 function AuthScreen() {
   const [mode, setMode] = useState('login');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -124,12 +128,18 @@ function AuthScreen() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(error.message);
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name } },
+      });
       if (error) setError(error.message);
       else setInfo('Konto utworzone! Możesz się teraz zalogować.');
     }
     setLoading(false);
   };
+
+  const canSubmit = mode === 'login' ? (email && password) : (name && email && password);
 
   return (
     <div style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -146,16 +156,19 @@ function AuthScreen() {
         </div>
       </div>
 
+      {mode === 'signup' && (
+        <TextField icon={User} placeholder="Imię i nazwisko (lub nick)" value={name} onChange={e => setName(e.target.value)} />
+      )}
       <TextField icon={Mail} type="email" placeholder="Adres email" value={email} onChange={e => setEmail(e.target.value)} />
       <TextField icon={Lock} type="password" placeholder="Hasło" value={password} onChange={e => setPassword(e.target.value)} />
 
       {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
       {info && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.fern, marginBottom: 12 }}>{info}</div>}
 
-      <button onClick={handleSubmit} disabled={loading || !email || !password} style={{
+      <button onClick={handleSubmit} disabled={loading || !canSubmit} style={{
         width: '100%', padding: 16, borderRadius: 16, background: colors.fern, color: '#fff',
         border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15,
-        cursor: loading ? 'default' : 'pointer', opacity: (loading || !email || !password) ? 0.6 : 1,
+        cursor: loading ? 'default' : 'pointer', opacity: (loading || !canSubmit) ? 0.6 : 1,
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4, marginBottom: 16
       }}>
         {loading && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
@@ -180,7 +193,7 @@ function HomeScreen({ onSelectHost }) {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [myCoords, setMyCoords] = useState(null);
-  const [locStatus, setLocStatus] = useState('idle'); // idle | loading | granted | denied
+  const [locStatus, setLocStatus] = useState('idle');
 
   useEffect(() => {
     let cancelled = false;
@@ -426,7 +439,7 @@ function HostDetailScreen({ host, onBack, onBook }) {
   );
 }
 
-function BookingForm({ host, userId, userEmail, onCancel, onBooked }) {
+function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) {
   const [plants, setPlants] = useState([]);
   const [plantsLoading, setPlantsLoading] = useState(true);
   const [selectedPlantId, setSelectedPlantId] = useState('');
@@ -468,6 +481,7 @@ function BookingForm({ host, userId, userEmail, onCancel, onBooked }) {
       host_id: host.id,
       renter_user_id: userId,
       renter_email: userEmail,
+      renter_name: userName || null,
       renter_phone: renterPhone || null,
       plant_id: selectedPlantId,
       plant_name: selectedPlant ? selectedPlant.name : '',
@@ -1322,18 +1336,19 @@ function statusInfo(status) {
   return { label: 'Oczekuje', tone: 'gold' };
 }
 
-function ContactBlock({ title, name, phone, address }) {
-  if (!phone && !address) return null;
+function ContactBlock({ title, phone, address, extra }) {
+  if (!phone && !address && !extra) return null;
   return (
     <div style={{ marginTop: 10, background: '#EEF3EA', borderRadius: 10, padding: 10 }}>
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, fontWeight: 700, color: colors.fern, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4 }}>{title}</div>
       {phone && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink, display: 'flex', alignItems: 'center', gap: 5 }}><Phone size={12} /> {phone}</div>}
       {address && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink, display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}><MapPin size={12} /> {address}</div>}
+      {extra && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#7A7261', marginTop: 2 }}>{extra}</div>}
     </div>
   );
 }
 
-function ProfileScreen({ user, refreshKey, onSignOut }) {
+function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myHost, setMyHost] = useState(null);
@@ -1352,6 +1367,11 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
   const [reviewsRefresh, setReviewsRefresh] = useState(0);
 
   const [expandedPlantId, setExpandedPlantId] = useState(null);
+
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(displayNameOf(user));
+  const [savingName, setSavingName] = useState(false);
+  const hasName = !!user?.user_metadata?.full_name;
 
   useEffect(() => {
     let cancelled = false;
@@ -1446,6 +1466,17 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
     setBookingsRefresh(k => k + 1);
   };
 
+  const handleSaveName = async () => {
+    if (!nameInput.trim()) return;
+    setSavingName(true);
+    const { data, error } = await supabase.auth.updateUser({ data: { full_name: nameInput.trim() } });
+    setSavingName(false);
+    if (!error && data?.user) {
+      onNameUpdated(data.user);
+      setEditingName(false);
+    }
+  };
+
   if (showHostForm) {
     return (
       <BecomeHostForm
@@ -1472,13 +1503,13 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
 
   return (
     <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
-        <div style={{ width: 60, height: 60, borderRadius: 30, background: colors.fern, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 22 }}>
-          {user.email.charAt(0).toUpperCase()}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+        <div style={{ width: 60, height: 60, borderRadius: 30, background: colors.fern, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 22, flexShrink: 0 }}>
+          {displayNameOf(user).charAt(0).toUpperCase()}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: colors.ink, wordBreak: 'break-all' }}>{user.email}</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B' }}>Mokotów, Warszawa</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: colors.ink, wordBreak: 'break-word' }}>{displayNameOf(user)}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', wordBreak: 'break-all' }}>{user.email}</div>
         </div>
         <button onClick={onSignOut} style={{
           background: colors.clayLight, border: 'none', borderRadius: 12, padding: 10,
@@ -1487,6 +1518,33 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
           <LogOut size={16} color={colors.clay} />
         </button>
       </div>
+
+      {!hasName && !editingName && (
+        <div onClick={() => setEditingName(true)} style={{
+          display: 'flex', alignItems: 'center', gap: 8, background: '#FFF8EC', border: `1.5px solid ${colors.gold}`,
+          borderRadius: 12, padding: 12, marginBottom: 20, cursor: 'pointer'
+        }}>
+          <Pencil size={14} color={colors.gold} />
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink }}>Uzupełnij swoje imię — host zobaczy je zamiast samego emaila</span>
+        </div>
+      )}
+      {hasName && !editingName && (
+        <div onClick={() => setEditingName(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 20, cursor: 'pointer' }}>
+          <Pencil size={11} color="#A9A08B" />
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Zmień imię</span>
+        </div>
+      )}
+      {editingName && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+          <div style={{ flex: 1 }}>
+            <TextField placeholder="Twoje imię i nazwisko" value={nameInput} onChange={e => setNameInput(e.target.value)} />
+          </div>
+          <button onClick={handleSaveName} disabled={savingName || !nameInput.trim()} style={{
+            padding: '0 16px', borderRadius: 14, background: colors.fern, color: '#fff', border: 'none',
+            fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, cursor: 'pointer', flexShrink: 0
+          }}>{savingName ? '...' : 'Zapisz'}</button>
+        </div>
+      )}
 
       <WeatherWidget />
 
@@ -1498,7 +1556,7 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
           {pendingIncoming.map(b => (
             <div key={b.id} style={{ background: colors.card, border: `1.5px solid ${colors.gold}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>{b.plant_name}</div>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 2 }}>od {b.renter_email}</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 2 }}>od {b.renter_name || b.renter_email}</div>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 10 }}>{b.start_date} → {b.end_date}</div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => respondToBooking(b.id, 'accepted')} style={{
@@ -1526,9 +1584,7 @@ function ProfileScreen({ user, refreshKey, onSignOut }) {
             <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>{b.plant_name}</div>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
-              <ContactBlock title="Kontakt do właściciela rośliny" phone={b.renter_phone} address={null} />
-              {!b.renter_phone && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: 6 }}>Email: {b.renter_email}</div>}
-              {b.renter_phone && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: 2 }}>Email: {b.renter_email}</div>}
+              <ContactBlock title="Kontakt do właściciela rośliny" phone={b.renter_phone} extra={`${b.renter_name || 'Bez podanego imienia'} · ${b.renter_email}`} />
             </div>
           ))}
         </>
@@ -1689,7 +1745,13 @@ export default function App() {
     setView('list');
   };
 
+  const handleNameUpdated = (updatedUser) => {
+    setSession(prev => prev ? { ...prev, user: updatedUser } : prev);
+  };
+
   const renderTab = () => {
+    const userName = displayNameOf(session.user) !== session.user.email ? displayNameOf(session.user) : null;
+
     if (tab === 'home') {
       if (view === 'detail') {
         return <HostDetailScreen host={selectedHost} onBack={() => setView('list')} onBook={() => setView('booking')} />;
@@ -1700,6 +1762,7 @@ export default function App() {
             host={selectedHost}
             userId={session.user.id}
             userEmail={session.user.email}
+            userName={userName}
             onCancel={() => setView('detail')}
             onBooked={() => setView('list')}
           />
@@ -1718,7 +1781,7 @@ export default function App() {
       );
     }
     if (tab === 'scan') return <ScanScreen />;
-    if (tab === 'profile') return <ProfileScreen user={session.user} refreshKey={refreshKey} onSignOut={handleSignOut} />;
+    if (tab === 'profile') return <ProfileScreen user={session.user} refreshKey={refreshKey} onSignOut={handleSignOut} onNameUpdated={handleNameUpdated} />;
   };
 
   return (
