@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -1062,9 +1062,6 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
   );
 }
 
-// Standalone, "no strings attached" identification tool — doesn't save
-// anything anywhere, just: photo in, species name out. For someone who
-// just wants to know what plant they're looking at.
 function ScanScreen() {
   const fileInputRef = useRef(null);
   const [photoDataUrl, setPhotoDataUrl] = useState(null);
@@ -1286,19 +1283,22 @@ function WeatherWidget() {
   );
 }
 
-function BecomeHostForm({ userId, onCancel, onSaved }) {
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [location, setLocation] = useState('');
-  const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState('');
-  const [sunlight, setSunlight] = useState('Pełne słońce');
-  const [capacity, setCapacity] = useState('');
-  const [description, setDescription] = useState('');
+function BecomeHostForm({ userId, existingHost, onCancel, onSaved }) {
+  const isEdit = !!existingHost;
+  const [name, setName] = useState(existingHost?.name || '');
+  const [price, setPrice] = useState(existingHost ? String(existingHost.price) : '');
+  const [location, setLocation] = useState(existingHost?.location || '');
+  const [address, setAddress] = useState(existingHost?.address || '');
+  const [phone, setPhone] = useState(existingHost?.phone || '');
+  const [sunlight, setSunlight] = useState(existingHost?.sunlight || 'Pełne słońce');
+  const [capacity, setCapacity] = useState(existingHost ? String(existingHost.plants_capacity) : '');
+  const [description, setDescription] = useState(existingHost?.description || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const [coords, setCoords] = useState(null);
+  const [coords, setCoords] = useState(
+    existingHost?.latitude != null ? { lat: existingHost.latitude, lon: existingHost.longitude } : null
+  );
   const [locLoading, setLocLoading] = useState(false);
   const [locError, setLocError] = useState(null);
 
@@ -1327,8 +1327,7 @@ function BecomeHostForm({ userId, onCancel, onSaved }) {
   const handleSave = async () => {
     setSaving(true);
     setError(null);
-    const { error } = await supabase.from('hosts').insert([{
-      user_id: userId,
+    const payload = {
       name,
       price: Number(price),
       location,
@@ -1337,11 +1336,12 @@ function BecomeHostForm({ userId, onCancel, onSaved }) {
       sunlight,
       plants_capacity: Number(capacity),
       description,
-      rating: null,
-      reviews: 0,
       latitude: coords ? coords.lat : null,
       longitude: coords ? coords.lon : null,
-    }]);
+    };
+    const { error } = isEdit
+      ? await supabase.from('hosts').update(payload).eq('id', existingHost.id)
+      : await supabase.from('hosts').insert([{ ...payload, user_id: userId, rating: null, reviews: 0 }]);
     setSaving(false);
     if (error) {
       setError('Nie udało się zapisać: ' + error.message);
@@ -1357,7 +1357,7 @@ function BecomeHostForm({ userId, onCancel, onSaved }) {
           width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
         }}><ArrowLeft size={18} color={colors.ink} /></button>
-        <h2 style={{ fontSize: 20, color: colors.ink, fontWeight: 600, margin: 0 }}>Zostań hostem</h2>
+        <h2 style={{ fontSize: 20, color: colors.ink, fontWeight: 600, margin: 0 }}>{isEdit ? 'Edytuj profil hosta' : 'Zostań hostem'}</h2>
       </div>
 
       <TextField placeholder="Twoje imię" value={name} onChange={e => setName(e.target.value)} />
@@ -1373,7 +1373,7 @@ function BecomeHostForm({ userId, onCancel, onSaved }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12
       }}>
         {locLoading ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Navigation size={15} />}
-        {locLoading ? 'Pobieram lokalizację...' : coords ? 'Lokalizacja zapisana ✓' : 'Użyj mojej lokalizacji (dla odległości)'}
+        {locLoading ? 'Pobieram lokalizację...' : coords ? 'Lokalizacja zapisana ✓ (kliknij by zaktualizować)' : 'Użyj mojej lokalizacji (dla odległości)'}
       </button>
       {locError && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.clay, marginBottom: 12 }}>{locError}</div>}
 
@@ -1416,7 +1416,7 @@ function BecomeHostForm({ userId, onCancel, onSaved }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
       }}>
         {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
-        {saving ? 'Zapisywanie...' : 'Zostań hostem'}
+        {saving ? 'Zapisywanie...' : isEdit ? 'Zapisz zmiany' : 'Zostań hostem'}
       </button>
     </div>
   );
@@ -1425,6 +1425,7 @@ function BecomeHostForm({ userId, onCancel, onSaved }) {
 function statusInfo(status) {
   if (status === 'accepted') return { label: 'Zaakceptowana', tone: 'fern' };
   if (status === 'rejected') return { label: 'Odrzucona', tone: 'clay' };
+  if (status === 'cancelled') return { label: 'Anulowana', tone: 'gray' };
   return { label: 'Oczekuje', tone: 'gold' };
 }
 
@@ -1446,6 +1447,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
   const [myHost, setMyHost] = useState(null);
   const [hostLoading, setHostLoading] = useState(true);
   const [showHostForm, setShowHostForm] = useState(false);
+  const [editingHost, setEditingHost] = useState(false);
   const [hostRefresh, setHostRefresh] = useState(0);
 
   const [myBookings, setMyBookings] = useState([]);
@@ -1459,6 +1461,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
   const [reviewsRefresh, setReviewsRefresh] = useState(0);
 
   const [expandedPlantId, setExpandedPlantId] = useState(null);
+  const [deletingPlantId, setDeletingPlantId] = useState(null);
 
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(displayNameOf(user));
@@ -1558,6 +1561,20 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
     setBookingsRefresh(k => k + 1);
   };
 
+  const cancelMyBooking = async (bookingId) => {
+    await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId);
+    setBookingsRefresh(k => k + 1);
+  };
+
+  const deletePlant = async (plantId) => {
+    setDeletingPlantId(plantId);
+    const { error } = await supabase.from('plants').delete().eq('id', plantId);
+    setDeletingPlantId(null);
+    if (!error) {
+      setPlants(prev => prev.filter(p => p.id !== plantId));
+    }
+  };
+
   const handleSaveName = async () => {
     if (!nameInput.trim()) return;
     setSavingName(true);
@@ -1569,12 +1586,13 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
     }
   };
 
-  if (showHostForm) {
+  if (showHostForm || editingHost) {
     return (
       <BecomeHostForm
         userId={user.id}
-        onCancel={() => setShowHostForm(false)}
-        onSaved={() => { setShowHostForm(false); setHostRefresh(k => k + 1); }}
+        existingHost={editingHost ? myHost : null}
+        onCancel={() => { setShowHostForm(false); setEditingHost(false); }}
+        onSaved={() => { setShowHostForm(false); setEditingHost(false); setHostRefresh(k => k + 1); }}
       />
     );
   }
@@ -1708,6 +1726,14 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
               <ContactBlock title="Kontakt do hosta" phone={b.hosts?.phone} address={b.hosts?.address} />
             )}
 
+            {b.status === 'pending' && (
+              <button onClick={() => cancelMyBooking(b.id)} style={{
+                marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.clayLight, color: colors.clay,
+                border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+              }}><X size={14} /> Anuluj prośbę</button>
+            )}
+
             {b.status === 'accepted' && !alreadyReviewed && (
               <button onClick={() => setReviewingBooking(b)} style={{
                 marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.gold, color: '#fff',
@@ -1736,13 +1762,14 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
 
       {!loading && plants.map(p => (
         <div key={p.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, marginBottom: 10, overflow: 'hidden' }}>
-          <div onClick={() => p.care_guide && setExpandedPlantId(expandedPlantId === p.id ? null : p.id)} style={{
-            display: 'flex', alignItems: 'center', gap: 12, padding: 12, cursor: p.care_guide ? 'pointer' : 'default'
-          }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: colors.clayLight, overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12 }}>
+            <div onClick={() => p.care_guide && setExpandedPlantId(expandedPlantId === p.id ? null : p.id)} style={{
+              width: 40, height: 40, borderRadius: 10, background: colors.clayLight, overflow: 'hidden', flexShrink: 0,
+              cursor: p.care_guide ? 'pointer' : 'default'
+            }}>
               {p.photo_url && <img src={p.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             </div>
-            <div style={{ flex: 1 }}>
+            <div onClick={() => p.care_guide && setExpandedPlantId(expandedPlantId === p.id ? null : p.id)} style={{ flex: 1, cursor: p.care_guide ? 'pointer' : 'default' }}>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, color: colors.ink }}>{p.name}</div>
               {p.care_guide && (
                 <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.gold, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3, marginTop: 2 }}>
@@ -1750,6 +1777,18 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
                 </div>
               )}
             </div>
+            <button
+              onClick={() => { if (window.confirm(`Usunąć "${p.name}" z Twoich roślin?`)) deletePlant(p.id); }}
+              disabled={deletingPlantId === p.id}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 6, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              {deletingPlantId === p.id
+                ? <Loader2 size={16} color="#A9A08B" style={{ animation: 'spin 1s linear infinite' }} />
+                : <Trash2 size={16} color="#A9A08B" />}
+            </button>
           </div>
           {expandedPlantId === p.id && p.care_guide && (
             <div style={{ padding: '0 16px 16px' }}>
@@ -1759,8 +1798,18 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
         </div>
       ))}
 
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, margin: '20px 0 10px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-        {myHost ? 'Twój profil hosta' : 'Chcesz zostać hostem?'}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '20px 0 10px' }}>
+        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          {myHost ? 'Twój profil hosta' : 'Chcesz zostać hostem?'}
+        </span>
+        {myHost && (
+          <button onClick={() => setEditingHost(true)} style={{
+            background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: 0
+          }}>
+            <Pencil size={11} color="#A9A08B" />
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Edytuj</span>
+          </button>
+        )}
       </div>
 
       {hostLoading && (
