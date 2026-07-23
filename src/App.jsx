@@ -82,7 +82,7 @@ function Screen({ children }) {
 
 function StatusBar() {
   return (
-    <div style={{ height: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', fontSize: 12, fontFamily: 'Inter, sans-serif', color: colors.ink, fontWeight: 600 }}>
+    <div className="app-statusbar" style={{ height: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', fontSize: 12, fontFamily: 'Inter, sans-serif', color: colors.ink, fontWeight: 600 }}>
       <span>9:41</span>
       <span>●●●●</span>
     </div>

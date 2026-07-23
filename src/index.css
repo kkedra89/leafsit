@@ -120,4 +120,7 @@ code {
     border-radius: 0 !important;
     border: none !important;
   }
+  .app-statusbar {
+    display: none !important;
+  }
 }
