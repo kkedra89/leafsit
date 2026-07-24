@@ -1327,8 +1327,6 @@ function WeatherWidget() {
 
 function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved }) {
   const isEdit = !!existingHost;
-  const fileInputRef = useRef(null);
-  const [photoDataUrl, setPhotoDataUrl] = useState(existingHost?.photo_url || userAvatarUrl || null);
   const [name, setName] = useState(existingHost?.name || '');
   const [price, setPrice] = useState(existingHost ? String(existingHost.price) : '');
   const [location, setLocation] = useState(existingHost?.location || '');
@@ -1347,13 +1345,6 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
   const [locError, setLocError] = useState(null);
 
   const canSave = name && price && location && capacity;
-
-  const handlePhotoChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const resized = await resizeImage(file);
-    setPhotoDataUrl(resized);
-  };
 
   const handleUseLocation = () => {
     if (!navigator.geolocation) {
@@ -1387,7 +1378,7 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
       sunlight,
       plants_capacity: Number(capacity),
       description,
-      photo_url: photoDataUrl,
+      photo_url: userAvatarUrl || null,
       latitude: coords ? coords.lat : null,
       longitude: coords ? coords.lon : null,
     };
@@ -1412,29 +1403,13 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
         <h2 style={{ fontSize: 20, color: colors.ink, fontWeight: 600, margin: 0 }}>{isEdit ? 'Edytuj profil hosta' : 'Zostań hostem'}</h2>
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handlePhotoChange}
-        style={{ display: 'none' }}
-      />
-      <div onClick={() => fileInputRef.current?.click()} style={{
-        display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20, cursor: 'pointer'
-      }}>
-        {photoDataUrl ? (
-          <img src={photoDataUrl} alt="" style={{ width: 64, height: 64, borderRadius: 16, objectFit: 'cover', flexShrink: 0 }} />
-        ) : (
-          <div style={{
-            width: 64, height: 64, borderRadius: 16, background: colors.clayLight, border: `2px dashed ${colors.clay}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-          }}>
-            <Camera size={22} color={colors.clay} />
-          </div>
-        )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+        <Avatar photoUrl={userAvatarUrl} name={name || 'H'} size={64} radius={16} />
         <div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink }}>{photoDataUrl ? 'Zmień zdjęcie profilu hosta' : 'Dodaj zdjęcie profilu hosta'}</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: 2 }}>Widoczne na liście hostów — osobne od Twojego zdjęcia w profilu</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink }}>Zdjęcie z Twojego konta</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: 2 }}>
+            Aby je zmienić, przejdź do zakładki Profil i kliknij w swój awatar.
+          </div>
         </div>
       </div>
 
@@ -1673,10 +1648,15 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated }) {
     setAvatarUploading(true);
     const resized = await resizeImage(file, 400);
     const { data, error } = await supabase.auth.updateUser({ data: { avatar_url: resized } });
-    setAvatarUploading(false);
     if (!error && data?.user) {
       onUserUpdated(data.user);
+      // keep the host listing photo in sync automatically, if this user is a host
+      if (myHost) {
+        await supabase.from('hosts').update({ photo_url: resized }).eq('id', myHost.id);
+        setHostRefresh(k => k + 1);
+      }
     }
+    setAvatarUploading(false);
   };
 
   if (showHostForm || editingHost) {
@@ -1739,6 +1719,12 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated }) {
           <LogOut size={16} color={colors.clay} />
         </button>
       </div>
+
+      {myHost && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginBottom: 20 }}>
+          To zdjęcie jest też widoczne na Twoim ogłoszeniu hosta.
+        </div>
+      )}
 
       {!hasName && !editingName && (
         <div onClick={() => setEditingName(true)} style={{
