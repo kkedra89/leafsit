@@ -67,6 +67,25 @@ function resizeImage(file, maxSize = 800) {
   });
 }
 
+// Small round/square avatar that shows a real photo when available,
+// falling back to the initial-letter badge used everywhere else.
+function Avatar({ photoUrl, name, size = 56, radius = 14 }) {
+  if (photoUrl) {
+    return (
+      <img src={photoUrl} alt={name} style={{
+        width: size, height: size, borderRadius: radius, objectFit: 'cover', flexShrink: 0
+      }} />
+    );
+  }
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: radius, background: `linear-gradient(135deg, ${colors.fern}, ${colors.fernDark})`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700,
+      fontSize: Math.round(size * 0.32), flexShrink: 0
+    }}>{name.charAt(0)}</div>
+  );
+}
+
 function Screen({ children }) {
   return (
     <div className="app-screen" style={{
@@ -119,14 +138,20 @@ function TabBar({ active, onNav }) {
   );
 }
 
-function Pill({ children, tone = 'fern' }) {
+function Pill({ children, tone = 'fern', active, onClick }) {
   const bg = tone === 'fern' ? colors.fern : tone === 'clay' ? colors.clay : tone === 'gray' ? '#A9A08B' : colors.gold;
   return (
-    <span style={{
-      background: bg, color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 10px',
-      borderRadius: 20, fontFamily: 'Inter, sans-serif', letterSpacing: 0.3,
-      display: 'inline-flex', alignItems: 'center', gap: 5
-    }}>{children}</span>
+    <span
+      onClick={onClick}
+      style={{
+        background: active === false ? colors.clayLight : bg,
+        color: active === false ? '#7A7261' : '#fff',
+        fontSize: 11, fontWeight: 700, padding: '4px 10px',
+        borderRadius: 20, fontFamily: 'Inter, sans-serif', letterSpacing: 0.3,
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        cursor: onClick ? 'pointer' : 'default', whiteSpace: 'nowrap',
+        border: active === false ? `1px solid ${colors.line}` : 'none'
+      }}>{children}</span>
   );
 }
 
@@ -228,6 +253,7 @@ function HomeScreen({ onSelectHost }) {
   const [query, setQuery] = useState('');
   const [myCoords, setMyCoords] = useState(null);
   const [locStatus, setLocStatus] = useState('idle');
+  const [activeFilter, setActiveFilter] = useState(null); // null | 'near' | 'top' | 'available'
 
   useEffect(() => {
     let cancelled = false;
@@ -256,6 +282,11 @@ function HomeScreen({ onSelectHost }) {
     );
   }, []);
 
+  const toggleFilter = (name) => {
+    if (name === 'near' && !myCoords) return; // no-op without location
+    setActiveFilter(prev => prev === name ? null : name);
+  };
+
   const q = query.trim().toLowerCase();
   let list = q
     ? hosts.filter(h =>
@@ -270,7 +301,15 @@ function HomeScreen({ onSelectHost }) {
     return { ...h, __dist: dist };
   });
 
-  if (myCoords) {
+  if (activeFilter === 'available') {
+    list = list.filter(h => (h.plants_capacity ?? 0) > 0);
+  }
+
+  if (activeFilter === 'top') {
+    list = [...list].sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+  } else if (activeFilter === 'near' || myCoords) {
+    // default sort is by distance whenever we have the renter's location,
+    // "W pobliżu" just makes that intent explicit
     list = [...list].sort((a, b) => {
       if (a.__dist == null && b.__dist == null) return 0;
       if (a.__dist == null) return 1;
@@ -314,9 +353,9 @@ function HomeScreen({ onSelectHost }) {
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, overflowX: 'auto' }}>
-        <Pill tone="fern">W pobliżu</Pill>
-        <Pill tone="gold">Najwyżej oceniani</Pill>
-        <Pill tone="clay">Dostępni teraz</Pill>
+        <Pill tone="fern" active={activeFilter === 'near'} onClick={() => toggleFilter('near')}>W pobliżu</Pill>
+        <Pill tone="gold" active={activeFilter === 'top'} onClick={() => toggleFilter('top')}>Najwyżej oceniani</Pill>
+        <Pill tone="clay" active={activeFilter === 'available'} onClick={() => toggleFilter('available')}>Dostępni teraz</Pill>
       </div>
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>
@@ -325,7 +364,7 @@ function HomeScreen({ onSelectHost }) {
 
       {!loading && list.length === 0 && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>
-          {q ? `Brak hostów pasujących do "${query}".` : 'Nie ma jeszcze żadnych hostów w Twojej okolicy.'}
+          {q ? `Brak hostów pasujących do "${query}".` : 'Nie ma jeszcze żadnych hostów spełniających te kryteria.'}
         </div>
       )}
 
@@ -338,10 +377,7 @@ function HomeScreen({ onSelectHost }) {
             border: `1px solid ${colors.line}`, cursor: 'pointer'
           }}>
             <div style={{ display: 'flex', gap: 12 }}>
-              <div style={{
-                width: 56, height: 56, borderRadius: 14, background: `linear-gradient(135deg, ${colors.fern}, ${colors.fernDark})`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 18, flexShrink: 0
-              }}>{h.name.charAt(0)}</div>
+              <Avatar photoUrl={h.photo_url} name={h.name} size={56} radius={14} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontWeight: 600, color: colors.ink, fontSize: 16 }}>{h.name}</span>
@@ -403,10 +439,16 @@ function HostDetailScreen({ host, onBack, onBook }) {
           position: 'absolute', top: 16, left: 16, width: 34, height: 34, borderRadius: 17,
           background: 'rgba(255,255,255,0.25)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
         }}><ArrowLeft size={18} color="#fff" /></button>
-        <div>
-          <div style={{ width: 64, height: 64, borderRadius: 16, background: colors.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: '#fff', marginBottom: 8, border: '3px solid rgba(255,255,255,0.4)' }}>{host.name.charAt(0)}</div>
-          <h2 style={{ color: '#fff', margin: 0, fontSize: 22, fontWeight: 600 }}>{host.name}</h2>
-          <div style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Inter, sans-serif', fontSize: 13 }}>{host.location}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {host.photo_url ? (
+            <img src={host.photo_url} alt={host.name} style={{ width: 64, height: 64, borderRadius: 16, objectFit: 'cover', border: '3px solid rgba(255,255,255,0.4)' }} />
+          ) : (
+            <div style={{ width: 64, height: 64, borderRadius: 16, background: colors.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: '#fff', border: '3px solid rgba(255,255,255,0.4)' }}>{host.name.charAt(0)}</div>
+          )}
+          <div>
+            <h2 style={{ color: '#fff', margin: 0, fontSize: 22, fontWeight: 600 }}>{host.name}</h2>
+            <div style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Inter, sans-serif', fontSize: 13 }}>{host.location}</div>
+          </div>
         </div>
       </div>
 
@@ -1285,6 +1327,8 @@ function WeatherWidget() {
 
 function BecomeHostForm({ userId, existingHost, onCancel, onSaved }) {
   const isEdit = !!existingHost;
+  const fileInputRef = useRef(null);
+  const [photoDataUrl, setPhotoDataUrl] = useState(existingHost?.photo_url || null);
   const [name, setName] = useState(existingHost?.name || '');
   const [price, setPrice] = useState(existingHost ? String(existingHost.price) : '');
   const [location, setLocation] = useState(existingHost?.location || '');
@@ -1303,6 +1347,13 @@ function BecomeHostForm({ userId, existingHost, onCancel, onSaved }) {
   const [locError, setLocError] = useState(null);
 
   const canSave = name && price && location && capacity;
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const resized = await resizeImage(file);
+    setPhotoDataUrl(resized);
+  };
 
   const handleUseLocation = () => {
     if (!navigator.geolocation) {
@@ -1336,6 +1387,7 @@ function BecomeHostForm({ userId, existingHost, onCancel, onSaved }) {
       sunlight,
       plants_capacity: Number(capacity),
       description,
+      photo_url: photoDataUrl,
       latitude: coords ? coords.lat : null,
       longitude: coords ? coords.lon : null,
     };
@@ -1358,6 +1410,32 @@ function BecomeHostForm({ userId, existingHost, onCancel, onSaved }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
         }}><ArrowLeft size={18} color={colors.ink} /></button>
         <h2 style={{ fontSize: 20, color: colors.ink, fontWeight: 600, margin: 0 }}>{isEdit ? 'Edytuj profil hosta' : 'Zostań hostem'}</h2>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handlePhotoChange}
+        style={{ display: 'none' }}
+      />
+      <div onClick={() => fileInputRef.current?.click()} style={{
+        display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20, cursor: 'pointer'
+      }}>
+        {photoDataUrl ? (
+          <img src={photoDataUrl} alt="" style={{ width: 64, height: 64, borderRadius: 16, objectFit: 'cover', flexShrink: 0 }} />
+        ) : (
+          <div style={{
+            width: 64, height: 64, borderRadius: 16, background: colors.clayLight, border: `2px dashed ${colors.clay}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+          }}>
+            <Camera size={22} color={colors.clay} />
+          </div>
+        )}
+        <div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink }}>{photoDataUrl ? 'Zmień zdjęcie profilowe' : 'Dodaj zdjęcie profilowe'}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: 2 }}>Opcjonalnie — bez zdjęcia pokażemy Twój inicjał</div>
+        </div>
       </div>
 
       <TextField placeholder="Twoje imię" value={name} onChange={e => setName(e.target.value)} />
@@ -1818,9 +1896,12 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
 
       {!hostLoading && myHost && (
         <div style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 16, padding: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, color: colors.ink }}>{myHost.name}</span>
-            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, color: colors.clay }}>{myHost.price} zł</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+            <Avatar photoUrl={myHost.photo_url} name={myHost.name} size={40} radius={10} />
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, color: colors.ink }}>{myHost.name}</span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, color: colors.clay }}>{myHost.price} zł</span>
+            </div>
           </div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{myHost.location} · {myHost.plants_capacity} miejsc</div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, marginTop: 6 }}>
