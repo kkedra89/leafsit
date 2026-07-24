@@ -33,6 +33,10 @@ function displayNameOf(user) {
   return user?.user_metadata?.full_name || user?.email || '';
 }
 
+function avatarUrlOf(user) {
+  return user?.user_metadata?.avatar_url || null;
+}
+
 function formatDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -67,8 +71,6 @@ function resizeImage(file, maxSize = 800) {
   });
 }
 
-// Small round/square avatar that shows a real photo when available,
-// falling back to the initial-letter badge used everywhere else.
 function Avatar({ photoUrl, name, size = 56, radius = 14 }) {
   if (photoUrl) {
     return (
@@ -253,7 +255,7 @@ function HomeScreen({ onSelectHost }) {
   const [query, setQuery] = useState('');
   const [myCoords, setMyCoords] = useState(null);
   const [locStatus, setLocStatus] = useState('idle');
-  const [activeFilter, setActiveFilter] = useState(null); // null | 'near' | 'top' | 'available'
+  const [activeFilter, setActiveFilter] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -283,7 +285,7 @@ function HomeScreen({ onSelectHost }) {
   }, []);
 
   const toggleFilter = (name) => {
-    if (name === 'near' && !myCoords) return; // no-op without location
+    if (name === 'near' && !myCoords) return;
     setActiveFilter(prev => prev === name ? null : name);
   };
 
@@ -308,8 +310,6 @@ function HomeScreen({ onSelectHost }) {
   if (activeFilter === 'top') {
     list = [...list].sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
   } else if (activeFilter === 'near' || myCoords) {
-    // default sort is by distance whenever we have the renter's location,
-    // "W pobliżu" just makes that intent explicit
     list = [...list].sort((a, b) => {
       if (a.__dist == null && b.__dist == null) return 0;
       if (a.__dist == null) return 1;
@@ -1433,8 +1433,8 @@ function BecomeHostForm({ userId, existingHost, onCancel, onSaved }) {
           </div>
         )}
         <div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink }}>{photoDataUrl ? 'Zmień zdjęcie profilowe' : 'Dodaj zdjęcie profilowe'}</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: 2 }}>Opcjonalnie — bez zdjęcia pokażemy Twój inicjał</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink }}>{photoDataUrl ? 'Zmień zdjęcie profilu hosta' : 'Dodaj zdjęcie profilu hosta'}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: 2 }}>Widoczne na liście hostów — osobne od Twojego zdjęcia w profilu</div>
         </div>
       </div>
 
@@ -1519,7 +1519,7 @@ function ContactBlock({ title, phone, address, extra }) {
   );
 }
 
-function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
+function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated }) {
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myHost, setMyHost] = useState(null);
@@ -1545,6 +1545,9 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
   const [nameInput, setNameInput] = useState(displayNameOf(user));
   const [savingName, setSavingName] = useState(false);
   const hasName = !!user?.user_metadata?.full_name;
+
+  const avatarFileInputRef = useRef(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -1659,8 +1662,20 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
     const { data, error } = await supabase.auth.updateUser({ data: { full_name: nameInput.trim() } });
     setSavingName(false);
     if (!error && data?.user) {
-      onNameUpdated(data.user);
+      onUserUpdated(data.user);
       setEditingName(false);
+    }
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    const resized = await resizeImage(file, 400);
+    const { data, error } = await supabase.auth.updateUser({ data: { avatar_url: resized } });
+    setAvatarUploading(false);
+    if (!error && data?.user) {
+      onUserUpdated(data.user);
     }
   };
 
@@ -1693,8 +1708,24 @@ function ProfileScreen({ user, refreshKey, onSignOut, onNameUpdated }) {
   return (
     <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-        <div style={{ width: 60, height: 60, borderRadius: 30, background: colors.fern, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 22, flexShrink: 0 }}>
-          {displayNameOf(user).charAt(0).toUpperCase()}
+        <input
+          ref={avatarFileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleAvatarChange}
+          style={{ display: 'none' }}
+        />
+        <div onClick={() => avatarFileInputRef.current?.click()} style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}>
+          <Avatar photoUrl={avatarUrlOf(user)} name={displayNameOf(user)} size={60} radius={30} />
+          <div style={{
+            position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, borderRadius: 11,
+            background: colors.gold, border: `2px solid ${colors.bg}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {avatarUploading
+              ? <Loader2 size={11} color="#fff" style={{ animation: 'spin 1s linear infinite' }} />
+              : <Pencil size={10} color="#fff" />}
+          </div>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: colors.ink, wordBreak: 'break-word' }}>{displayNameOf(user)}</div>
@@ -1968,7 +1999,7 @@ export default function App() {
     setView('list');
   };
 
-  const handleNameUpdated = (updatedUser) => {
+  const handleUserUpdated = (updatedUser) => {
     setSession(prev => prev ? { ...prev, user: updatedUser } : prev);
   };
 
@@ -2004,7 +2035,7 @@ export default function App() {
       );
     }
     if (tab === 'scan') return <ScanScreen />;
-    if (tab === 'profile') return <ProfileScreen user={session.user} refreshKey={refreshKey} onSignOut={handleSignOut} onNameUpdated={handleNameUpdated} />;
+    if (tab === 'profile') return <ProfileScreen user={session.user} refreshKey={refreshKey} onSignOut={handleSignOut} onUserUpdated={handleUserUpdated} />;
   };
 
   return (
