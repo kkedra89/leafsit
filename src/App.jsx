@@ -1325,10 +1325,10 @@ function WeatherWidget() {
   );
 }
 
-function BecomeHostForm({ userId, existingHost, onCancel, onSaved }) {
+function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved }) {
   const isEdit = !!existingHost;
   const fileInputRef = useRef(null);
-  const [photoDataUrl, setPhotoDataUrl] = useState(existingHost?.photo_url || null);
+  const [photoDataUrl, setPhotoDataUrl] = useState(existingHost?.photo_url || userAvatarUrl || null);
   const [name, setName] = useState(existingHost?.name || '');
   const [price, setPrice] = useState(existingHost ? String(existingHost.price) : '');
   const [location, setLocation] = useState(existingHost?.location || '');
@@ -1684,6 +1684,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated }) {
       <BecomeHostForm
         userId={user.id}
         existingHost={editingHost ? myHost : null}
+        userAvatarUrl={avatarUrlOf(user)}
         onCancel={() => { setShowHostForm(false); setEditingHost(false); }}
         onSaved={() => { setShowHostForm(false); setEditingHost(false); setHostRefresh(k => k + 1); }}
       />
