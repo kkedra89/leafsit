@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2 } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -1494,7 +1494,7 @@ function ContactBlock({ title, phone, address, extra }) {
   );
 }
 
-function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated }) {
+function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectReturn, onConnectReturnHandled }) {
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myHost, setMyHost] = useState(null);
@@ -1523,6 +1523,9 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated }) {
 
   const avatarFileInputRef = useRef(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const [connectLoading, setConnectLoading] = useState(false);
+  const [connectChecking, setConnectChecking] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -1612,6 +1615,31 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated }) {
     return () => { cancelled = true; };
   }, [user.id, reviewsRefresh]);
 
+  // If we just came back from Stripe Connect onboarding, re-check the
+  // account status and update the host record once we know myHost.id.
+  useEffect(() => {
+    if (!connectReturn || hostLoading) return;
+    if (!myHost || !myHost.stripe_account_id) { onConnectReturnHandled(); return; }
+    (async () => {
+      setConnectChecking(true);
+      try {
+        const res = await fetch('/api/check-connect-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accountId: myHost.stripe_account_id }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          await supabase.from('hosts').update({ stripe_charges_enabled: !!data.chargesEnabled }).eq('id', myHost.id);
+          setHostRefresh(k => k + 1);
+        }
+      } catch (e) { /* ignore, host can just try again */ }
+      setConnectChecking(false);
+      onConnectReturnHandled();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectReturn, hostLoading, myHost]);
+
   const respondToBooking = async (bookingId, newStatus) => {
     await supabase.from('bookings').update({ status: newStatus }).eq('id', bookingId);
     setBookingsRefresh(k => k + 1);
@@ -1650,13 +1678,39 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated }) {
     const { data, error } = await supabase.auth.updateUser({ data: { avatar_url: resized } });
     if (!error && data?.user) {
       onUserUpdated(data.user);
-      // keep the host listing photo in sync automatically, if this user is a host
       if (myHost) {
         await supabase.from('hosts').update({ photo_url: resized }).eq('id', myHost.id);
         setHostRefresh(k => k + 1);
       }
     }
     setAvatarUploading(false);
+  };
+
+  const handleConnectStripe = async () => {
+    setConnectLoading(true);
+    try {
+      const res = await fetch('/api/create-connect-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hostId: myHost.id,
+          existingAccountId: myHost.stripe_account_id || null,
+          email: user.email,
+          origin: window.location.origin,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setConnectLoading(false);
+        return;
+      }
+      if (!myHost.stripe_account_id && data.accountId) {
+        await supabase.from('hosts').update({ stripe_account_id: data.accountId }).eq('id', myHost.id);
+      }
+      window.location.href = data.url;
+    } catch (e) {
+      setConnectLoading(false);
+    }
   };
 
   if (showHostForm || editingHost) {
@@ -1925,6 +1979,32 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated }) {
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, marginTop: 6 }}>
             Twój profil jest już widoczny na liście hostów ✓{myHost.latitude != null ? ' · lokalizacja GPS zapisana' : ''}
           </div>
+
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${colors.line}` }}>
+            {connectChecking ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>
+                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Sprawdzam status konta wypłat...
+              </div>
+            ) : myHost.stripe_charges_enabled ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.fern, fontWeight: 700 }}>
+                <CheckCircle size={14} /> Konto do wypłat podłączone
+              </div>
+            ) : (
+              <>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 8 }}>
+                  Aby otrzymywać wypłaty za rezerwacje, podłącz konto Stripe (kilka minut).
+                </div>
+                <button onClick={handleConnectStripe} disabled={connectLoading} style={{
+                  width: '100%', padding: 12, borderRadius: 12, background: colors.ink, color: '#fff', border: 'none',
+                  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, cursor: connectLoading ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: connectLoading ? 0.7 : 1
+                }}>
+                  {connectLoading ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Wallet size={15} />}
+                  {connectLoading ? 'Przekierowuję...' : 'Podłącz konto Stripe'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
@@ -1955,6 +2035,15 @@ function readPremiumReturnFromUrl() {
   return null;
 }
 
+function readConnectReturnFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('connect_return') === '1' || params.get('connect_refresh') === '1') {
+    window.history.replaceState({}, '', window.location.pathname);
+    return true;
+  }
+  return false;
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -1963,12 +2052,18 @@ export default function App() {
   const [selectedHost, setSelectedHost] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [premiumReturn, setPremiumReturn] = useState(null);
+  const [connectReturn, setConnectReturn] = useState(false);
 
   useEffect(() => {
     const pending = readPremiumReturnFromUrl();
     if (pending) {
       setPremiumReturn(pending);
       setTab('add');
+    }
+    const connectPending = readConnectReturnFromUrl();
+    if (connectPending) {
+      setConnectReturn(true);
+      setTab('profile');
     }
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -2022,7 +2117,18 @@ export default function App() {
       );
     }
     if (tab === 'scan') return <ScanScreen />;
-    if (tab === 'profile') return <ProfileScreen user={session.user} refreshKey={refreshKey} onSignOut={handleSignOut} onUserUpdated={handleUserUpdated} />;
+    if (tab === 'profile') {
+      return (
+        <ProfileScreen
+          user={session.user}
+          refreshKey={refreshKey}
+          onSignOut={handleSignOut}
+          onUserUpdated={handleUserUpdated}
+          connectReturn={connectReturn}
+          onConnectReturnHandled={() => setConnectReturn(false)}
+        />
+      );
+    }
   };
 
   return (
