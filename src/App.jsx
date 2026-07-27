@@ -79,7 +79,7 @@ function resizeImage(file, maxSize = 800) {
 
 // Central place for creating an in-app notification. Email sending will be
 // wired in here later (Etap C) without needing to change every call site.
-async function createNotification(userId, type, title, body, bookingId = null) {
+async function createNotification(userId, type, title, body, bookingId = null, recipientEmail = null) {
   if (!userId) return;
   await supabase.from('notifications').insert([{
     user_id: userId,
@@ -88,6 +88,19 @@ async function createNotification(userId, type, title, body, bookingId = null) {
     body,
     related_booking_id: bookingId,
   }]);
+  if (recipientEmail) {
+    const { data: profile } = await supabase.from('profiles').select('email_notifications').eq('id', userId).maybeSingle();
+    const wantsEmail = profile ? profile.email_notifications !== false : true;
+    if (wantsEmail) {
+      try {
+        await fetch('/api/send-notification-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: recipientEmail, title, body }),
+        });
+      } catch (e) { /* email jest opcjonalne, powiadomienie w apce już zapisane */ }
+    }
+  }
 }
 
 function Avatar({ photoUrl, name, size = 56, radius = 14 }) {
@@ -601,7 +614,8 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
           'booking_request',
           'Nowa prośba o rezerwację',
           `${userName || userEmail} chce zostawić u Ciebie roślinę "${selectedPlant ? selectedPlant.name : ''}"`,
-          data?.id || null
+          data?.id || null,
+          host.email || null
         );
       }
       setDone(true);
@@ -739,7 +753,8 @@ function ReviewForm({ booking, userId, userName, onCancel, onSaved }) {
         'new_review',
         'Nowa opinia',
         `${userName || 'Gość'} wystawił(a) Ci ocenę ${rating}/5 za "${booking.plant_name}"`,
-        booking.id
+        booking.id,
+        booking.hosts.email || null
       );
     }
     setSaving(false);
@@ -1659,7 +1674,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       setMyBookingsLoading(true);
       const { data, error } = await supabase
         .from('bookings')
-        .select('*, hosts(user_id, name, location, phone, address, price, stripe_account_id, stripe_charges_enabled)')
+        .select('*, hosts(user_id, name, location, phone, address, price, stripe_account_id, stripe_charges_enabled, email)')
         .eq('renter_user_id', user.id)
         .order('created_at', { ascending: false });
       if (!cancelled) {
@@ -1747,7 +1762,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           }).eq('id', bookingPaymentReturn.bookingId);
           const { data: bd } = await supabase
             .from('bookings')
-            .select('plant_name, hosts(user_id)')
+            .select('plant_name, hosts(user_id, email)')
             .eq('id', bookingPaymentReturn.bookingId)
             .maybeSingle();
           if (bd?.hosts?.user_id) {
@@ -1756,7 +1771,8 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
               'booking_paid',
               'Otrzymano płatność',
               `Rezerwacja "${bd.plant_name}" została opłacona — ${data.amountTotal} zł`,
-              bookingPaymentReturn.bookingId
+              bookingPaymentReturn.bookingId,
+              bd.hosts.email || null
             );
           }
           setBookingsRefresh(k => k + 1);
@@ -1779,7 +1795,8 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         newStatus === 'accepted'
           ? `Twoja prośba dla "${b.plant_name}" została zaakceptowana — możesz teraz opłacić rezerwację w Profilu.`
           : `Twoja prośba dla "${b.plant_name}" została odrzucona przez hosta.`,
-        bookingId
+        bookingId,
+        b.renter_email || null
       );
     }
     setBookingsRefresh(k => k + 1);
