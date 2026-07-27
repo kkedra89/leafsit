@@ -29,11 +29,10 @@ function distanceKm(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function weeksBetween(startDate, endDate) {
+function daysBetween(startDate, endDate) {
   const start = new Date(startDate);
   const end = new Date(endDate);
-  const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
-  return Math.max(1, Math.ceil(days / 7));
+  return Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
 }
 
 function displayNameOf(user) {
@@ -388,7 +387,7 @@ function HomeScreen({ onSelectHost }) {
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontWeight: 600, color: colors.ink, fontSize: 16 }}>{h.name}</span>
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: colors.clay, fontSize: 14 }}>{h.price} zł<span style={{ fontSize: 11, color: '#A9A08B', fontWeight: 500 }}>/roślinę/tydz.</span></span>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: colors.clay, fontSize: 14 }}>{h.price} zł<span style={{ fontSize: 11, color: '#A9A08B', fontWeight: 500 }}>/roślinę/dzień.</span></span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={12} fill={colors.gold} color={colors.gold} /> {h.rating ?? '—'} ({h.reviews ?? 0})</span>
@@ -471,7 +470,7 @@ function HostDetailScreen({ host, onBack, onBook }) {
           </div>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink }}>{host.price} zł</div>
-            <div style={{ fontSize: 11, color: '#A9A08B' }}>za roślinę/tydz.</div>
+            <div style={{ fontSize: 11, color: '#A9A08B' }}>za roślinę/dzień.</div>
           </div>
         </div>
 
@@ -560,8 +559,8 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
 
   const selectedPlant = plants.find(p => p.id === selectedPlantId);
   const canSave = selectedPlantId && startDate && endDate;
-  const estimatedWeeks = (startDate && endDate) ? weeksBetween(startDate, endDate) : null;
-  const estimatedTotal = estimatedWeeks ? (estimatedWeeks * host.price) : null;
+  const estimatedDays = (startDate && endDate) ? daysBetween(startDate, endDate) : null;
+  const estimatedTotal = estimatedDays ? (estimatedDays * host.price) : null;
 
   const handleSave = async () => {
     setSaving(true);
@@ -614,7 +613,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
         }}><ArrowLeft size={18} color={colors.ink} /></button>
         <div>
           <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>Zarezerwuj u {host.name}</h2>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B' }}>{host.price} zł / roślinę / tydzień</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B' }}>{host.price} zł / roślinę / dzień</div>
         </div>
       </div>
 
@@ -664,7 +663,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
 
           {estimatedTotal != null && (
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, fontWeight: 600, marginBottom: 16 }}>
-              Szacowany koszt: {estimatedTotal} zł ({estimatedWeeks} {estimatedWeeks === 1 ? 'tydzień' : 'tyg.'}) — płatność dopiero po akceptacji przez hosta
+              Szacowany koszt: {estimatedTotal} zł ({estimatedDays} {estimatedDays === 1 ? 'dzień' : 'dni'}) — płatność dopiero po akceptacji przez hosta
             </div>
           )}
 
@@ -1430,7 +1429,7 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
       </div>
 
       <TextField placeholder="Twoje imię" value={name} onChange={e => setName(e.target.value)} />
-      <TextField icon={DollarSign} type="number" placeholder="Cena za roślinę / tydzień (zł)" value={price} onChange={e => setPrice(e.target.value)} />
+      <TextField icon={DollarSign} type="number" placeholder="Cena za roślinę / dzień (zł)" value={price} onChange={e => setPrice(e.target.value)} />
       <TextField icon={MapPin} placeholder="Okolica (np. Mokotów, Warszawa)" value={location} onChange={e => setLocation(e.target.value)} />
       <TextField icon={Phone} type="tel" placeholder="Telefon (opcjonalnie, widoczny po akceptacji)" value={phone} onChange={e => setPhone(e.target.value)} />
       <TextField placeholder="Dokładny adres (opcjonalnie, widoczny po akceptacji)" value={address} onChange={e => setAddress(e.target.value)} />
@@ -1778,7 +1777,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         body: JSON.stringify({
           bookingId: booking.id,
           hostStripeAccountId: booking.hosts?.stripe_account_id,
-          hostPricePerWeek: booking.hosts?.price,
+          hostPricePerDay: booking.hosts?.price,
           startDate: booking.start_date,
           endDate: booking.end_date,
           hostName: booking.hosts?.name,
@@ -1956,8 +1955,8 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         const alreadyReviewed = reviewedBookingIds.has(b.id);
         const needsPayment = b.status === 'accepted' && b.payment_status !== 'paid';
         const hostReady = b.hosts?.stripe_account_id && b.hosts?.stripe_charges_enabled;
-        const estWeeks = weeksBetween(b.start_date, b.end_date);
-        const estTotal = b.amount_total ?? (estWeeks * (b.hosts?.price ?? 0));
+        const estDays = daysBetween(b.start_date, b.end_date);
+        const estTotal = b.amount_total ?? (estDays * (b.hosts?.price ?? 0));
         return (
           <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>

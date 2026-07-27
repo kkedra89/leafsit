@@ -1,10 +1,9 @@
 import Stripe from 'stripe';
 
-function weeksBetween(startDate, endDate) {
+function daysBetween(startDate, endDate) {
   const start = new Date(startDate);
   const end = new Date(endDate);
-  const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
-  return Math.max(1, Math.ceil(days / 7));
+  return Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
 }
 
 export default async function handler(req, res) {
@@ -15,7 +14,7 @@ export default async function handler(req, res) {
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     const {
-      bookingId, hostStripeAccountId, hostPricePerWeek,
+      bookingId, hostStripeAccountId, hostPricePerDay,
       startDate, endDate, hostName, plantName, origin,
     } = req.body;
 
@@ -23,8 +22,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Host nie ma jeszcze podłączonego konta do wypłat.' });
     }
 
-    const weeks = weeksBetween(startDate, endDate);
-    const amountTotal = weeks * Number(hostPricePerWeek);
+    const days = daysBetween(startDate, endDate);
+    const amountTotal = days * Number(hostPricePerDay);
     const amountInGrosze = Math.round(amountTotal * 100);
     const commissionInGrosze = Math.round(amountInGrosze * 0.10);
 
@@ -35,7 +34,7 @@ export default async function handler(req, res) {
         price_data: {
           currency: 'pln',
           product_data: {
-            name: `Rezerwacja u ${hostName} — ${plantName} (${weeks} tydz.)`,
+            name: `Rezerwacja u ${hostName} — ${plantName} (${days} ${days === 1 ? 'dzień' : 'dni'})`,
           },
           unit_amount: amountInGrosze,
         },
@@ -51,7 +50,7 @@ export default async function handler(req, res) {
       cancel_url: `${origin}/?booking_payment_cancelled=1`,
     });
 
-    return res.status(200).json({ url: session.url, amountTotal, weeks });
+    return res.status(200).json({ url: session.url, amountTotal, days });
   } catch (err) {
     return res.status(500).json({ error: 'Błąd tworzenia płatności: ' + err.message });
   }
