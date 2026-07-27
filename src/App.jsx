@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard, Bell } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -75,6 +75,19 @@ function resizeImage(file, maxSize = 800) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+// Central place for creating an in-app notification. Email sending will be
+// wired in here later (Etap C) without needing to change every call site.
+async function createNotification(userId, type, title, body, bookingId = null) {
+  if (!userId) return;
+  await supabase.from('notifications').insert([{
+    user_id: userId,
+    type,
+    title,
+    body,
+    related_booking_id: bookingId,
+  }]);
 }
 
 function Avatar({ photoUrl, name, size = 56, radius = 14 }) {
@@ -387,7 +400,7 @@ function HomeScreen({ onSelectHost }) {
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontWeight: 600, color: colors.ink, fontSize: 16 }}>{h.name}</span>
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: colors.clay, fontSize: 14 }}>{h.price} zł<span style={{ fontSize: 11, color: '#A9A08B', fontWeight: 500 }}>/roślinę/dzień.</span></span>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: colors.clay, fontSize: 14 }}>{h.price} zł<span style={{ fontSize: 11, color: '#A9A08B', fontWeight: 500 }}>/roślinę/dzień</span></span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={12} fill={colors.gold} color={colors.gold} /> {h.rating ?? '—'} ({h.reviews ?? 0})</span>
@@ -470,7 +483,7 @@ function HostDetailScreen({ host, onBack, onBook }) {
           </div>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink }}>{host.price} zł</div>
-            <div style={{ fontSize: 11, color: '#A9A08B' }}>za roślinę/dzień.</div>
+            <div style={{ fontSize: 11, color: '#A9A08B' }}>za roślinę/dzień</div>
           </div>
         </div>
 
@@ -565,7 +578,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
   const handleSave = async () => {
     setSaving(true);
     setError(null);
-    const { error } = await supabase.from('bookings').insert([{
+    const { data, error } = await supabase.from('bookings').insert([{
       host_id: host.id,
       renter_user_id: userId,
       renter_email: userEmail,
@@ -577,11 +590,20 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
       end_date: endDate,
       status: 'pending',
       payment_status: 'unpaid',
-    }]);
+    }]).select().single();
     setSaving(false);
     if (error) {
       setError('Nie udało się wysłać prośby: ' + error.message);
     } else {
+      if (host.user_id) {
+        await createNotification(
+          host.user_id,
+          'booking_request',
+          'Nowa prośba o rezerwację',
+          `${userName || userEmail} chce zostawić u Ciebie roślinę "${selectedPlant ? selectedPlant.name : ''}"`,
+          data?.id || null
+        );
+      }
       setDone(true);
     }
   };
@@ -711,6 +733,15 @@ function ReviewForm({ booking, userId, userName, onCancel, onSaved }) {
       return;
     }
     await supabase.rpc('update_host_rating', { host_id_param: booking.host_id });
+    if (booking.hosts?.user_id) {
+      await createNotification(
+        booking.hosts.user_id,
+        'new_review',
+        'Nowa opinia',
+        `${userName || 'Gość'} wystawił(a) Ci ocenę ${rating}/5 za "${booking.plant_name}"`,
+        booking.id
+      );
+    }
     setSaving(false);
     onSaved();
   };
@@ -1556,6 +1587,36 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const [payingBookingId, setPayingBookingId] = useState(null);
   const [verifyingBookingPayment, setVerifyingBookingPayment] = useState(false);
 
+  const [notifications, setNotifications] = useState([]);
+  const [notifLoading, setNotifLoading] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifRefresh, setNotifRefresh] = useState(0);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadNotifications() {
+      setNotifLoading(true);
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (!cancelled) {
+        if (!error && data) setNotifications(data);
+        setNotifLoading(false);
+      }
+    }
+    loadNotifications();
+    return () => { cancelled = true; };
+  }, [user.id, notifRefresh]);
+
+  const markNotificationRead = async (id) => {
+    await supabase.from('notifications').update({ read: true }).eq('id', id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
   useEffect(() => {
     let cancelled = false;
     async function loadPlants() {
@@ -1598,7 +1659,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       setMyBookingsLoading(true);
       const { data, error } = await supabase
         .from('bookings')
-        .select('*, hosts(name, location, phone, address, price, stripe_account_id, stripe_charges_enabled)')
+        .select('*, hosts(user_id, name, location, phone, address, price, stripe_account_id, stripe_charges_enabled)')
         .eq('renter_user_id', user.id)
         .order('created_at', { ascending: false });
       if (!cancelled) {
@@ -1667,8 +1728,6 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectReturn, hostLoading, myHost]);
 
-  // If we just came back from paying for a booking, verify with Stripe and
-  // mark it as paid in the database.
   useEffect(() => {
     if (!bookingPaymentReturn) return;
     (async () => {
@@ -1686,6 +1745,20 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             amount_total: data.amountTotal,
             stripe_session_id: bookingPaymentReturn.sessionId,
           }).eq('id', bookingPaymentReturn.bookingId);
+          const { data: bd } = await supabase
+            .from('bookings')
+            .select('plant_name, hosts(user_id)')
+            .eq('id', bookingPaymentReturn.bookingId)
+            .maybeSingle();
+          if (bd?.hosts?.user_id) {
+            await createNotification(
+              bd.hosts.user_id,
+              'booking_paid',
+              'Otrzymano płatność',
+              `Rezerwacja "${bd.plant_name}" została opłacona — ${data.amountTotal} zł`,
+              bookingPaymentReturn.bookingId
+            );
+          }
           setBookingsRefresh(k => k + 1);
         }
       } catch (e) { /* ignore, renter can retry from the booking */ }
@@ -1697,11 +1770,33 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
   const respondToBooking = async (bookingId, newStatus) => {
     await supabase.from('bookings').update({ status: newStatus }).eq('id', bookingId);
+    const b = incoming.find(x => x.id === bookingId);
+    if (b) {
+      await createNotification(
+        b.renter_user_id,
+        newStatus === 'accepted' ? 'booking_accepted' : 'booking_rejected',
+        newStatus === 'accepted' ? 'Rezerwacja zaakceptowana!' : 'Rezerwacja odrzucona',
+        newStatus === 'accepted'
+          ? `Twoja prośba dla "${b.plant_name}" została zaakceptowana — możesz teraz opłacić rezerwację w Profilu.`
+          : `Twoja prośba dla "${b.plant_name}" została odrzucona przez hosta.`,
+        bookingId
+      );
+    }
     setBookingsRefresh(k => k + 1);
   };
 
   const cancelMyBooking = async (bookingId) => {
     await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId);
+    const b = myBookings.find(x => x.id === bookingId);
+    if (b?.hosts?.user_id) {
+      await createNotification(
+        b.hosts.user_id,
+        'booking_cancelled',
+        'Rezerwacja anulowana',
+        `Prośba dla "${b.plant_name}" została anulowana przez wynajmującego.`,
+        bookingId
+      );
+    }
     setBookingsRefresh(k => k + 1);
   };
 
@@ -1824,7 +1919,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const acceptedIncoming = incoming.filter(b => b.status === 'accepted');
 
   return (
-    <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
+    <div style={{ flex: 1, padding: 20, overflow: 'auto', position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
         <input
           ref={avatarFileInputRef}
@@ -1849,6 +1944,20 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           <div style={{ fontSize: 15, fontWeight: 600, color: colors.ink, wordBreak: 'break-word' }}>{displayNameOf(user)}</div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', wordBreak: 'break-all' }}>{user.email}</div>
         </div>
+        <button onClick={() => setShowNotifications(s => !s)} style={{
+          background: colors.clayLight, border: 'none', borderRadius: 12, padding: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
+          position: 'relative'
+        }}>
+          <Bell size={16} color={colors.ink} />
+          {unreadCount > 0 && (
+            <div style={{
+              position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, borderRadius: 8,
+              background: colors.clay, color: '#fff', fontSize: 9.5, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px'
+            }}>{unreadCount > 9 ? '9+' : unreadCount}</div>
+          )}
+        </button>
         <button onClick={onSignOut} style={{
           background: colors.clayLight, border: 'none', borderRadius: 12, padding: 10,
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
@@ -1856,6 +1965,39 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           <LogOut size={16} color={colors.clay} />
         </button>
       </div>
+
+      {showNotifications && (
+        <div style={{
+          background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 16,
+          marginBottom: 20, overflow: 'hidden'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: `1px solid ${colors.line}` }}>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, color: colors.ink }}>Powiadomienia</span>
+            <button onClick={() => setShowNotifications(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
+              <X size={15} color="#A9A08B" />
+            </button>
+          </div>
+          <div style={{ maxHeight: 300, overflow: 'auto' }}>
+            {notifLoading && <div style={{ padding: 14, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>Ładowanie...</div>}
+            {!notifLoading && notifications.length === 0 && (
+              <div style={{ padding: 14, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>Brak powiadomień.</div>
+            )}
+            {!notifLoading && notifications.map(n => (
+              <div key={n.id} onClick={() => !n.read && markNotificationRead(n.id)} style={{
+                padding: '12px 14px', borderBottom: `1px solid ${colors.line}`, cursor: n.read ? 'default' : 'pointer',
+                background: n.read ? 'transparent' : '#FFF8EC'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {!n.read && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.gold, flexShrink: 0 }} />}
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, color: colors.ink }}>{n.title}</span>
+                </div>
+                {n.body && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#7A7261', marginTop: 3 }}>{n.body}</div>}
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#A9A08B', marginTop: 4 }}>{formatDate(n.created_at)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {myHost && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginBottom: 20 }}>
