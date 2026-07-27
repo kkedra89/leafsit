@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -27,6 +27,13 @@ function distanceKm(lat1, lon1, lat2, lon2) {
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function weeksBetween(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+  return Math.max(1, Math.ceil(days / 7));
 }
 
 function displayNameOf(user) {
@@ -553,6 +560,8 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
 
   const selectedPlant = plants.find(p => p.id === selectedPlantId);
   const canSave = selectedPlantId && startDate && endDate;
+  const estimatedWeeks = (startDate && endDate) ? weeksBetween(startDate, endDate) : null;
+  const estimatedTotal = estimatedWeeks ? (estimatedWeeks * host.price) : null;
 
   const handleSave = async () => {
     setSaving(true);
@@ -568,6 +577,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
       start_date: startDate,
       end_date: endDate,
       status: 'pending',
+      payment_status: 'unpaid',
     }]);
     setSaving(false);
     if (error) {
@@ -585,7 +595,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
         </div>
         <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 16, color: colors.ink }}>Prośba wysłana!</div>
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7261', textAlign: 'center' }}>
-          Czeka na akceptację przez {host.name}. Sprawdź status w zakładce Profil.
+          Czeka na akceptację przez {host.name}. Gdy host zaakceptuje, będziesz mógł opłacić i potwierdzić rezerwację w zakładce Profil.
         </div>
         <button onClick={onBooked} style={{
           padding: '12px 24px', borderRadius: 14, background: colors.fern, color: '#fff',
@@ -635,7 +645,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
           ))}
 
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginTop: 16, marginBottom: 10 }}>Na jakie daty?</div>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginBottom: 4 }}>Od</div>
               <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{
@@ -651,6 +661,12 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
               }} />
             </div>
           </div>
+
+          {estimatedTotal != null && (
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, fontWeight: 600, marginBottom: 16 }}>
+              Szacowany koszt: {estimatedTotal} zł ({estimatedWeeks} {estimatedWeeks === 1 ? 'tydzień' : 'tyg.'}) — płatność dopiero po akceptacji przez hosta
+            </div>
+          )}
 
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>Twój telefon (opcjonalnie)</div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginBottom: 8 }}>Host zobaczy go dopiero po zaakceptowaniu — ułatwi ustalenie godziny odbioru</div>
@@ -1494,7 +1510,7 @@ function ContactBlock({ title, phone, address, extra }) {
   );
 }
 
-function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectReturn, onConnectReturnHandled }) {
+function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectReturn, onConnectReturnHandled, bookingPaymentReturn, onBookingPaymentReturnHandled }) {
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myHost, setMyHost] = useState(null);
@@ -1526,6 +1542,9 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectChecking, setConnectChecking] = useState(false);
+
+  const [payingBookingId, setPayingBookingId] = useState(null);
+  const [verifyingBookingPayment, setVerifyingBookingPayment] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -1569,7 +1588,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       setMyBookingsLoading(true);
       const { data, error } = await supabase
         .from('bookings')
-        .select('*, hosts(name, location, phone, address)')
+        .select('*, hosts(name, location, phone, address, price, stripe_account_id, stripe_charges_enabled)')
         .eq('renter_user_id', user.id)
         .order('created_at', { ascending: false });
       if (!cancelled) {
@@ -1615,8 +1634,6 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     return () => { cancelled = true; };
   }, [user.id, reviewsRefresh]);
 
-  // If we just came back from Stripe Connect onboarding, re-check the
-  // account status and update the host record once we know myHost.id.
   useEffect(() => {
     if (!connectReturn || hostLoading) return;
     if (!myHost || !myHost.stripe_account_id) { onConnectReturnHandled(); return; }
@@ -1639,6 +1656,34 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectReturn, hostLoading, myHost]);
+
+  // If we just came back from paying for a booking, verify with Stripe and
+  // mark it as paid in the database.
+  useEffect(() => {
+    if (!bookingPaymentReturn) return;
+    (async () => {
+      setVerifyingBookingPayment(true);
+      try {
+        const res = await fetch('/api/verify-booking-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: bookingPaymentReturn.sessionId }),
+        });
+        const data = await res.json();
+        if (res.ok && data.paid) {
+          await supabase.from('bookings').update({
+            payment_status: 'paid',
+            amount_total: data.amountTotal,
+            stripe_session_id: bookingPaymentReturn.sessionId,
+          }).eq('id', bookingPaymentReturn.bookingId);
+          setBookingsRefresh(k => k + 1);
+        }
+      } catch (e) { /* ignore, renter can retry from the booking */ }
+      setVerifyingBookingPayment(false);
+      onBookingPaymentReturnHandled();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingPaymentReturn]);
 
   const respondToBooking = async (bookingId, newStatus) => {
     await supabase.from('bookings').update({ status: newStatus }).eq('id', bookingId);
@@ -1710,6 +1755,34 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       window.location.href = data.url;
     } catch (e) {
       setConnectLoading(false);
+    }
+  };
+
+  const handlePayForBooking = async (booking) => {
+    setPayingBookingId(booking.id);
+    try {
+      const res = await fetch('/api/create-booking-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          hostStripeAccountId: booking.hosts?.stripe_account_id,
+          hostPricePerWeek: booking.hosts?.price,
+          startDate: booking.start_date,
+          endDate: booking.end_date,
+          hostName: booking.hosts?.name,
+          plantName: booking.plant_name,
+          origin: window.location.origin,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setPayingBookingId(null);
+        return;
+      }
+      window.location.href = data.url;
+    } catch (e) {
+      setPayingBookingId(null);
     }
   };
 
@@ -1845,6 +1918,15 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>{b.plant_name}</div>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
+              {b.payment_status === 'paid' ? (
+                <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <CheckCircle size={13} /> Opłacona — {b.amount_total} zł (Twoja część: {Math.round(b.amount_total * 0.9 * 100) / 100} zł)
+                </div>
+              ) : (
+                <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B' }}>
+                  Oczekuje na opłacenie przez wynajmującego
+                </div>
+              )}
               <ContactBlock title="Kontakt do właściciela rośliny" phone={b.renter_phone} extra={`${b.renter_name || 'Bez podanego imienia'} · ${b.renter_email}`} />
             </div>
           ))}
@@ -1861,6 +1943,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       {!myBookingsLoading && myBookings.map(b => {
         const si = statusInfo(b.status);
         const alreadyReviewed = reviewedBookingIds.has(b.id);
+        const needsPayment = b.status === 'accepted' && b.payment_status !== 'paid';
+        const hostReady = b.hosts?.stripe_account_id && b.hosts?.stripe_charges_enabled;
+        const estWeeks = weeksBetween(b.start_date, b.end_date);
+        const estTotal = b.amount_total ?? (estWeeks * (b.hosts?.price ?? 0));
         return (
           <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
@@ -1876,6 +1962,38 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
               <ContactBlock title="Kontakt do hosta" phone={b.hosts?.phone} address={b.hosts?.address} />
             )}
 
+            {b.payment_status === 'paid' && (
+              <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <CheckCircle size={13} /> Zapłacono {b.amount_total} zł
+              </div>
+            )}
+
+            {needsPayment && verifyingBookingPayment && (
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>
+                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Sprawdzam płatność...
+              </div>
+            )}
+
+            {needsPayment && !verifyingBookingPayment && hostReady && (
+              <button onClick={() => handlePayForBooking(b)} disabled={payingBookingId === b.id} style={{
+                marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.clay, color: '#fff',
+                border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                opacity: payingBookingId === b.id ? 0.7 : 1
+              }}>
+                {payingBookingId === b.id
+                  ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                  : <CreditCard size={14} />}
+                {payingBookingId === b.id ? 'Przekierowuję...' : `Zapłać i potwierdź (${estTotal} zł)`}
+              </button>
+            )}
+
+            {needsPayment && !verifyingBookingPayment && !hostReady && (
+              <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B' }}>
+                Host jeszcze nie podłączył konta do wypłat — spróbuj ponownie za chwilę.
+              </div>
+            )}
+
             {b.status === 'pending' && (
               <button onClick={() => cancelMyBooking(b.id)} style={{
                 marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.clayLight, color: colors.clay,
@@ -1884,7 +2002,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
               }}><X size={14} /> Anuluj prośbę</button>
             )}
 
-            {b.status === 'accepted' && !alreadyReviewed && (
+            {b.status === 'accepted' && b.payment_status === 'paid' && !alreadyReviewed && (
               <button onClick={() => setReviewingBooking(b)} style={{
                 marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.gold, color: '#fff',
                 border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
@@ -2044,6 +2162,22 @@ function readConnectReturnFromUrl() {
   return false;
 }
 
+function readBookingPaymentReturnFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('booking_paid') === '1' && params.get('session_id') && params.get('booking_id')) {
+    const result = {
+      bookingId: params.get('booking_id'),
+      sessionId: params.get('session_id'),
+    };
+    window.history.replaceState({}, '', window.location.pathname);
+    return result;
+  }
+  if (params.get('booking_payment_cancelled') === '1') {
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+  return null;
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -2053,6 +2187,7 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [premiumReturn, setPremiumReturn] = useState(null);
   const [connectReturn, setConnectReturn] = useState(false);
+  const [bookingPaymentReturn, setBookingPaymentReturn] = useState(null);
 
   useEffect(() => {
     const pending = readPremiumReturnFromUrl();
@@ -2063,6 +2198,11 @@ export default function App() {
     const connectPending = readConnectReturnFromUrl();
     if (connectPending) {
       setConnectReturn(true);
+      setTab('profile');
+    }
+    const bookingPaymentPending = readBookingPaymentReturnFromUrl();
+    if (bookingPaymentPending) {
+      setBookingPaymentReturn(bookingPaymentPending);
       setTab('profile');
     }
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -2126,6 +2266,8 @@ export default function App() {
           onUserUpdated={handleUserUpdated}
           connectReturn={connectReturn}
           onConnectReturnHandled={() => setConnectReturn(false)}
+          bookingPaymentReturn={bookingPaymentReturn}
+          onBookingPaymentReturnHandled={() => setBookingPaymentReturn(null)}
         />
       );
     }
