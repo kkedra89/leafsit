@@ -1539,6 +1539,17 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
   const avatarFileInputRef = useRef(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadProfile() {
+      const { data } = await supabase.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle();
+      if (!cancelled) setProfileAvatarUrl(data?.avatar_url || null);
+    }
+    loadProfile();
+    return () => { cancelled = true; };
+  }, [user.id]);
 
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectChecking, setConnectChecking] = useState(false);
@@ -1720,9 +1731,9 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     if (!file) return;
     setAvatarUploading(true);
     const resized = await resizeImage(file, 400);
-    const { data, error } = await supabase.auth.updateUser({ data: { avatar_url: resized } });
-    if (!error && data?.user) {
-      onUserUpdated(data.user);
+    const { error } = await supabase.from('profiles').upsert({ id: user.id, avatar_url: resized, updated_at: new Date().toISOString() });
+    if (!error) {
+      setProfileAvatarUrl(resized);
       if (myHost) {
         await supabase.from('hosts').update({ photo_url: resized }).eq('id', myHost.id);
         setHostRefresh(k => k + 1);
@@ -1791,7 +1802,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       <BecomeHostForm
         userId={user.id}
         existingHost={editingHost ? myHost : null}
-        userAvatarUrl={avatarUrlOf(user)}
+        userAvatarUrl={profileAvatarUrl}
         onCancel={() => { setShowHostForm(false); setEditingHost(false); }}
         onSaved={() => { setShowHostForm(false); setEditingHost(false); setHostRefresh(k => k + 1); }}
       />
@@ -1824,7 +1835,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           style={{ display: 'none' }}
         />
         <div onClick={() => avatarFileInputRef.current?.click()} style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}>
-          <Avatar photoUrl={avatarUrlOf(user)} name={displayNameOf(user)} size={60} radius={30} />
+          <Avatar photoUrl={profileAvatarUrl} name={displayNameOf(user)} size={60} radius={30} />
           <div style={{
             position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, borderRadius: 11,
             background: colors.gold, border: `2px solid ${colors.bg}`,
