@@ -209,6 +209,7 @@ function AuthScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [emailConsent, setEmailConsent] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
@@ -221,13 +222,19 @@ function AuthScreen() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(error.message);
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { full_name: name } },
       });
-      if (error) setError(error.message);
-      else setInfo('Konto utworzone! Możesz się teraz zalogować.');
+      if (error) {
+        setError(error.message);
+      } else {
+        if (signUpData?.user) {
+          await supabase.from('profiles').upsert({ id: signUpData.user.id, email_notifications: emailConsent });
+        }
+        setInfo('Konto utworzone! Możesz się teraz zalogować.');
+      }
     }
     setLoading(false);
   };
@@ -251,6 +258,23 @@ function AuthScreen() {
 
       {mode === 'signup' && (
         <TextField icon={User} placeholder="Imię i nazwisko (lub nick)" value={name} onChange={e => setName(e.target.value)} />
+      )}
+      {mode === 'signup' && (
+        <div onClick={() => setEmailConsent(c => !c)} style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, cursor: 'pointer'
+        }}>
+          <div style={{
+            width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+            border: `2px solid ${emailConsent ? colors.fern : colors.line}`,
+            background: emailConsent ? colors.fern : 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {emailConsent && <Check size={13} color="#fff" strokeWidth={3} />}
+          </div>
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#7A7261' }}>
+            Chcę otrzymywać powiadomienia email (np. o nowych rezerwacjach)
+          </span>
+        </div>
       )}
       <TextField icon={Mail} type="email" placeholder="Adres email" value={email} onChange={e => setEmail(e.target.value)} />
       <TextField icon={Lock} type="password" placeholder="Hasło" value={password} onChange={e => setPassword(e.target.value)} />
@@ -1585,16 +1609,29 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const avatarFileInputRef = useRef(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [profileAvatarUrl, setProfileAvatarUrl] = useState(null);
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [savingEmailPref, setSavingEmailPref] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     async function loadProfile() {
-      const { data } = await supabase.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle();
-      if (!cancelled) setProfileAvatarUrl(data?.avatar_url || null);
+      const { data } = await supabase.from('profiles').select('avatar_url, email_notifications').eq('id', user.id).maybeSingle();
+      if (!cancelled) {
+        setProfileAvatarUrl(data?.avatar_url || null);
+        setEmailNotifications(data?.email_notifications !== false);
+      }
     }
     loadProfile();
     return () => { cancelled = true; };
   }, [user.id]);
+
+  const toggleEmailNotifications = async () => {
+    const next = !emailNotifications;
+    setSavingEmailPref(true);
+    setEmailNotifications(next);
+    await supabase.from('profiles').upsert({ id: user.id, email_notifications: next });
+    setSavingEmailPref(false);
+  };
 
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectChecking, setConnectChecking] = useState(false);
@@ -2012,6 +2049,22 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
                 <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#A9A08B', marginTop: 4 }}>{formatDate(n.created_at)}</div>
               </div>
             ))}
+          </div>
+          <div onClick={toggleEmailNotifications} style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderTop: `1px solid ${colors.line}`, cursor: 'pointer'
+          }}>
+            <div style={{
+              width: 34, height: 20, borderRadius: 10, flexShrink: 0, position: 'relative',
+              background: emailNotifications ? colors.fern : colors.line, transition: 'background 0.15s'
+            }}>
+              <div style={{
+                position: 'absolute', top: 2, left: emailNotifications ? 16 : 2, width: 16, height: 16, borderRadius: 8,
+                background: '#fff', transition: 'left 0.15s'
+              }} />
+            </div>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>
+              {savingEmailPref ? 'Zapisywanie...' : 'Powiadomienia email'}
+            </span>
           </div>
         </div>
       )}
