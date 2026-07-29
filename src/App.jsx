@@ -1804,6 +1804,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             payment_status: 'paid',
             amount_total: data.amountTotal,
             stripe_session_id: bookingPaymentReturn.sessionId,
+            stripe_payment_intent_id: data.paymentIntentId,
           }).eq('id', bookingPaymentReturn.bookingId);
           const { data: bd } = await supabase
             .from('bookings')
@@ -1830,8 +1831,24 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   }, [bookingPaymentReturn]);
 
   const respondToBooking = async (bookingId, newStatus) => {
-    await supabase.from('bookings').update({ status: newStatus }).eq('id', bookingId);
     const b = incoming.find(x => x.id === bookingId);
+
+    if (newStatus === 'accepted' && b && myHost) {
+      const { data: overlapping } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('host_id', myHost.id)
+        .eq('status', 'accepted')
+        .lte('start_date', b.end_date)
+        .gte('end_date', b.start_date);
+      const currentCount = overlapping?.length || 0;
+      if (currentCount + 1 > myHost.plants_capacity) {
+        alert(`Nie możesz zaakceptować tej prośby — w tym terminie masz już ${currentCount} zaakceptowanych roślin, a Twój limit to ${myHost.plants_capacity}.`);
+        return;
+      }
+    }
+
+    await supabase.from('bookings').update({ status: newStatus }).eq('id', bookingId);
     if (b) {
       await createNotification(
         b.renter_user_id,
@@ -1847,18 +1864,47 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     setBookingsRefresh(k => k + 1);
   };
 
+  const [cancellingBookingId, setCancellingBookingId] = useState(null);
+
   const cancelMyBooking = async (bookingId) => {
-    await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId);
     const b = myBookings.find(x => x.id === bookingId);
+    setCancellingBookingId(bookingId);
+
+    if (b?.payment_status === 'paid' && b?.stripe_payment_intent_id) {
+      try {
+        const res = await fetch('/api/refund-booking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentIntentId: b.stripe_payment_intent_id }),
+        });
+        if (!res.ok) {
+          setCancellingBookingId(null);
+          alert('Nie udało się zwrócić płatności. Spróbuj ponownie lub skontaktuj się z pomocą.');
+          return;
+        }
+        await supabase.from('bookings').update({ status: 'cancelled', payment_status: 'refunded' }).eq('id', bookingId);
+      } catch (e) {
+        setCancellingBookingId(null);
+        alert('Nie udało się zwrócić płatności. Spróbuj ponownie lub skontaktuj się z pomocą.');
+        return;
+      }
+    } else {
+      await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId);
+    }
+
     if (b?.hosts?.user_id) {
       await createNotification(
         b.hosts.user_id,
         'booking_cancelled',
         'Rezerwacja anulowana',
-        `Prośba dla "${b.plant_name}" została anulowana przez wynajmującego.`,
-        bookingId
+        b.payment_status === 'paid'
+          ? `Rezerwacja "${b.plant_name}" została anulowana i zwrócona — środki zostaną wycofane z Twojego konta.`
+          : `Prośba dla "${b.plant_name}" została anulowana przez wynajmującego.`,
+        bookingId,
+        b.hosts.email || null
       );
     }
+    setCancellingBookingId(null);
     setBookingsRefresh(k => k + 1);
   };
 
@@ -2225,11 +2271,36 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             )}
 
             {b.status === 'pending' && (
-              <button onClick={() => cancelMyBooking(b.id)} style={{
+              <button onClick={() => cancelMyBooking(b.id)} disabled={cancellingBookingId === b.id} style={{
                 marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.clayLight, color: colors.clay,
                 border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
-              }}><X size={14} /> Anuluj prośbę</button>
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                opacity: cancellingBookingId === b.id ? 0.7 : 1
+              }}>
+                {cancellingBookingId === b.id ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <X size={14} />}
+                Anuluj prośbę
+              </button>
+            )}
+
+            {b.status === 'accepted' && (b.payment_status === 'paid' || b.payment_status === 'unpaid') && (
+              <button
+                onClick={() => {
+                  const msg = b.payment_status === 'paid'
+                    ? `Na pewno anulować? Zapłacone ${b.amount_total} zł zostanie w pełni zwrócone.`
+                    : 'Na pewno anulować tę rezerwację?';
+                  if (window.confirm(msg)) cancelMyBooking(b.id);
+                }}
+                disabled={cancellingBookingId === b.id}
+                style={{
+                  marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.clayLight, color: colors.clay,
+                  border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  opacity: cancellingBookingId === b.id ? 0.7 : 1
+                }}
+              >
+                {cancellingBookingId === b.id ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <X size={14} />}
+                {cancellingBookingId === b.id ? 'Anulowanie...' : b.payment_status === 'paid' ? 'Anuluj i zwróć płatność' : 'Anuluj rezerwację'}
+              </button>
             )}
 
             {b.status === 'accepted' && b.payment_status === 'paid' && !alreadyReviewed && (

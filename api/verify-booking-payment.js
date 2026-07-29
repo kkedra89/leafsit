@@ -12,7 +12,11 @@ export default async function handler(req, res) {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status === 'paid') {
-      return res.status(200).json({ paid: true, amountTotal: session.amount_total / 100 });
+      return res.status(200).json({
+        paid: true,
+        amountTotal: session.amount_total / 100,
+        paymentIntentId: session.payment_intent,
+      });
     }
     return res.status(200).json({ paid: false });
   } catch (err) {
