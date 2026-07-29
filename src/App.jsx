@@ -646,11 +646,12 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
       setError('Nie udało się wysłać prośby: ' + error.message);
     } else {
       if (host.user_id) {
+        const qtyLabel = quantity > 1 ? ` (×${quantity} szt.)` : '';
         await createNotification(
           host.user_id,
           'booking_request',
           'Nowa prośba o rezerwację',
-          `${userName || userEmail} chce zostawić u Ciebie roślinę "${selectedPlant ? selectedPlant.name : ''}"`,
+          `${userName || userEmail} chce zostawić u Ciebie roślinę "${selectedPlant ? selectedPlant.name : ''}"${qtyLabel}`,
           data?.id || null,
           host.email || null
         );
@@ -2231,7 +2232,9 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           </div>
           {pendingIncoming.map(b => (
             <div key={b.id} style={{ background: colors.card, border: `1.5px solid ${colors.gold}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>{b.plant_name}</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>
+                {b.plant_name}{b.quantity > 1 ? ` × ${b.quantity}` : ''}
+              </div>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 2 }}>od {b.renter_name || b.renter_email}</div>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 10 }}>{b.start_date} → {b.end_date}</div>
               <div style={{ display: 'flex', gap: 8 }}>
