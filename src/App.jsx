@@ -1653,6 +1653,26 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
   const [expandedPlantId, setExpandedPlantId] = useState(null);
   const [deletingPlantId, setDeletingPlantId] = useState(null);
+  const [plantHistory, setPlantHistory] = useState({});
+  const [loadingPlantHistory, setLoadingPlantHistory] = useState(null);
+
+  const togglePlantExpand = async (plantId) => {
+    if (expandedPlantId === plantId) {
+      setExpandedPlantId(null);
+      return;
+    }
+    setExpandedPlantId(plantId);
+    if (!plantHistory[plantId]) {
+      setLoadingPlantHistory(plantId);
+      const { data } = await supabase
+        .from('bookings')
+        .select('id, start_date, end_date, status, payment_status, quantity, hosts(name, location)')
+        .eq('plant_id', plantId)
+        .order('start_date', { ascending: false });
+      setPlantHistory(prev => ({ ...prev, [plantId]: data || [] }));
+      setLoadingPlantHistory(null);
+    }
+  };
 
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(displayNameOf(user));
@@ -2375,22 +2395,35 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Nie masz jeszcze żadnych roślin — dodaj pierwszą w zakładce "Dodaj".</div>
       )}
 
-      {!loading && plants.map(p => (
+      {!loading && plants.map(p => {
+        const history = plantHistory[p.id] || [];
+        const active = history.find(h => h.status === 'accepted' && new Date(h.end_date) >= new Date().setHours(0,0,0,0));
+        return (
         <div key={p.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, marginBottom: 10, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12 }}>
-            <div onClick={() => p.care_guide && setExpandedPlantId(expandedPlantId === p.id ? null : p.id)} style={{
-              width: 40, height: 40, borderRadius: 10, background: colors.clayLight, overflow: 'hidden', flexShrink: 0,
-              cursor: p.care_guide ? 'pointer' : 'default'
+            <div onClick={() => togglePlantExpand(p.id)} style={{
+              width: 40, height: 40, borderRadius: 10, background: colors.clayLight, overflow: 'hidden', flexShrink: 0, cursor: 'pointer'
             }}>
               {p.photo_url && <img src={p.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             </div>
-            <div onClick={() => p.care_guide && setExpandedPlantId(expandedPlantId === p.id ? null : p.id)} style={{ flex: 1, cursor: p.care_guide ? 'pointer' : 'default' }}>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, color: colors.ink }}>{p.name}</div>
-              {p.care_guide && (
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.gold, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3, marginTop: 2 }}>
-                  <Crown size={11} /> Przewodnik Premium
-                </div>
-              )}
+            <div onClick={() => togglePlantExpand(p.id)} style={{ flex: 1, cursor: 'pointer' }}>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, color: colors.ink }}>
+                {p.name}{p.quantity > 1 ? ` × ${p.quantity}` : ''}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                {p.care_guide && (
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.gold, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <Crown size={11} /> Premium
+                  </div>
+                )}
+                {active ? (
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.fern, fontWeight: 700 }}>
+                    Obecnie u {active.hosts?.name}
+                  </div>
+                ) : (
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>U Ciebie w domu</div>
+                )}
+              </div>
             </div>
             <button
               onClick={() => { if (window.confirm(`Usunąć "${p.name}" z Twoich roślin?`)) deletePlant(p.id); }}
@@ -2405,13 +2438,35 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
                 : <Trash2 size={16} color="#A9A08B" />}
             </button>
           </div>
-          {expandedPlantId === p.id && p.care_guide && (
+          {expandedPlantId === p.id && (
             <div style={{ padding: '0 16px 16px' }}>
-              <CareGuide text={p.care_guide} />
+              {p.care_guide && <div style={{ marginBottom: 14 }}><CareGuide text={p.care_guide} /></div>}
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 700, color: colors.ink, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 }}>
+                Historia u hostów
+              </div>
+              {loadingPlantHistory === p.id && (
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>Ładowanie...</div>
+              )}
+              {loadingPlantHistory !== p.id && history.length === 0 && (
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>Ta roślina nigdy nie była jeszcze u hosta.</div>
+              )}
+              {loadingPlantHistory !== p.id && history.map(h => (
+                <div key={h.id} style={{ background: colors.bg, borderRadius: 10, padding: 10, marginBottom: 6 }}>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, fontWeight: 700, color: colors.ink }}>
+                    {h.hosts?.name} {h.quantity > 1 ? `(×${h.quantity})` : ''} · {h.hosts?.location}
+                  </div>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#7A7261', marginTop: 2 }}>
+                    {h.start_date} → {h.end_date}
+                  </div>
+                  <div style={{ marginTop: 4 }}>
+                    <Pill tone={statusInfo(h.status).tone}>{statusInfo(h.status).label}</Pill>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
-      ))}
+      );})}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '20px 0 10px' }}>
         <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, textTransform: 'uppercase', letterSpacing: 0.5 }}>
