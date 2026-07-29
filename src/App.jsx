@@ -1500,6 +1500,14 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
 
       <TextField placeholder="Twoje imię" value={name} onChange={e => setName(e.target.value)} />
       <TextField icon={DollarSign} type="number" placeholder="Cena za roślinę / dzień (zł)" value={price} onChange={e => setPrice(e.target.value)} />
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: -6, marginBottom: 14 }}>
+        Sugerowana cena: 2-5 zł za roślinę dziennie
+      </div>
+      {Number(price) > 10 && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.clay, marginTop: -6, marginBottom: 14 }}>
+          To znacznie powyżej średniej — czy na pewno?
+        </div>
+      )}
       <TextField icon={MapPin} placeholder="Okolica (np. Mokotów, Warszawa)" value={location} onChange={e => setLocation(e.target.value)} />
       <TextField icon={Phone} type="tel" placeholder="Telefon (opcjonalnie, widoczny po akceptacji)" value={phone} onChange={e => setPhone(e.target.value)} />
       <TextField placeholder="Dokładny adres (opcjonalnie, widoczny po akceptacji)" value={address} onChange={e => setAddress(e.target.value)} />
