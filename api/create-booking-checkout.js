@@ -15,15 +15,16 @@ export default async function handler(req, res) {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     const {
       bookingId, hostStripeAccountId, hostPricePerDay,
-      startDate, endDate, hostName, plantName, origin,
+      startDate, endDate, hostName, plantName, quantity, origin,
     } = req.body;
 
     if (!hostStripeAccountId) {
       return res.status(400).json({ error: 'Host nie ma jeszcze podłączonego konta do wypłat.' });
     }
 
+    const qty = Math.max(1, Number(quantity) || 1);
     const days = daysBetween(startDate, endDate);
-    const amountTotal = days * Number(hostPricePerDay);
+    const amountTotal = days * Number(hostPricePerDay) * qty;
     const amountInGrosze = Math.round(amountTotal * 100);
     const commissionInGrosze = Math.round(amountInGrosze * 0.10);
 
@@ -34,7 +35,7 @@ export default async function handler(req, res) {
         price_data: {
           currency: 'pln',
           product_data: {
-            name: `Rezerwacja u ${hostName} — ${plantName} (${days} ${days === 1 ? 'dzień' : 'dni'})`,
+            name: `Rezerwacja u ${hostName} — ${plantName}${qty > 1 ? ` ×${qty}` : ''} (${days} ${days === 1 ? 'dzień' : 'dni'})`,
           },
           unit_amount: amountInGrosze,
         },

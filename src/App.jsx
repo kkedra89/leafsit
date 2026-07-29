@@ -588,6 +588,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [renterPhone, setRenterPhone] = useState('');
+  const [quantity, setQuantity] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
@@ -614,9 +615,14 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
   }, [userId]);
 
   const selectedPlant = plants.find(p => p.id === selectedPlantId);
+  const maxQuantity = selectedPlant?.quantity || 1;
   const canSave = selectedPlantId && startDate && endDate;
   const estimatedDays = (startDate && endDate) ? daysBetween(startDate, endDate) : null;
-  const estimatedTotal = estimatedDays ? (estimatedDays * host.price) : null;
+  const estimatedTotal = estimatedDays ? (estimatedDays * host.price * quantity) : null;
+
+  useEffect(() => {
+    setQuantity(1);
+  }, [selectedPlantId]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -629,6 +635,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
       renter_phone: renterPhone || null,
       plant_id: selectedPlantId,
       plant_name: selectedPlant ? selectedPlant.name : '',
+      quantity: quantity,
       start_date: startDate,
       end_date: endDate,
       status: 'pending',
@@ -708,6 +715,23 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
               <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: selectedPlantId === p.id ? 700 : 500 }}>{p.name}</span>
             </div>
           ))}
+
+          {maxQuantity > 1 && (
+            <>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginTop: 16, marginBottom: 10 }}>Ile sztuk? (masz {maxQuantity})</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+                <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{
+                  width: 36, height: 36, borderRadius: 10, background: colors.clayLight, border: 'none',
+                  fontSize: 18, fontWeight: 700, color: colors.ink, cursor: 'pointer'
+                }}>−</button>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 16, fontWeight: 700, color: colors.ink, minWidth: 20, textAlign: 'center' }}>{quantity}</span>
+                <button onClick={() => setQuantity(q => Math.min(maxQuantity, q + 1))} style={{
+                  width: 36, height: 36, borderRadius: 10, background: colors.fern, border: 'none',
+                  fontSize: 18, fontWeight: 700, color: '#fff', cursor: 'pointer'
+                }}>+</button>
+              </div>
+            </>
+          )}
 
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginTop: 16, marginBottom: 10 }}>Na jakie daty?</div>
           <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
@@ -872,6 +896,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [quantity, setQuantity] = useState(1);
 
   const [showPremium, setShowPremium] = useState(false);
   const [premiumSunlight, setPremiumSunlight] = useState('Pełne słońce');
@@ -1010,6 +1035,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
         photo_url: photoDataUrl,
         sunlight: careGuide ? premiumSunlight : null,
         care_guide: careGuide,
+        quantity: quantity,
       }]);
     setSaving(false);
     if (error) {
@@ -1088,6 +1114,19 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
               <TextField value={plantName} onChange={e => setPlantName(e.target.value)} />
             </>
           )}
+
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 8 }}>Ile masz takich samych roślin?</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+            <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{
+              width: 36, height: 36, borderRadius: 10, background: colors.clayLight, border: 'none',
+              fontSize: 18, fontWeight: 700, color: colors.ink, cursor: 'pointer'
+            }}>−</button>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 16, fontWeight: 700, color: colors.ink, minWidth: 20, textAlign: 'center' }}>{quantity}</span>
+            <button onClick={() => setQuantity(q => Math.min(20, q + 1))} style={{
+              width: 36, height: 36, borderRadius: 10, background: colors.fern, border: 'none',
+              fontSize: 18, fontWeight: 700, color: '#fff', cursor: 'pointer'
+            }}>+</button>
+          </div>
 
           {!careGuide && !showPremium && (
             <button onClick={() => setShowPremium(true)} style={{
@@ -1842,13 +1881,13 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     if (newStatus === 'accepted' && b && myHost) {
       const { data: overlapping } = await supabase
         .from('bookings')
-        .select('id')
+        .select('id, quantity')
         .eq('host_id', myHost.id)
         .eq('status', 'accepted')
         .lte('start_date', b.end_date)
         .gte('end_date', b.start_date);
-      const currentCount = overlapping?.length || 0;
-      if (currentCount + 1 > myHost.plants_capacity) {
+      const currentCount = (overlapping || []).reduce((sum, o) => sum + (o.quantity || 1), 0);
+      if (currentCount + (b.quantity || 1) > myHost.plants_capacity) {
         alert(`Nie możesz zaakceptować tej prośby — w tym terminie masz już ${currentCount} zaakceptowanych roślin, a Twój limit to ${myHost.plants_capacity}.`);
         return;
       }
@@ -1991,6 +2030,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           endDate: booking.end_date,
           hostName: booking.hosts?.name,
           plantName: booking.plant_name,
+          quantity: booking.quantity,
           origin: window.location.origin,
         }),
       });
@@ -2228,7 +2268,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         const needsPayment = b.status === 'accepted' && b.payment_status !== 'paid';
         const hostReady = b.hosts?.stripe_account_id && b.hosts?.stripe_charges_enabled;
         const estDays = daysBetween(b.start_date, b.end_date);
-        const estTotal = b.amount_total ?? (estDays * (b.hosts?.price ?? 0));
+        const estTotal = b.amount_total ?? (estDays * (b.hosts?.price ?? 0) * (b.quantity || 1));
         return (
           <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
