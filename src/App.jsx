@@ -35,6 +35,12 @@ function daysBetween(startDate, endDate) {
   return Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
 }
 
+function isUpcoming(dateStr) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(dateStr) > today;
+}
+
 function displayNameOf(user) {
   return user?.user_metadata?.full_name || user?.email || '';
 }
@@ -2282,7 +2288,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
               </button>
             )}
 
-            {b.status === 'accepted' && (b.payment_status === 'paid' || b.payment_status === 'unpaid') && (
+            {b.status === 'accepted' && (b.payment_status === 'paid' || b.payment_status === 'unpaid') && isUpcoming(b.start_date) && (
               <button
                 onClick={() => {
                   const msg = b.payment_status === 'paid'
