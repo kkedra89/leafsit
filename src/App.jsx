@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard, Bell, Heart, Map as MapIcon, List } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard, Bell, Heart, Map as MapIcon, List, Send } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -630,7 +630,7 @@ function HomeScreen({ onSelectHost, userId }) {
   );
 }
 
-function HostDetailScreen({ host, onBack, onBook }) {
+function HostDetailScreen({ host, onBack, onBook, onMessage }) {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -713,10 +713,17 @@ function HostDetailScreen({ host, onBack, onBook }) {
           Dokładny adres i numer telefonu hosta zobaczysz dopiero po zaakceptowaniu Twojej rezerwacji — dla bezpieczeństwa obu stron.
         </div>
 
-        <button onClick={onBook} style={{
-          width: '100%', padding: 16, borderRadius: 16, background: colors.clay, color: '#fff',
-          border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer', marginBottom: 24
-        }}>Zarezerwuj termin</button>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
+          <button onClick={onMessage} style={{
+            padding: 16, borderRadius: 16, background: colors.clayLight, color: colors.ink,
+            border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+          }}><MessageCircle size={17} /></button>
+          <button onClick={onBook} style={{
+            flex: 1, padding: 16, borderRadius: 16, background: colors.clay, color: '#fff',
+            border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer'
+          }}>Zarezerwuj termin</button>
+        </div>
 
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Opinie</div>
 
@@ -1885,7 +1892,84 @@ function ContactBlock({ title, phone, address, extra }) {
   );
 }
 
-function HostDashboardScreen({ myHost, onBack }) {
+function ChatScreen({ conversationId, myUserId, otherName, onBack }) {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+      if (!cancelled) {
+        if (!error && data) setMessages(data);
+        setLoading(false);
+      }
+      const unread = (data || []).filter(m => !m.read && m.sender_id !== myUserId);
+      if (unread.length > 0) {
+        await supabase.from('messages').update({ read: true }).in('id', unread.map(m => m.id));
+      }
+    }
+    load();
+    const interval = setInterval(load, 4000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [conversationId, myUserId]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!text.trim()) return;
+    setSending(true);
+    const { error } = await supabase.from('messages').insert([{
+      conversation_id: conversationId,
+      sender_id: myUserId,
+      content: text.trim(),
+    }]);
+    if (!error) {
+      setText('');
+      const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+      if (data) setMessages(data);
+    }
+    setSending(false);
+  };
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 20, paddingBottom: 14, borderBottom: `1px solid ${colors.line}` }}>
+        <button onClick={onBack} style={{
+          width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+        }}><ArrowLeft size={18} color={colors.ink} /></button>
+        <h2 style={{ fontSize: 16, color: colors.ink, fontWeight: 600, margin: 0 }}>{otherName}</h2>
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+        {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>}
+        {!loading && messages.length === 0 && (
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', textAlign: 'center', marginTop: 30 }}>Napisz pierwszą wiadomość!</div>
+        )}
+        {messages.map(m => {
+          const mine = m.sender_id === myUserId;
+          return (
+            <div key={m.id} style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start', marginBottom: 10 }}>
+              <div style={{
+                maxWidth: '75%', padding: '10px 14px', borderRadius: 16,
+                background: mine ? colors.fern : colors.clayLight,
+                color: mine ? '#fff' : colors.ink,
+                fontFamily: 'Inter,
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -3023,6 +3107,27 @@ export default function App() {
   const [premiumReturn, setPremiumReturn] = useState(null);
   const [connectReturn, setConnectReturn] = useState(false);
   const [bookingPaymentReturn, setBookingPaymentReturn] = useState(null);
+  const [activeConversation, setActiveConversation] = useState(null);
+
+  const openConversationWithHost = async (host) => {
+    const { data: existing } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('host_id', host.id)
+      .eq('renter_user_id', session.user.id)
+      .maybeSingle();
+    let conversationId = existing?.id;
+    if (!conversationId) {
+      const { data: created, error } = await supabase
+        .from('conversations')
+        .insert([{ host_id: host.id, renter_user_id: session.user.id }])
+        .select()
+        .single();
+      if (error) return;
+      conversationId = created.id;
+    }
+    setActiveConversation({ id: conversationId, otherName: host.name });
+  };
 
   useEffect(() => {
     const pending = readPremiumReturnFromUrl();
@@ -3061,11 +3166,21 @@ export default function App() {
   };
 
   const renderTab = () => {
+    if (activeConversation) {
+      return (
+        <ChatScreen
+          conversationId={activeConversation.id}
+          myUserId={session.user.id}
+          otherName={activeConversation.otherName}
+          onBack={() => setActiveConversation(null)}
+        />
+      );
+    }
     const userName = displayNameOf(session.user) !== session.user.email ? displayNameOf(session.user) : null;
 
     if (tab === 'home') {
       if (view === 'detail') {
-        return <HostDetailScreen host={selectedHost} onBack={() => setView('list')} onBook={() => setView('booking')} />;
+        return <HostDetailScreen host={selectedHost} onBack={() => setView('list')} onBook={() => setView('booking')} onMessage={() => openConversationWithHost(selectedHost)} />;
       }
       if (view === 'booking') {
         return (
