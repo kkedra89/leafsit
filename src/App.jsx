@@ -319,6 +319,9 @@ function HomeScreen({ onSelectHost, userId }) {
   const [locStatus, setLocStatus] = useState('idle');
   const [activeFilter, setActiveFilter] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -400,6 +403,13 @@ function HomeScreen({ onSelectHost, userId }) {
     list = list.filter(h => favoriteIds.has(h.id));
   }
 
+  if (priceMin !== '') {
+    list = list.filter(h => h.price >= Number(priceMin));
+  }
+  if (priceMax !== '') {
+    list = list.filter(h => h.price <= Number(priceMax));
+  }
+
   if (activeFilter === 'top') {
     list = [...list].sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
   } else if (activeFilter === 'near' || myCoords) {
@@ -445,12 +455,30 @@ function HomeScreen({ onSelectHost, userId }) {
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, overflowX: 'auto' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 12, overflowX: 'auto' }}>
         <Pill tone="fern" active={activeFilter === 'near'} onClick={() => toggleFilter('near')}>W pobliżu</Pill>
         <Pill tone="gold" active={activeFilter === 'top'} onClick={() => toggleFilter('top')}>Najwyżej oceniani</Pill>
         <Pill tone="clay" active={activeFilter === 'available'} onClick={() => toggleFilter('available')}>Dostępni teraz</Pill>
         <Pill tone="gold" active={activeFilter === 'favorites'} onClick={() => toggleFilter('favorites')}>❤️ Ulubione</Pill>
+        <Pill tone="gray" active={showFilters || priceMin !== '' || priceMax !== ''} onClick={() => setShowFilters(s => !s)}>Cena</Pill>
       </div>
+
+      {showFilters && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, background: colors.card, border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: 12 }}>
+          <input type="number" placeholder="Cena od" value={priceMin} onChange={e => setPriceMin(e.target.value)} style={{
+            flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
+          }} />
+          <span style={{ color: '#A9A08B', fontFamily: 'Inter, sans-serif' }}>—</span>
+          <input type="number" placeholder="Cena do" value={priceMax} onChange={e => setPriceMax(e.target.value)} style={{
+            flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
+          }} />
+          {(priceMin !== '' || priceMax !== '') && (
+            <button onClick={() => { setPriceMin(''); setPriceMax(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+              <X size={16} color="#A9A08B" />
+            </button>
+          )}
+        </div>
+      )}
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>
         {loading ? 'Ładowanie...' : `${list.length} hostów${q ? ' pasujących do wyszukiwania' : ' w pobliżu'}`}
