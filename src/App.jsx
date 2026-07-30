@@ -93,8 +93,7 @@ function resizeImage(file, maxSize = 800) {
   });
 }
 
-// Central place for creating an in-app notification. Email sending will be
-// wired in here later (Etap C) without needing to change every call site.
+// Central place for creating an in-app notification, with optional email.
 async function createNotification(userId, type, title, body, bookingId = null, recipientEmail = null) {
   if (!userId) return;
   await supabase.from('notifications').insert([{
@@ -333,56 +332,11 @@ function HomeScreen({ onSelectHost, userId }) {
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [showDateFilter, setShowDateFilter] = useState(false);
-  const [viewMode, setViewMode] = useState('list');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
   const [filterQuantity, setFilterQuantity] = useState(1);
   const [bookedQuantities, setBookedQuantities] = useState({});
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadOverlapping() {
-      if (!filterStartDate || !filterEndDate) { setBookedQuantities({}); return; }
-      const { data, error } = await supabase
-        .from('bookings')
-        .select('host_id, quantity')
-        .eq('status', 'accepted')
-        .lte('start_date', filterEndDate)
-        .gte('end_date', filterStartDate);
-      if (cancelled || error || !data) return;
-      const map = {};
-      data.forEach(b => { map[b.host_id] = (map[b.host_id] || 0) + (b.quantity || 1); });
-      setBookedQuantities(map);
-    }
-    loadOverlapping();
-    return () => { cancelled = true; };
-  }, [filterStartDate, filterEndDate]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadFavorites() {
-      if (!userId) return;
-      const { data, error } = await supabase.from('favorites').select('host_id').eq('user_id', userId);
-      if (!cancelled && !error && data) setFavoriteIds(new Set(data.map(f => f.host_id)));
-    }
-    loadFavorites();
-    return () => { cancelled = true; };
-  }, [userId]);
-
-  const toggleFavorite = async (hostId, e) => {
-    e.stopPropagation();
-    const isFav = favoriteIds.has(hostId);
-    setFavoriteIds(prev => {
-      const next = new Set(prev);
-      if (isFav) next.delete(hostId); else next.add(hostId);
-      return next;
-    });
-    if (isFav) {
-      await supabase.from('favorites').delete().eq('user_id', userId).eq('host_id', hostId);
-    } else {
-      await supabase.from('favorites').insert([{ user_id: userId, host_id: hostId }]);
-    }
-  };
+  const [viewMode, setViewMode] = useState('list');
 
   useEffect(() => {
     let cancelled = false;
@@ -410,6 +364,51 @@ function HomeScreen({ onSelectHost, userId }) {
       { timeout: 8000 }
     );
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadFavorites() {
+      if (!userId) return;
+      const { data, error } = await supabase.from('favorites').select('host_id').eq('user_id', userId);
+      if (!cancelled && !error && data) setFavoriteIds(new Set(data.map(f => f.host_id)));
+    }
+    loadFavorites();
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadOverlapping() {
+      if (!filterStartDate || !filterEndDate) { setBookedQuantities({}); return; }
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('host_id, quantity')
+        .eq('status', 'accepted')
+        .lte('start_date', filterEndDate)
+        .gte('end_date', filterStartDate);
+      if (cancelled || error || !data) return;
+      const map = {};
+      data.forEach(b => { map[b.host_id] = (map[b.host_id] || 0) + (b.quantity || 1); });
+      setBookedQuantities(map);
+    }
+    loadOverlapping();
+    return () => { cancelled = true; };
+  }, [filterStartDate, filterEndDate]);
+
+  const toggleFavorite = async (hostId, e) => {
+    e.stopPropagation();
+    const isFav = favoriteIds.has(hostId);
+    setFavoriteIds(prev => {
+      const next = new Set(prev);
+      if (isFav) next.delete(hostId); else next.add(hostId);
+      return next;
+    });
+    if (isFav) {
+      await supabase.from('favorites').delete().eq('user_id', userId).eq('host_id', hostId);
+    } else {
+      await supabase.from('favorites').insert([{ user_id: userId, host_id: hostId }]);
+    }
+  };
 
   const toggleFilter = (name) => {
     if (name === 'near' && !myCoords) return;
@@ -506,8 +505,25 @@ function HomeScreen({ onSelectHost, userId }) {
         </Pill>
       </div>
 
-      {showDateFilter && (
+      {showFilters && (
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, background: colors.card, border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: 12 }}>
+          <input type="number" placeholder="Cena od" value={priceMin} onChange={e => setPriceMin(e.target.value)} style={{
+            flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
+          }} />
+          <span style={{ color: '#A9A08B', fontFamily: 'Inter, sans-serif' }}>—</span>
+          <input type="number" placeholder="Cena do" value={priceMax} onChange={e => setPriceMax(e.target.value)} style={{
+            flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
+          }} />
+          {(priceMin !== '' || priceMax !== '') && (
+            <button onClick={() => { setPriceMin(''); setPriceMax(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+              <X size={16} color="#A9A08B" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {showDateFilter && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8, background: colors.card, border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: 12 }}>
           <input type="date" value={filterStartDate} onChange={e => setFilterStartDate(e.target.value)} style={{
             flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink, boxSizing: 'border-box'
           }} />
@@ -523,7 +539,7 @@ function HomeScreen({ onSelectHost, userId }) {
         </div>
       )}
       {showDateFilter && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: -12, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
           <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>Ile roślin?</span>
           <button onClick={() => setFilterQuantity(q => Math.max(1, q - 1))} style={{
             width: 28, height: 28, borderRadius: 8, background: colors.clayLight, border: 'none', fontSize: 15, fontWeight: 700, color: colors.ink, cursor: 'pointer'
@@ -532,23 +548,6 @@ function HomeScreen({ onSelectHost, userId }) {
           <button onClick={() => setFilterQuantity(q => Math.min(20, q + 1))} style={{
             width: 28, height: 28, borderRadius: 8, background: colors.fern, border: 'none', fontSize: 15, fontWeight: 700, color: '#fff', cursor: 'pointer'
           }}>+</button>
-        </div>
-      )}
-
-      {showFilters && (
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, background: colors.card, border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: 12 }}>
-          <input type="number" placeholder="Cena od" value={priceMin} onChange={e => setPriceMin(e.target.value)} style={{
-            flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
-          }} />
-          <span style={{ color: '#A9A08B', fontFamily: 'Inter, sans-serif' }}>—</span>
-          <input type="number" placeholder="Cena do" value={priceMax} onChange={e => setPriceMax(e.target.value)} style={{
-            flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
-          }} />
-          {(priceMin !== '' || priceMax !== '') && (
-            <button onClick={() => { setPriceMin(''); setPriceMax(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
-              <X size={16} color="#A9A08B" />
-            </button>
-          )}
         </div>
       )}
 
@@ -888,7 +887,9 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
               <div style={{ width: 32, height: 32, borderRadius: 8, background: colors.clayLight, overflow: 'hidden', flexShrink: 0 }}>
                 {p.photo_url && <img src={p.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               </div>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: selectedPlantId === p.id ? 700 : 500 }}>{p.name}</span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: selectedPlantId === p.id ? 700 : 500 }}>
+                {p.name}{p.quantity > 1 ? ` (masz ${p.quantity})` : ''}
+              </span>
             </div>
           ))}
 
@@ -968,6 +969,7 @@ function ReviewForm({ booking, userId, userName, onCancel, onSaved }) {
       booking_id: booking.id,
       renter_user_id: userId,
       renter_name: userName || null,
+      reviewer_role: 'renter',
       rating,
       comment,
     }]);
@@ -1969,7 +1971,40 @@ function ChatScreen({ conversationId, myUserId, otherName, onBack }) {
                 maxWidth: '75%', padding: '10px 14px', borderRadius: 16,
                 background: mine ? colors.fern : colors.clayLight,
                 color: mine ? '#fff' : colors.ink,
-                fontFamily: 'Inter,
+                fontFamily: 'Inter, sans-serif', fontSize: 13.5, lineHeight: 1.4
+              }}>
+                {m.content}
+              </div>
+            </div>
+          );
+        })}
+        <div ref={scrollRef} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, padding: 16, borderTop: `1px solid ${colors.line}` }}>
+        <input
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
+          placeholder="Napisz wiadomość..."
+          style={{
+            flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: '10px 14px',
+            fontFamily: 'Inter, sans-serif', fontSize: 13.5, color: colors.ink, boxSizing: 'border-box'
+          }}
+        />
+        <button onClick={handleSend} disabled={sending || !text.trim()} style={{
+          width: 44, height: 44, borderRadius: 14, background: colors.clay, border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
+          opacity: (sending || !text.trim()) ? 0.6 : 1
+        }}>
+          <Send size={18} color="#fff" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HostDashboardScreen({ myHost, onBack }) {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -2057,6 +2092,7 @@ function ChatScreen({ conversationId, myUserId, otherName, onBack }) {
     </div>
   );
 }
+
 function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectReturn, onConnectReturnHandled, bookingPaymentReturn, onBookingPaymentReturnHandled }) {
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -2080,63 +2116,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const [reviewingAsHostBooking, setReviewingAsHostBooking] = useState(null);
   const [receivedReviews, setReceivedReviews] = useState({});
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadReceivedReviews() {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('booking_id, rating, comment')
-        .eq('renter_user_id', user.id)
-        .eq('reviewer_role', 'host');
-      if (!cancelled && !error && data) {
-        const map = {};
-        data.forEach(r => { map[r.booking_id] = r; });
-        setReceivedReviews(map);
-      }
-    }
-    loadReceivedReviews();
-    return () => { cancelled = true; };
-  }, [user.id, reviewsRefresh]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadHostReviews() {
-      if (!myHost) return;
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('booking_id')
-        .eq('host_id', myHost.id)
-        .eq('reviewer_role', 'host');
-      if (!cancelled && !error && data) {
-        setHostReviewedBookingIds(new Set(data.map(r => r.booking_id)));
-      }
-    }
-    loadHostReviews();
-    return () => { cancelled = true; };
-  }, [myHost, reviewsRefresh]);
-
   const [expandedPlantId, setExpandedPlantId] = useState(null);
   const [deletingPlantId, setDeletingPlantId] = useState(null);
   const [plantHistory, setPlantHistory] = useState({});
   const [loadingPlantHistory, setLoadingPlantHistory] = useState(null);
-
-  const togglePlantExpand = async (plantId) => {
-    if (expandedPlantId === plantId) {
-      setExpandedPlantId(null);
-      return;
-    }
-    setExpandedPlantId(plantId);
-    if (!plantHistory[plantId]) {
-      setLoadingPlantHistory(plantId);
-      const { data } = await supabase
-        .from('bookings')
-        .select('id, start_date, end_date, status, payment_status, quantity, hosts(name, location)')
-        .eq('plant_id', plantId)
-        .order('start_date', { ascending: false });
-      setPlantHistory(prev => ({ ...prev, [plantId]: data || [] }));
-      setLoadingPlantHistory(null);
-    }
-  };
 
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(displayNameOf(user));
@@ -2175,12 +2158,31 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
   const [payingBookingId, setPayingBookingId] = useState(null);
   const [verifyingBookingPayment, setVerifyingBookingPayment] = useState(false);
+  const [cancellingBookingId, setCancellingBookingId] = useState(null);
 
   const [notifications, setNotifications] = useState([]);
   const [notifLoading, setNotifLoading] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifRefresh, setNotifRefresh] = useState(0);
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const togglePlantExpand = async (plantId) => {
+    if (expandedPlantId === plantId) {
+      setExpandedPlantId(null);
+      return;
+    }
+    setExpandedPlantId(plantId);
+    if (!plantHistory[plantId]) {
+      setLoadingPlantHistory(plantId);
+      const { data } = await supabase
+        .from('bookings')
+        .select('id, start_date, end_date, status, payment_status, quantity, hosts(name, location)')
+        .eq('plant_id', plantId)
+        .order('start_date', { ascending: false });
+      setPlantHistory(prev => ({ ...prev, [plantId]: data || [] }));
+      setLoadingPlantHistory(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -2296,6 +2298,41 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   }, [user.id, reviewsRefresh]);
 
   useEffect(() => {
+    let cancelled = false;
+    async function loadHostReviews() {
+      if (!myHost) return;
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('booking_id')
+        .eq('host_id', myHost.id)
+        .eq('reviewer_role', 'host');
+      if (!cancelled && !error && data) {
+        setHostReviewedBookingIds(new Set(data.map(r => r.booking_id)));
+      }
+    }
+    loadHostReviews();
+    return () => { cancelled = true; };
+  }, [myHost, reviewsRefresh]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadReceivedReviews() {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('booking_id, rating, comment')
+        .eq('renter_user_id', user.id)
+        .eq('reviewer_role', 'host');
+      if (!cancelled && !error && data) {
+        const map = {};
+        data.forEach(r => { map[r.booking_id] = r; });
+        setReceivedReviews(map);
+      }
+    }
+    loadReceivedReviews();
+    return () => { cancelled = true; };
+  }, [user.id, reviewsRefresh]);
+
+  useEffect(() => {
     if (!connectReturn || hostLoading) return;
     if (!myHost || !myHost.stripe_account_id) { onConnectReturnHandled(); return; }
     (async () => {
@@ -2380,21 +2417,20 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
     await supabase.from('bookings').update({ status: newStatus }).eq('id', bookingId);
     if (b) {
+      const qtyLabel = b.quantity > 1 ? ` (×${b.quantity} szt.)` : '';
       await createNotification(
         b.renter_user_id,
         newStatus === 'accepted' ? 'booking_accepted' : 'booking_rejected',
         newStatus === 'accepted' ? 'Rezerwacja zaakceptowana!' : 'Rezerwacja odrzucona',
         newStatus === 'accepted'
-          ? `Twoja prośba dla "${b.plant_name}" została zaakceptowana — możesz teraz opłacić rezerwację w Profilu.`
-          : `Twoja prośba dla "${b.plant_name}" została odrzucona przez hosta.`,
+          ? `Twoja prośba dla "${b.plant_name}"${qtyLabel} została zaakceptowana — możesz teraz opłacić rezerwację w Profilu.`
+          : `Twoja prośba dla "${b.plant_name}"${qtyLabel} została odrzucona przez hosta.`,
         bookingId,
         b.renter_email || null
       );
     }
     setBookingsRefresh(k => k + 1);
   };
-
-  const [cancellingBookingId, setCancellingBookingId] = useState(null);
 
   const cancelMyBooking = async (bookingId) => {
     const b = myBookings.find(x => x.id === bookingId);
@@ -2740,7 +2776,9 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           </div>
           {acceptedIncoming.map(b => (
             <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>{b.plant_name}</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>
+                {b.plant_name}{b.quantity > 1 ? ` × ${b.quantity}` : ''}
+              </div>
               <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
               {b.payment_status === 'paid' ? (
                 <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -2787,7 +2825,9 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
               <div>
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink }}>{b.plant_name}</div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink }}>
+                  {b.plant_name}{b.quantity > 1 ? ` × ${b.quantity}` : ''}
+                </div>
                 <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>u {b.hosts?.name} · {b.hosts?.location}</div>
               </div>
               <Pill tone={si.tone}>{si.label}</Pill>
@@ -2801,6 +2841,22 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             {b.payment_status === 'paid' && (
               <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <CheckCircle size={13} /> Zapłacono {b.amount_total} zł
+              </div>
+            )}
+
+            {receivedReviews[b.id] && (
+              <div style={{ marginTop: 10, background: '#FFF8EC', borderRadius: 10, padding: 10 }}>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, fontWeight: 700, color: colors.gold, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4 }}>
+                  Opinia hosta o Tobie
+                </div>
+                <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
+                  {[1,2,3,4,5].map(n => (
+                    <Star key={n} size={12} fill={n <= receivedReviews[b.id].rating ? colors.gold : 'none'} color={colors.gold} />
+                  ))}
+                </div>
+                {receivedReviews[b.id].comment && (
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#5A5445', fontStyle: 'italic' }}>{receivedReviews[b.id].comment}</div>
+                )}
               </div>
             )}
 
@@ -2873,21 +2929,6 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             {b.status === 'accepted' && alreadyReviewed && (
               <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <Check size={13} /> Opinia wystawiona
-              </div>
-            )}
-            {receivedReviews[b.id] && (
-              <div style={{ marginTop: 10, background: '#FFF8EC', borderRadius: 10, padding: 10 }}>
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, fontWeight: 700, color: colors.gold, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4 }}>
-                  Opinia hosta o Tobie
-                </div>
-                <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
-                  {[1,2,3,4,5].map(n => (
-                    <Star key={n} size={12} fill={n <= receivedReviews[b.id].rating ? colors.gold : 'none'} color={colors.gold} />
-                  ))}
-                </div>
-                {receivedReviews[b.id].comment && (
-                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#5A5445', fontStyle: 'italic' }}>{receivedReviews[b.id].comment}</div>
-                )}
               </div>
             )}
           </div>
