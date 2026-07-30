@@ -322,6 +322,29 @@ function HomeScreen({ onSelectHost, userId }) {
   const [showFilters, setShowFilters] = useState(false);
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+  const [bookedQuantities, setBookedQuantities] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadOverlapping() {
+      if (!filterStartDate || !filterEndDate) { setBookedQuantities({}); return; }
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('host_id, quantity')
+        .eq('status', 'accepted')
+        .lte('start_date', filterEndDate)
+        .gte('end_date', filterStartDate);
+      if (cancelled || error || !data) return;
+      const map = {};
+      data.forEach(b => { map[b.host_id] = (map[b.host_id] || 0) + (b.quantity || 1); });
+      setBookedQuantities(map);
+    }
+    loadOverlapping();
+    return () => { cancelled = true; };
+  }, [filterStartDate, filterEndDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -410,6 +433,10 @@ function HomeScreen({ onSelectHost, userId }) {
     list = list.filter(h => h.price <= Number(priceMax));
   }
 
+  if (filterStartDate && filterEndDate) {
+    list = list.filter(h => (bookedQuantities[h.id] || 0) < (h.plants_capacity || 0));
+  }
+
   if (activeFilter === 'top') {
     list = [...list].sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
   } else if (activeFilter === 'near' || myCoords) {
@@ -461,7 +488,25 @@ function HomeScreen({ onSelectHost, userId }) {
         <Pill tone="clay" active={activeFilter === 'available'} onClick={() => toggleFilter('available')}>Dostępni teraz</Pill>
         <Pill tone="gold" active={activeFilter === 'favorites'} onClick={() => toggleFilter('favorites')}>❤️ Ulubione</Pill>
         <Pill tone="gray" active={showFilters || priceMin !== '' || priceMax !== ''} onClick={() => setShowFilters(s => !s)}>Cena</Pill>
+        <Pill tone="gray" active={showDateFilter || (filterStartDate && filterEndDate)} onClick={() => setShowDateFilter(s => !s)}>Terminy</Pill>
       </div>
+
+      {showDateFilter && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, background: colors.card, border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: 12 }}>
+          <input type="date" value={filterStartDate} onChange={e => setFilterStartDate(e.target.value)} style={{
+            flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink, boxSizing: 'border-box'
+          }} />
+          <span style={{ color: '#A9A08B', fontFamily: 'Inter, sans-serif' }}>—</span>
+          <input type="date" value={filterEndDate} onChange={e => setFilterEndDate(e.target.value)} style={{
+            flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink, boxSizing: 'border-box'
+          }} />
+          {(filterStartDate || filterEndDate) && (
+            <button onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+              <X size={16} color="#A9A08B" />
+            </button>
+          )}
+        </div>
+      )}
 
       {showFilters && (
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, background: colors.card, border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: 12 }}>
