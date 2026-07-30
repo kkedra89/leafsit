@@ -476,6 +476,7 @@ function HostDetailScreen({ host, onBack, onBook }) {
         .from('reviews')
         .select('*')
         .eq('host_id', host.id)
+        .eq('reviewer_role', 'renter')
         .order('created_at', { ascending: false });
       if (!cancelled) {
         if (!error && data) setReviews(data);
@@ -1737,6 +1738,25 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const [reviewsRefresh, setReviewsRefresh] = useState(0);
   const [hostReviewedBookingIds, setHostReviewedBookingIds] = useState(new Set());
   const [reviewingAsHostBooking, setReviewingAsHostBooking] = useState(null);
+  const [receivedReviews, setReceivedReviews] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadReceivedReviews() {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('booking_id, rating, comment')
+        .eq('renter_user_id', user.id)
+        .eq('reviewer_role', 'host');
+      if (!cancelled && !error && data) {
+        const map = {};
+        data.forEach(r => { map[r.booking_id] = r; });
+        setReceivedReviews(map);
+      }
+    }
+    loadReceivedReviews();
+    return () => { cancelled = true; };
+  }, [user.id, reviewsRefresh]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2508,6 +2528,21 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             {b.status === 'accepted' && alreadyReviewed && (
               <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <Check size={13} /> Opinia wystawiona
+              </div>
+            )}
+            {receivedReviews[b.id] && (
+              <div style={{ marginTop: 10, background: '#FFF8EC', borderRadius: 10, padding: 10 }}>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, fontWeight: 700, color: colors.gold, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4 }}>
+                  Opinia hosta o Tobie
+                </div>
+                <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
+                  {[1,2,3,4,5].map(n => (
+                    <Star key={n} size={12} fill={n <= receivedReviews[b.id].rating ? colors.gold : 'none'} color={colors.gold} />
+                  ))}
+                </div>
+                {receivedReviews[b.id].comment && (
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#5A5445', fontStyle: 'italic' }}>{receivedReviews[b.id].comment}</div>
+                )}
               </div>
             )}
           </div>
