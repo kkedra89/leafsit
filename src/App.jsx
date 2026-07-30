@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard, Bell } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard, Bell, Heart } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const colors = {
@@ -311,13 +311,40 @@ function AuthScreen() {
   );
 }
 
-function HomeScreen({ onSelectHost }) {
+function HomeScreen({ onSelectHost, userId }) {
   const [hosts, setHosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [myCoords, setMyCoords] = useState(null);
   const [locStatus, setLocStatus] = useState('idle');
   const [activeFilter, setActiveFilter] = useState(null);
+  const [favoriteIds, setFavoriteIds] = useState(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadFavorites() {
+      if (!userId) return;
+      const { data, error } = await supabase.from('favorites').select('host_id').eq('user_id', userId);
+      if (!cancelled && !error && data) setFavoriteIds(new Set(data.map(f => f.host_id)));
+    }
+    loadFavorites();
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  const toggleFavorite = async (hostId, e) => {
+    e.stopPropagation();
+    const isFav = favoriteIds.has(hostId);
+    setFavoriteIds(prev => {
+      const next = new Set(prev);
+      if (isFav) next.delete(hostId); else next.add(hostId);
+      return next;
+    });
+    if (isFav) {
+      await supabase.from('favorites').delete().eq('user_id', userId).eq('host_id', hostId);
+    } else {
+      await supabase.from('favorites').insert([{ user_id: userId, host_id: hostId }]);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -369,6 +396,10 @@ function HomeScreen({ onSelectHost }) {
     list = list.filter(h => (h.plants_capacity ?? 0) > 0);
   }
 
+  if (activeFilter === 'favorites') {
+    list = list.filter(h => favoriteIds.has(h.id));
+  }
+
   if (activeFilter === 'top') {
     list = [...list].sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
   } else if (activeFilter === 'near' || myCoords) {
@@ -418,6 +449,7 @@ function HomeScreen({ onSelectHost }) {
         <Pill tone="fern" active={activeFilter === 'near'} onClick={() => toggleFilter('near')}>W pobliżu</Pill>
         <Pill tone="gold" active={activeFilter === 'top'} onClick={() => toggleFilter('top')}>Najwyżej oceniani</Pill>
         <Pill tone="clay" active={activeFilter === 'available'} onClick={() => toggleFilter('available')}>Dostępni teraz</Pill>
+        <Pill tone="gold" active={activeFilter === 'favorites'} onClick={() => toggleFilter('favorites')}>❤️ Ulubione</Pill>
       </div>
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>
@@ -439,7 +471,16 @@ function HomeScreen({ onSelectHost }) {
             border: `1px solid ${colors.line}`, cursor: 'pointer'
           }}>
             <div style={{ display: 'flex', gap: 12 }}>
-              <Avatar photoUrl={h.photo_url} name={h.name} size={56} radius={14} />
+              <div style={{ position: 'relative' }}>
+                <Avatar photoUrl={h.photo_url} name={h.name} size={56} radius={14} />
+                <button onClick={(e) => toggleFavorite(h.id, e)} style={{
+                  position: 'absolute', top: -6, left: -6, width: 22, height: 22, borderRadius: 11,
+                  background: colors.card, border: `1px solid ${colors.line}`, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
+                }}>
+                  <Heart size={11} fill={favoriteIds.has(h.id) ? colors.clay : 'none'} color={colors.clay} />
+                </button>
+              </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontWeight: 600, color: colors.ink, fontSize: 16 }}>{h.name}</span>
@@ -2811,7 +2852,7 @@ export default function App() {
           />
         );
       }
-      return <HomeScreen onSelectHost={(h) => { setSelectedHost(h); setView('detail'); }} />;
+      return <HomeScreen onSelectHost={(h) => { setSelectedHost(h); setView('detail'); }} userId={session.user.id} />;
     }
     if (tab === 'add') {
       return (
