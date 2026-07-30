@@ -1845,6 +1845,94 @@ function ContactBlock({ title, phone, address, extra }) {
   );
 }
 
+function HostDashboardScreen({ myHost, onBack }) {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('host_id', myHost.id)
+        .order('start_date', { ascending: false });
+      if (!cancelled) {
+        if (!error && data) setBookings(data);
+        setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [myHost.id]);
+
+  const paidBookings = bookings.filter(b => b.payment_status === 'paid');
+  const totalEarned = paidBookings.reduce((sum, b) => sum + (b.amount_total || 0) * 0.9, 0);
+  const completedCount = paidBookings.length;
+  const pendingCount = bookings.filter(b => b.status === 'pending').length;
+
+  return (
+    <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <button onClick={onBack} style={{
+          width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+        }}><ArrowLeft size={18} color={colors.ink} /></button>
+        <h2 style={{ fontSize: 20, color: colors.ink, fontWeight: 600, margin: 0 }}>Panel hosta</h2>
+      </div>
+
+      <div style={{ background: colors.fern, borderRadius: 16, padding: 16, marginBottom: 12 }}>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.4 }}>Łącznie zarobione</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 26, fontWeight: 700, color: '#fff', marginTop: 4 }}>{Math.round(totalEarned * 100) / 100} zł</div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
+        <div style={{ flex: 1, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, textAlign: 'center' }}>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 20, fontWeight: 700, color: colors.ink }}>{completedCount}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Zrealizowane</div>
+        </div>
+        <div style={{ flex: 1, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, textAlign: 'center' }}>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 20, fontWeight: 700, color: colors.ink }}>{pendingCount}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Oczekujące</div>
+        </div>
+        <div style={{ flex: 1, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, textAlign: 'center' }}>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 20, fontWeight: 700, color: colors.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+            <Star size={14} fill={colors.gold} color={colors.gold} /> {myHost.rating ?? '—'}
+          </div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Ocena</div>
+        </div>
+      </div>
+
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Historia rezerwacji</div>
+
+      {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>}
+      {!loading && bookings.length === 0 && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Brak historii rezerwacji.</div>}
+      {!loading && bookings.map(b => {
+        const si = statusInfo(b.status);
+        return (
+          <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+              <div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink }}>
+                  {b.plant_name}{b.quantity > 1 ? ` × ${b.quantity}` : ''}
+                </div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.renter_name || b.renter_email}</div>
+              </div>
+              <Pill tone={si.tone}>{si.label}</Pill>
+            </div>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
+            {b.payment_status === 'paid' && (
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, fontWeight: 700, marginTop: 4 }}>
+                +{Math.round(b.amount_total * 0.9 * 100) / 100} zł
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectReturn, onConnectReturnHandled, bookingPaymentReturn, onBookingPaymentReturnHandled }) {
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1852,6 +1940,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const [hostLoading, setHostLoading] = useState(true);
   const [showHostForm, setShowHostForm] = useState(false);
   const [editingHost, setEditingHost] = useState(false);
+  const [showHostDashboard, setShowHostDashboard] = useState(false);
   const [hostRefresh, setHostRefresh] = useState(0);
 
   const [myBookings, setMyBookings] = useState([]);
@@ -2317,6 +2406,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     }
   };
 
+  if (showHostDashboard) {
+    return <HostDashboardScreen myHost={myHost} onBack={() => setShowHostDashboard(false)} />;
+  }
+
   if (showHostForm || editingHost) {
     return (
       <BecomeHostForm
@@ -2765,12 +2858,20 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           {myHost ? 'Twój profil hosta' : 'Chcesz zostać hostem?'}
         </span>
         {myHost && (
-          <button onClick={() => setEditingHost(true)} style={{
-            background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: 0
-          }}>
-            <Pencil size={11} color="#A9A08B" />
-            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Edytuj</span>
-          </button>
+          <div style={{ display: 'flex', gap: 14 }}>
+            <button onClick={() => setShowHostDashboard(true)} style={{
+              background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: 0
+            }}>
+              <DollarSign size={11} color={colors.fern} />
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.fern, fontWeight: 700 }}>Panel hosta</span>
+            </button>
+            <button onClick={() => setEditingHost(true)} style={{
+              background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: 0
+            }}>
+              <Pencil size={11} color="#A9A08B" />
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Edytuj</span>
+            </button>
+          </div>
         )}
       </div>
 
