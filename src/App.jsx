@@ -325,6 +325,7 @@ function HomeScreen({ onSelectHost, userId }) {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
+  const [filterQuantity, setFilterQuantity] = useState(1);
   const [bookedQuantities, setBookedQuantities] = useState({});
 
   useEffect(() => {
@@ -434,7 +435,7 @@ function HomeScreen({ onSelectHost, userId }) {
   }
 
   if (filterStartDate && filterEndDate) {
-    list = list.filter(h => (bookedQuantities[h.id] || 0) < (h.plants_capacity || 0));
+    list = list.filter(h => ((h.plants_capacity || 0) - (bookedQuantities[h.id] || 0)) >= filterQuantity);
   }
 
   if (activeFilter === 'top') {
@@ -501,10 +502,22 @@ function HomeScreen({ onSelectHost, userId }) {
             flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink, boxSizing: 'border-box'
           }} />
           {(filterStartDate || filterEndDate) && (
-            <button onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+            <button onClick={() => { setFilterStartDate(''); setFilterEndDate(''); setFilterQuantity(1); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
               <X size={16} color="#A9A08B" />
             </button>
           )}
+        </div>
+      )}
+      {showDateFilter && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: -12, marginBottom: 20 }}>
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>Ile roślin?</span>
+          <button onClick={() => setFilterQuantity(q => Math.max(1, q - 1))} style={{
+            width: 28, height: 28, borderRadius: 8, background: colors.clayLight, border: 'none', fontSize: 15, fontWeight: 700, color: colors.ink, cursor: 'pointer'
+          }}>−</button>
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, minWidth: 16, textAlign: 'center' }}>{filterQuantity}</span>
+          <button onClick={() => setFilterQuantity(q => Math.min(20, q + 1))} style={{
+            width: 28, height: 28, borderRadius: 8, background: colors.fern, border: 'none', fontSize: 15, fontWeight: 700, color: '#fff', cursor: 'pointer'
+          }}>+</button>
         </div>
       )}
 
