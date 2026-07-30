@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard, Bell, Heart } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard, Bell, Heart, Map as MapIcon, List } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+const hostMapIcon = L.divIcon({
+  className: '',
+  html: `<div style="width:30px;height:30px;border-radius:50%;background:#3A5A40;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>`,
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+});
 
 const colors = {
   bg: '#F7F4EC',
@@ -323,6 +333,7 @@ function HomeScreen({ onSelectHost, userId }) {
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [showDateFilter, setShowDateFilter] = useState(false);
+  const [viewMode, setViewMode] = useState('list');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
   const [filterQuantity, setFilterQuantity] = useState(1);
@@ -490,6 +501,9 @@ function HomeScreen({ onSelectHost, userId }) {
         <Pill tone="gold" active={activeFilter === 'favorites'} onClick={() => toggleFilter('favorites')}>❤️ Ulubione</Pill>
         <Pill tone="gray" active={showFilters || priceMin !== '' || priceMax !== ''} onClick={() => setShowFilters(s => !s)}>Cena</Pill>
         <Pill tone="gray" active={showDateFilter || (filterStartDate && filterEndDate)} onClick={() => setShowDateFilter(s => !s)}>Terminy</Pill>
+        <Pill tone="fern" active={viewMode === 'map'} onClick={() => setViewMode(v => v === 'map' ? 'list' : 'map')}>
+          {viewMode === 'map' ? <List size={12} /> : <MapIcon size={12} />} {viewMode === 'map' ? 'Lista' : 'Mapa'}
+        </Pill>
       </div>
 
       {showDateFilter && (
@@ -548,7 +562,33 @@ function HomeScreen({ onSelectHost, userId }) {
         </div>
       )}
 
-      {list.map((h) => {
+      {viewMode === 'map' && (
+        <div style={{ height: 400, borderRadius: 18, overflow: 'hidden', marginBottom: 20, border: `1px solid ${colors.line}` }}>
+          <MapContainer
+            center={myCoords ? [myCoords.lat, myCoords.lon] : [52.208, 21.038]}
+            zoom={12}
+            style={{ height: '100%', width: '100%' }}
+          >
+            <TileLayer
+              attribution='&copy; OpenStreetMap'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {list.filter(h => h.latitude != null && h.longitude != null).map(h => (
+              <Marker key={h.id} position={[h.latitude, h.longitude]} icon={hostMapIcon}>
+                <Popup>
+                  <div onClick={() => onSelectHost(h)} style={{ cursor: 'pointer', fontFamily: 'sans-serif' }}>
+                    <b>{h.name}</b><br />
+                    {h.price} zł/roślinę/dzień<br />
+                    <span style={{ color: '#3A5A40', textDecoration: 'underline' }}>Zobacz profil</span>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        </div>
+      )}
+
+      {viewMode === 'list' && list.map((h) => {
         const si = sunlightInfo(h.sunlight);
         const SIcon = si.Icon;
         return (
