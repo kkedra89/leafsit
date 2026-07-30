@@ -1945,7 +1945,8 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       const { data, error } = await supabase
         .from('reviews')
         .select('booking_id')
-        .eq('renter_user_id', user.id);
+        .eq('renter_user_id', user.id)
+        .eq('reviewer_role', 'renter');
       if (!cancelled && !error && data) {
         setReviewedBookingIds(new Set(data.map(r => r.booking_id)));
       }
