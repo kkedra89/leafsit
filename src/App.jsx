@@ -865,6 +865,90 @@ function ReviewForm({ booking, userId, userName, onCancel, onSaved }) {
   );
 }
 
+function HostReviewForm({ booking, hostName, onCancel, onSaved }) {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    const { error } = await supabase.from('reviews').insert([{
+      host_id: booking.host_id,
+      booking_id: booking.id,
+      renter_user_id: booking.renter_user_id,
+      renter_name: booking.renter_name || null,
+      reviewer_role: 'host',
+      rating,
+      comment,
+    }]);
+    if (error) {
+      setSaving(false);
+      setError('Nie udało się zapisać opinii: ' + error.message);
+      return;
+    }
+    await createNotification(
+      booking.renter_user_id,
+      'new_review',
+      'Otrzymałeś opinię',
+      `${hostName || 'Host'} wystawił(a) Ci ocenę ${rating}/5 za rezerwację "${booking.plant_name}"`,
+      booking.id,
+      booking.renter_email || null
+    );
+    setSaving(false);
+    onSaved();
+  };
+
+  return (
+    <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <button onClick={onCancel} style={{
+          width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+        }}><ArrowLeft size={18} color={colors.ink} /></button>
+        <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>Oceń wynajmującego</h2>
+      </div>
+
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7261', marginBottom: 20 }}>
+        {booking.renter_name || booking.renter_email} — roślina: {booking.plant_name}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
+        {[1, 2, 3, 4, 5].map(n => (
+          <button key={n} onClick={() => setRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+            <Star size={32} fill={n <= rating ? colors.gold : 'none'} color={colors.gold} />
+          </button>
+        ))}
+      </div>
+
+      <textarea
+        placeholder="Jak przebiegła współpraca? (opcjonalnie)"
+        value={comment}
+        onChange={e => setComment(e.target.value)}
+        rows={4}
+        style={{
+          width: '100%', border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: 14,
+          fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, marginBottom: 16,
+          resize: 'none', boxSizing: 'border-box'
+        }}
+      />
+
+      {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
+
+      <button onClick={handleSave} disabled={saving} style={{
+        width: '100%', padding: 16, borderRadius: 16, background: colors.fern, color: '#fff',
+        border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15,
+        cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+      }}>
+        {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
+        {saving ? 'Zapisywanie...' : 'Wyślij opinię'}
+      </button>
+    </div>
+  );
+}
+
 function CareGuide({ text }) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   return (
@@ -1651,6 +1735,25 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const [reviewedBookingIds, setReviewedBookingIds] = useState(new Set());
   const [reviewingBooking, setReviewingBooking] = useState(null);
   const [reviewsRefresh, setReviewsRefresh] = useState(0);
+  const [hostReviewedBookingIds, setHostReviewedBookingIds] = useState(new Set());
+  const [reviewingAsHostBooking, setReviewingAsHostBooking] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadHostReviews() {
+      if (!myHost) return;
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('booking_id')
+        .eq('host_id', myHost.id)
+        .eq('reviewer_role', 'host');
+      if (!cancelled && !error && data) {
+        setHostReviewedBookingIds(new Set(data.map(r => r.booking_id)));
+      }
+    }
+    loadHostReviews();
+    return () => { cancelled = true; };
+  }, [myHost, reviewsRefresh]);
 
   const [expandedPlantId, setExpandedPlantId] = useState(null);
   const [deletingPlantId, setDeletingPlantId] = useState(null);
@@ -2090,6 +2193,17 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     );
   }
 
+  if (reviewingAsHostBooking) {
+    return (
+      <HostReviewForm
+        booking={reviewingAsHostBooking}
+        hostName={myHost?.name}
+        onCancel={() => setReviewingAsHostBooking(null)}
+        onSaved={() => { setReviewingAsHostBooking(null); setReviewsRefresh(k => k + 1); }}
+      />
+    );
+  }
+
   const pendingIncoming = incoming.filter(b => b.status === 'pending');
   const acceptedIncoming = incoming.filter(b => b.status === 'accepted');
 
@@ -2273,6 +2387,18 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
                 </div>
               )}
               <ContactBlock title="Kontakt do właściciela rośliny" phone={b.renter_phone} extra={`${b.renter_name || 'Bez podanego imienia'} · ${b.renter_email}`} />
+              {b.payment_status === 'paid' && !hostReviewedBookingIds.has(b.id) && (
+                <button onClick={() => setReviewingAsHostBooking(b)} style={{
+                  marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.gold, color: '#fff',
+                  border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+                }}><MessageCircle size={14} /> Oceń wynajmującego</button>
+              )}
+              {b.payment_status === 'paid' && hostReviewedBookingIds.has(b.id) && (
+                <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Check size={13} /> Opinia o wynajmującym wystawiona
+                </div>
+              )}
             </div>
           ))}
         </>
