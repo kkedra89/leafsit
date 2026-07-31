@@ -1894,7 +1894,7 @@ function ContactBlock({ title, phone, address, extra }) {
   );
 }
 
-function ChatScreen({ conversationId, myUserId, otherName, onBack }) {
+function ChatScreen({ conversationId, myUserId, otherName, otherUserId, onBack }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
@@ -1937,6 +1937,7 @@ function ChatScreen({ conversationId, myUserId, otherName, onBack }) {
       content: text.trim(),
     }]);
     if (!error) {
+      const sentText = text.trim();
       setText('');
       const { data } = await supabase
         .from('messages')
@@ -1944,6 +1945,20 @@ function ChatScreen({ conversationId, myUserId, otherName, onBack }) {
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
       if (data) setMessages(data);
+      await supabase.from('conversations').update({
+        last_message: sentText,
+        last_message_at: new Date().toISOString(),
+      }).eq('id', conversationId);
+      if (otherUserId) {
+        await createNotification(
+          otherUserId,
+          'new_message',
+          `Nowa wiadomość`,
+          sentText.length > 80 ? sentText.slice(0, 80) + '…' : sentText,
+          null,
+          null
+        );
+      }
     }
     setSending(false);
   };
@@ -2000,6 +2015,99 @@ function ChatScreen({ conversationId, myUserId, otherName, onBack }) {
           <Send size={18} color="#fff" />
         </button>
       </div>
+    </div>
+  );
+}
+
+function ConversationsListScreen({ myUserId, onOpenConversation, onBack }) {
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [unreadByConvo, setUnreadByConvo] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('*, hosts(id, name, photo_url, user_id)')
+        .order('last_message_at', { ascending: false });
+      if (cancelled) return;
+      const mine = (data || []).filter(c => c.renter_user_id === myUserId || c.hosts?.user_id === myUserId);
+      setConversations(mine);
+      setLoading(false);
+
+      if (mine.length > 0) {
+        const { data: unread } = await supabase
+          .from('messages')
+          .select('conversation_id')
+          .in('conversation_id', mine.map(c => c.id))
+          .eq('read', false)
+          .neq('sender_id', myUserId);
+        if (!cancelled && unread) {
+          const map = {};
+          unread.forEach(m => { map[m.conversation_id] = (map[m.conversation_id] || 0) + 1; });
+          setUnreadByConvo(map);
+        }
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [myUserId]);
+
+  return (
+    <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <button onClick={onBack} style={{
+          width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+        }}><ArrowLeft size={18} color={colors.ink} /></button>
+        <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>Wiadomości</h2>
+      </div>
+
+      {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>}
+      {!loading && conversations.length === 0 && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Nie masz jeszcze żadnych rozmów.</div>
+      )}
+      {!loading && conversations.map(c => {
+        const isHostSide = c.hosts?.user_id === myUserId;
+        const otherName = isHostSide ? (c.renter_name || c.renter_email || 'Wynajmujący') : (c.hosts?.name || 'Host');
+        const otherUserId = isHostSide ? c.renter_user_id : c.hosts?.user_id;
+        const unread = unreadByConvo[c.id] || 0;
+        return (
+          <div
+            key={c.id}
+            onClick={() => onOpenConversation({ id: c.id, otherName, otherUserId })}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12, background: colors.card, border: `1px solid ${colors.line}`,
+              borderRadius: 14, padding: 14, marginBottom: 10, cursor: 'pointer'
+            }}
+          >
+            <Avatar photoUrl={isHostSide ? null : c.hosts?.photo_url} name={otherName} size={44} radius={22} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, color: colors.ink }}>{otherName}</span>
+                {c.last_message_at && (
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, color: '#A9A08B', flexShrink: 0 }}>{formatDate(c.last_message_at)}</span>
+                )}
+              </div>
+              <div style={{
+                fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: unread > 0 ? colors.ink : '#7A7261',
+                fontWeight: unread > 0 ? 700 : 400, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+              }}>
+                {c.last_message || 'Rozpocznij rozmowę'}
+              </div>
+            </div>
+            {unread > 0 && (
+              <div style={{
+                minWidth: 20, height: 20, borderRadius: 10, background: colors.clay, color: '#fff',
+                fontSize: 10.5, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', flexShrink: 0
+              }}>{unread}</div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -2093,7 +2201,50 @@ function HostDashboardScreen({ myHost, onBack }) {
   );
 }
 
-function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectReturn, onConnectReturnHandled, bookingPaymentReturn, onBookingPaymentReturnHandled }) {
+function FullListScreen({ title, items, renderItem, statusOptions, getStatus, getDate, onBack, emptyText }) {
+  const [sortDesc, setSortDesc] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  let list = (statusOptions && statusFilter !== 'all')
+    ? items.filter(it => getStatus(it) === statusFilter)
+    : items;
+
+  list = [...list].sort((a, b) => {
+    const da = new Date(getDate(a)).getTime();
+    const db = new Date(getDate(b)).getTime();
+    return sortDesc ? db - da : da - db;
+  });
+
+  return (
+    <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <button onClick={onBack} style={{
+          width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+        }}><ArrowLeft size={18} color={colors.ink} /></button>
+        <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>{title}</h2>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, overflowX: 'auto' }}>
+        <Pill tone="fern" active={sortDesc} onClick={() => setSortDesc(true)}>Najnowsze</Pill>
+        <Pill tone="fern" active={!sortDesc} onClick={() => setSortDesc(false)}>Najstarsze</Pill>
+        {statusOptions && (
+          <Pill tone="clay" active={statusFilter === 'all'} onClick={() => setStatusFilter('all')}>Wszystkie</Pill>
+        )}
+        {statusOptions && statusOptions.map(opt => (
+          <Pill key={opt.value} tone="gold" active={statusFilter === opt.value} onClick={() => setStatusFilter(opt.value)}>{opt.label}</Pill>
+        ))}
+      </div>
+
+      {list.length === 0 && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{emptyText || 'Brak wyników.'}</div>
+      )}
+      {list.map(renderItem)}
+    </div>
+  );
+}
+
+function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectReturn, onConnectReturnHandled, bookingPaymentReturn, onBookingPaymentReturnHandled, onOpenConversation }) {
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myHost, setMyHost] = useState(null);
@@ -2165,6 +2316,29 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifRefresh, setNotifRefresh] = useState(0);
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const [showConversations, setShowConversations] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [fullListView, setFullListView] = useState(null); // 'pending' | 'accepted' | 'bookings' | 'plants'
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadUnreadMessages() {
+      const { data: myConvos } = await supabase.from('conversations').select('id, renter_user_id, hosts(user_id)');
+      if (cancelled || !myConvos) return;
+      const mineIds = myConvos.filter(c => c.renter_user_id === user.id || c.hosts?.user_id === user.id).map(c => c.id);
+      if (mineIds.length === 0) { setUnreadMessagesCount(0); return; }
+      const { data: unread } = await supabase
+        .from('messages')
+        .select('id')
+        .in('conversation_id', mineIds)
+        .eq('read', false)
+        .neq('sender_id', user.id);
+      if (!cancelled) setUnreadMessagesCount(unread?.length || 0);
+    }
+    loadUnreadMessages();
+    return () => { cancelled = true; };
+  }, [user.id, refreshKey, showConversations]);
 
   const togglePlantExpand = async (plantId) => {
     if (expandedPlantId === plantId) {
@@ -2605,8 +2779,307 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     );
   }
 
+  if (showConversations) {
+    return (
+      <ConversationsListScreen
+        myUserId={user.id}
+        onOpenConversation={(conv) => { setShowConversations(false); onOpenConversation(conv); }}
+        onBack={() => setShowConversations(false)}
+      />
+    );
+  }
+
   const pendingIncoming = incoming.filter(b => b.status === 'pending');
   const acceptedIncoming = incoming.filter(b => b.status === 'accepted');
+
+  const renderPendingCard = (b) => (
+    <div key={b.id} style={{ background: colors.card, border: `1.5px solid ${colors.gold}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>
+        {b.plant_name}{b.quantity > 1 ? ` × ${b.quantity}` : ''}
+      </div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 2 }}>od {b.renter_name || b.renter_email}</div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 10 }}>{b.start_date} → {b.end_date}</div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={() => respondToBooking(b.id, 'accepted')} style={{
+          flex: 1, padding: 10, borderRadius: 10, background: colors.fern, color: '#fff', border: 'none',
+          fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
+        }}><CheckCircle size={14} /> Akceptuj</button>
+        <button onClick={() => respondToBooking(b.id, 'rejected')} style={{
+          flex: 1, padding: 10, borderRadius: 10, background: colors.clayLight, color: colors.clay, border: 'none',
+          fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
+        }}><XCircle size={14} /> Odrzuć</button>
+      </div>
+    </div>
+  );
+
+  const renderAcceptedCard = (b) => (
+    <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>
+        {b.plant_name}{b.quantity > 1 ? ` × ${b.quantity}` : ''}
+      </div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
+      {b.payment_status === 'paid' ? (
+        <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <CheckCircle size={13} /> Opłacona — {b.amount_total} zł (Twoja część: {Math.round(b.amount_total * 0.9 * 100) / 100} zł)
+        </div>
+      ) : (
+        <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B' }}>
+          Oczekuje na opłacenie przez wynajmującego
+        </div>
+      )}
+      <ContactBlock title="Kontakt do właściciela rośliny" phone={b.renter_phone} extra={`${b.renter_name || 'Bez podanego imienia'} · ${b.renter_email}`} />
+      {b.payment_status === 'paid' && !hostReviewedBookingIds.has(b.id) && (
+        <button onClick={() => setReviewingAsHostBooking(b)} style={{
+          marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.gold, color: '#fff',
+          border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+        }}><MessageCircle size={14} /> Oceń wynajmującego</button>
+      )}
+      {b.payment_status === 'paid' && hostReviewedBookingIds.has(b.id) && (
+        <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Check size={13} /> Opinia o wynajmującym wystawiona
+        </div>
+      )}
+    </div>
+  );
+
+  const renderBookingCard = (b) => {
+    const si = statusInfo(b.status);
+    const alreadyReviewed = reviewedBookingIds.has(b.id);
+    const needsPayment = b.status === 'accepted' && b.payment_status !== 'paid';
+    const hostReady = b.hosts?.stripe_account_id && b.hosts?.stripe_charges_enabled;
+    const estDays = daysBetween(b.start_date, b.end_date);
+    const estTotal = b.amount_total ?? (estDays * (b.hosts?.price ?? 0) * (b.quantity || 1));
+    return (
+      <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+          <div>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink }}>
+              {b.plant_name}{b.quantity > 1 ? ` × ${b.quantity}` : ''}
+            </div>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>u {b.hosts?.name} · {b.hosts?.location}</div>
+          </div>
+          <Pill tone={si.tone}>{si.label}</Pill>
+        </div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
+
+        {b.status === 'accepted' && (
+          <ContactBlock title="Kontakt do hosta" phone={b.hosts?.phone} address={b.hosts?.address} />
+        )}
+
+        {b.payment_status === 'paid' && (
+          <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <CheckCircle size={13} /> Zapłacono {b.amount_total} zł
+          </div>
+        )}
+
+        {receivedReviews[b.id] && (
+          <div style={{ marginTop: 10, background: '#FFF8EC', borderRadius: 10, padding: 10 }}>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, fontWeight: 700, color: colors.gold, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4 }}>
+              Opinia hosta o Tobie
+            </div>
+            <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
+              {[1,2,3,4,5].map(n => (
+                <Star key={n} size={12} fill={n <= receivedReviews[b.id].rating ? colors.gold : 'none'} color={colors.gold} />
+              ))}
+            </div>
+            {receivedReviews[b.id].comment && (
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#5A5445', fontStyle: 'italic' }}>{receivedReviews[b.id].comment}</div>
+            )}
+          </div>
+        )}
+
+        {needsPayment && verifyingBookingPayment && (
+          <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>
+            <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Sprawdzam płatność...
+          </div>
+        )}
+
+        {needsPayment && !verifyingBookingPayment && hostReady && (
+          <button onClick={() => handlePayForBooking(b)} disabled={payingBookingId === b.id} style={{
+            marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.clay, color: '#fff',
+            border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            opacity: payingBookingId === b.id ? 0.7 : 1
+          }}>
+            {payingBookingId === b.id
+              ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+              : <CreditCard size={14} />}
+            {payingBookingId === b.id ? 'Przekierowuję...' : `Zapłać i potwierdź (${estTotal} zł)`}
+          </button>
+        )}
+
+        {needsPayment && !verifyingBookingPayment && !hostReady && (
+          <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B' }}>
+            Host jeszcze nie podłączył konta do wypłat — spróbuj ponownie za chwilę.
+          </div>
+        )}
+
+        {b.status === 'pending' && (
+          <button onClick={() => cancelMyBooking(b.id)} disabled={cancellingBookingId === b.id} style={{
+            marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.clayLight, color: colors.clay,
+            border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            opacity: cancellingBookingId === b.id ? 0.7 : 1
+          }}>
+            {cancellingBookingId === b.id ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <X size={14} />}
+            Anuluj prośbę
+          </button>
+        )}
+
+        {b.status === 'accepted' && (b.payment_status === 'paid' || b.payment_status === 'unpaid') && isUpcoming(b.start_date) && (
+          <button
+            onClick={() => {
+              const msg = b.payment_status === 'paid'
+                ? `Na pewno anulować? Zapłacone ${b.amount_total} zł zostanie w pełni zwrócone.`
+                : 'Na pewno anulować tę rezerwację?';
+              if (window.confirm(msg)) cancelMyBooking(b.id);
+            }}
+            disabled={cancellingBookingId === b.id}
+            style={{
+              marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.clayLight, color: colors.clay,
+              border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              opacity: cancellingBookingId === b.id ? 0.7 : 1
+            }}
+          >
+            {cancellingBookingId === b.id ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <X size={14} />}
+            {cancellingBookingId === b.id ? 'Anulowanie...' : b.payment_status === 'paid' ? 'Anuluj i zwróć płatność' : 'Anuluj rezerwację'}
+          </button>
+        )}
+
+        {b.status === 'accepted' && b.payment_status === 'paid' && !alreadyReviewed && (
+          <button onClick={() => setReviewingBooking(b)} style={{
+            marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.gold, color: '#fff',
+            border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+          }}><MessageCircle size={14} /> Zostaw opinię</button>
+        )}
+        {b.status === 'accepted' && alreadyReviewed && (
+          <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Check size={13} /> Opinia wystawiona
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderPlantCard = (p) => {
+    const history = plantHistory[p.id] || [];
+    const active = history.find(h => h.status === 'accepted' && new Date(h.end_date) >= new Date().setHours(0,0,0,0));
+    return (
+      <div key={p.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, marginBottom: 10, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12 }}>
+          <div onClick={() => togglePlantExpand(p.id)} style={{
+            width: 40, height: 40, borderRadius: 10, background: colors.clayLight, overflow: 'hidden', flexShrink: 0, cursor: 'pointer'
+          }}>
+            {p.photo_url && <img src={p.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+          </div>
+          <div onClick={() => togglePlantExpand(p.id)} style={{ flex: 1, cursor: 'pointer' }}>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, color: colors.ink }}>
+              {p.name}{p.quantity > 1 ? ` × ${p.quantity}` : ''}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+              {p.care_guide && (
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.gold, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Crown size={11} /> Premium
+                </div>
+              )}
+              {active ? (
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.fern, fontWeight: 700 }}>
+                  Obecnie u {active.hosts?.name}
+                </div>
+              ) : (
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>U Ciebie w domu</div>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => { if (window.confirm(`Usunąć "${p.name}" z Twoich roślin?`)) deletePlant(p.id); }}
+            disabled={deletingPlantId === p.id}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 6, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+          >
+            {deletingPlantId === p.id
+              ? <Loader2 size={16} color="#A9A08B" style={{ animation: 'spin 1s linear infinite' }} />
+              : <Trash2 size={16} color="#A9A08B" />}
+          </button>
+        </div>
+        {expandedPlantId === p.id && (
+          <div style={{ padding: '0 16px 16px' }}>
+            {p.care_guide && <div style={{ marginBottom: 14 }}><CareGuide text={p.care_guide} /></div>}
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 700, color: colors.ink, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 }}>
+              Historia u hostów
+            </div>
+            {loadingPlantHistory === p.id && (
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>Ładowanie...</div>
+            )}
+            {loadingPlantHistory !== p.id && history.length === 0 && (
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>Ta roślina nigdy nie była jeszcze u hosta.</div>
+            )}
+            {loadingPlantHistory !== p.id && history.map(h => (
+              <div key={h.id} style={{ background: colors.bg, borderRadius: 10, padding: 10, marginBottom: 6 }}>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, fontWeight: 700, color: colors.ink }}>
+                  {h.hosts?.name} {h.quantity > 1 ? `(×${h.quantity})` : ''} · {h.hosts?.location}
+                </div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#7A7261', marginTop: 2 }}>
+                  {h.start_date} → {h.end_date}
+                </div>
+                <div style={{ marginTop: 4 }}>
+                  <Pill tone={statusInfo(h.status).tone}>{statusInfo(h.status).label}</Pill>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const viewAllBtnStyle = {
+    width: '100%', padding: 10, borderRadius: 10, background: 'none', border: `1.5px dashed ${colors.line}`,
+    color: colors.fern, fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', marginBottom: 10
+  };
+
+  if (fullListView === 'pending') {
+    return (
+      <FullListScreen title="Prośby o rezerwację" items={pendingIncoming} renderItem={renderPendingCard}
+        getDate={(b) => b.created_at} onBack={() => setFullListView(null)} emptyText="Brak próśb o rezerwację." />
+    );
+  }
+  if (fullListView === 'accepted') {
+    return (
+      <FullListScreen title="Zaakceptowane rezerwacje" items={acceptedIncoming} renderItem={renderAcceptedCard}
+        getDate={(b) => b.created_at} onBack={() => setFullListView(null)} emptyText="Brak zaakceptowanych rezerwacji." />
+    );
+  }
+  if (fullListView === 'bookings') {
+    return (
+      <FullListScreen
+        title="Twoje rezerwacje" items={myBookings} renderItem={renderBookingCard}
+        statusOptions={[
+          { value: 'pending', label: 'Oczekujące' },
+          { value: 'accepted', label: 'Zaakceptowane' },
+          { value: 'rejected', label: 'Odrzucone' },
+          { value: 'cancelled', label: 'Anulowane' },
+        ]}
+        getStatus={(b) => b.status}
+        getDate={(b) => b.created_at}
+        onBack={() => setFullListView(null)}
+        emptyText="Nie masz jeszcze żadnych rezerwacji."
+      />
+    );
+  }
+  if (fullListView === 'plants') {
+    return (
+      <FullListScreen title="Twoje rośliny" items={plants} renderItem={renderPlantCard}
+        getDate={(p) => p.created_at} onBack={() => setFullListView(null)} emptyText="Nie masz jeszcze żadnych roślin." />
+    );
+  }
 
   return (
     <div style={{ flex: 1, padding: 20, overflow: 'auto', position: 'relative' }}>
@@ -2634,6 +3107,20 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           <div style={{ fontSize: 15, fontWeight: 600, color: colors.ink, wordBreak: 'break-word' }}>{displayNameOf(user)}</div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', wordBreak: 'break-all' }}>{user.email}</div>
         </div>
+        <button onClick={() => setShowConversations(true)} style={{
+          background: colors.clayLight, border: 'none', borderRadius: 12, padding: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
+          position: 'relative'
+        }}>
+          <MessageCircle size={16} color={colors.ink} />
+          {unreadMessagesCount > 0 && (
+            <div style={{
+              position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, borderRadius: 8,
+              background: colors.clay, color: '#fff', fontSize: 9.5, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px'
+            }}>{unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}</div>
+          )}
+        </button>
         <button onClick={() => setShowNotifications(s => !s)} style={{
           background: colors.clayLight, border: 'none', borderRadius: 12, padding: 10,
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
@@ -2745,27 +3232,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
             Prośby o rezerwację ({pendingIncoming.length})
           </div>
-          {pendingIncoming.map(b => (
-            <div key={b.id} style={{ background: colors.card, border: `1.5px solid ${colors.gold}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>
-                {b.plant_name}{b.quantity > 1 ? ` × ${b.quantity}` : ''}
-              </div>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 2 }}>od {b.renter_name || b.renter_email}</div>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 10 }}>{b.start_date} → {b.end_date}</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => respondToBooking(b.id, 'accepted')} style={{
-                  flex: 1, padding: 10, borderRadius: 10, background: colors.fern, color: '#fff', border: 'none',
-                  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
-                }}><CheckCircle size={14} /> Akceptuj</button>
-                <button onClick={() => respondToBooking(b.id, 'rejected')} style={{
-                  flex: 1, padding: 10, borderRadius: 10, background: colors.clayLight, color: colors.clay, border: 'none',
-                  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
-                }}><XCircle size={14} /> Odrzuć</button>
-              </div>
-            </div>
-          ))}
+          {renderPendingCard([...pendingIncoming].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])}
+          {pendingIncoming.length > 1 && (
+            <button onClick={() => setFullListView('pending')} style={viewAllBtnStyle}>Wyświetl wszystkie ({pendingIncoming.length})</button>
+          )}
         </>
       )}
 
@@ -2774,36 +3244,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: pendingIncoming.length > 0 ? 20 : 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>
             Zaakceptowane rezerwacje ({acceptedIncoming.length})
           </div>
-          {acceptedIncoming.map(b => (
-            <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>
-                {b.plant_name}{b.quantity > 1 ? ` × ${b.quantity}` : ''}
-              </div>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
-              {b.payment_status === 'paid' ? (
-                <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <CheckCircle size={13} /> Opłacona — {b.amount_total} zł (Twoja część: {Math.round(b.amount_total * 0.9 * 100) / 100} zł)
-                </div>
-              ) : (
-                <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B' }}>
-                  Oczekuje na opłacenie przez wynajmującego
-                </div>
-              )}
-              <ContactBlock title="Kontakt do właściciela rośliny" phone={b.renter_phone} extra={`${b.renter_name || 'Bez podanego imienia'} · ${b.renter_email}`} />
-              {b.payment_status === 'paid' && !hostReviewedBookingIds.has(b.id) && (
-                <button onClick={() => setReviewingAsHostBooking(b)} style={{
-                  marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.gold, color: '#fff',
-                  border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
-                }}><MessageCircle size={14} /> Oceń wynajmującego</button>
-              )}
-              {b.payment_status === 'paid' && hostReviewedBookingIds.has(b.id) && (
-                <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Check size={13} /> Opinia o wynajmującym wystawiona
-                </div>
-              )}
-            </div>
-          ))}
+          {renderAcceptedCard([...acceptedIncoming].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])}
+          {acceptedIncoming.length > 1 && (
+            <button onClick={() => setFullListView('accepted')} style={viewAllBtnStyle}>Wyświetl wszystkie ({acceptedIncoming.length})</button>
+          )}
         </>
       )}
 
@@ -2814,126 +3258,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       {!myBookingsLoading && myBookings.length === 0 && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>Nie masz jeszcze żadnych rezerwacji.</div>
       )}
-      {!myBookingsLoading && myBookings.map(b => {
-        const si = statusInfo(b.status);
-        const alreadyReviewed = reviewedBookingIds.has(b.id);
-        const needsPayment = b.status === 'accepted' && b.payment_status !== 'paid';
-        const hostReady = b.hosts?.stripe_account_id && b.hosts?.stripe_charges_enabled;
-        const estDays = daysBetween(b.start_date, b.end_date);
-        const estTotal = b.amount_total ?? (estDays * (b.hosts?.price ?? 0) * (b.quantity || 1));
-        return (
-          <div key={b.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-              <div>
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink }}>
-                  {b.plant_name}{b.quantity > 1 ? ` × ${b.quantity}` : ''}
-                </div>
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>u {b.hosts?.name} · {b.hosts?.location}</div>
-              </div>
-              <Pill tone={si.tone}>{si.label}</Pill>
-            </div>
-            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
-
-            {b.status === 'accepted' && (
-              <ContactBlock title="Kontakt do hosta" phone={b.hosts?.phone} address={b.hosts?.address} />
-            )}
-
-            {b.payment_status === 'paid' && (
-              <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <CheckCircle size={13} /> Zapłacono {b.amount_total} zł
-              </div>
-            )}
-
-            {receivedReviews[b.id] && (
-              <div style={{ marginTop: 10, background: '#FFF8EC', borderRadius: 10, padding: 10 }}>
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, fontWeight: 700, color: colors.gold, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4 }}>
-                  Opinia hosta o Tobie
-                </div>
-                <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
-                  {[1,2,3,4,5].map(n => (
-                    <Star key={n} size={12} fill={n <= receivedReviews[b.id].rating ? colors.gold : 'none'} color={colors.gold} />
-                  ))}
-                </div>
-                {receivedReviews[b.id].comment && (
-                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#5A5445', fontStyle: 'italic' }}>{receivedReviews[b.id].comment}</div>
-                )}
-              </div>
-            )}
-
-            {needsPayment && verifyingBookingPayment && (
-              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>
-                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Sprawdzam płatność...
-              </div>
-            )}
-
-            {needsPayment && !verifyingBookingPayment && hostReady && (
-              <button onClick={() => handlePayForBooking(b)} disabled={payingBookingId === b.id} style={{
-                marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.clay, color: '#fff',
-                border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                opacity: payingBookingId === b.id ? 0.7 : 1
-              }}>
-                {payingBookingId === b.id
-                  ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                  : <CreditCard size={14} />}
-                {payingBookingId === b.id ? 'Przekierowuję...' : `Zapłać i potwierdź (${estTotal} zł)`}
-              </button>
-            )}
-
-            {needsPayment && !verifyingBookingPayment && !hostReady && (
-              <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B' }}>
-                Host jeszcze nie podłączył konta do wypłat — spróbuj ponownie za chwilę.
-              </div>
-            )}
-
-            {b.status === 'pending' && (
-              <button onClick={() => cancelMyBooking(b.id)} disabled={cancellingBookingId === b.id} style={{
-                marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.clayLight, color: colors.clay,
-                border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                opacity: cancellingBookingId === b.id ? 0.7 : 1
-              }}>
-                {cancellingBookingId === b.id ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <X size={14} />}
-                Anuluj prośbę
-              </button>
-            )}
-
-            {b.status === 'accepted' && (b.payment_status === 'paid' || b.payment_status === 'unpaid') && isUpcoming(b.start_date) && (
-              <button
-                onClick={() => {
-                  const msg = b.payment_status === 'paid'
-                    ? `Na pewno anulować? Zapłacone ${b.amount_total} zł zostanie w pełni zwrócone.`
-                    : 'Na pewno anulować tę rezerwację?';
-                  if (window.confirm(msg)) cancelMyBooking(b.id);
-                }}
-                disabled={cancellingBookingId === b.id}
-                style={{
-                  marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.clayLight, color: colors.clay,
-                  border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  opacity: cancellingBookingId === b.id ? 0.7 : 1
-                }}
-              >
-                {cancellingBookingId === b.id ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <X size={14} />}
-                {cancellingBookingId === b.id ? 'Anulowanie...' : b.payment_status === 'paid' ? 'Anuluj i zwróć płatność' : 'Anuluj rezerwację'}
-              </button>
-            )}
-
-            {b.status === 'accepted' && b.payment_status === 'paid' && !alreadyReviewed && (
-              <button onClick={() => setReviewingBooking(b)} style={{
-                marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.gold, color: '#fff',
-                border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
-              }}><MessageCircle size={14} /> Zostaw opinię</button>
-            )}
-            {b.status === 'accepted' && alreadyReviewed && (
-              <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Check size={13} /> Opinia wystawiona
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {!myBookingsLoading && myBookings.length > 0 && renderBookingCard([...myBookings].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])}
+      {!myBookingsLoading && myBookings.length > 1 && (
+        <button onClick={() => setFullListView('bookings')} style={viewAllBtnStyle}>Wyświetl wszystkie ({myBookings.length})</button>
+      )}
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>Twoje rośliny</div>
 
@@ -2945,78 +3273,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Nie masz jeszcze żadnych roślin — dodaj pierwszą w zakładce "Dodaj".</div>
       )}
 
-      {!loading && plants.map(p => {
-        const history = plantHistory[p.id] || [];
-        const active = history.find(h => h.status === 'accepted' && new Date(h.end_date) >= new Date().setHours(0,0,0,0));
-        return (
-        <div key={p.id} style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, marginBottom: 10, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12 }}>
-            <div onClick={() => togglePlantExpand(p.id)} style={{
-              width: 40, height: 40, borderRadius: 10, background: colors.clayLight, overflow: 'hidden', flexShrink: 0, cursor: 'pointer'
-            }}>
-              {p.photo_url && <img src={p.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-            </div>
-            <div onClick={() => togglePlantExpand(p.id)} style={{ flex: 1, cursor: 'pointer' }}>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, color: colors.ink }}>
-                {p.name}{p.quantity > 1 ? ` × ${p.quantity}` : ''}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-                {p.care_guide && (
-                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.gold, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <Crown size={11} /> Premium
-                  </div>
-                )}
-                {active ? (
-                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.fern, fontWeight: 700 }}>
-                    Obecnie u {active.hosts?.name}
-                  </div>
-                ) : (
-                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>U Ciebie w domu</div>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={() => { if (window.confirm(`Usunąć "${p.name}" z Twoich roślin?`)) deletePlant(p.id); }}
-              disabled={deletingPlantId === p.id}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer', padding: 6, flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}
-            >
-              {deletingPlantId === p.id
-                ? <Loader2 size={16} color="#A9A08B" style={{ animation: 'spin 1s linear infinite' }} />
-                : <Trash2 size={16} color="#A9A08B" />}
-            </button>
-          </div>
-          {expandedPlantId === p.id && (
-            <div style={{ padding: '0 16px 16px' }}>
-              {p.care_guide && <div style={{ marginBottom: 14 }}><CareGuide text={p.care_guide} /></div>}
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 700, color: colors.ink, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 }}>
-                Historia u hostów
-              </div>
-              {loadingPlantHistory === p.id && (
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>Ładowanie...</div>
-              )}
-              {loadingPlantHistory !== p.id && history.length === 0 && (
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>Ta roślina nigdy nie była jeszcze u hosta.</div>
-              )}
-              {loadingPlantHistory !== p.id && history.map(h => (
-                <div key={h.id} style={{ background: colors.bg, borderRadius: 10, padding: 10, marginBottom: 6 }}>
-                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, fontWeight: 700, color: colors.ink }}>
-                    {h.hosts?.name} {h.quantity > 1 ? `(×${h.quantity})` : ''} · {h.hosts?.location}
-                  </div>
-                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#7A7261', marginTop: 2 }}>
-                    {h.start_date} → {h.end_date}
-                  </div>
-                  <div style={{ marginTop: 4 }}>
-                    <Pill tone={statusInfo(h.status).tone}>{statusInfo(h.status).label}</Pill>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      );})}
+      {!loading && plants.length > 0 && renderPlantCard([...plants].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])}
+      {!loading && plants.length > 1 && (
+        <button onClick={() => setFullListView('plants')} style={viewAllBtnStyle}>Wyświetl wszystkie ({plants.length})</button>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '20px 0 10px' }}>
         <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, textTransform: 'uppercase', letterSpacing: 0.5 }}>
@@ -3151,6 +3411,7 @@ export default function App() {
   const [activeConversation, setActiveConversation] = useState(null);
 
   const openConversationWithHost = async (host) => {
+    const myName = displayNameOf(session.user) !== session.user.email ? displayNameOf(session.user) : null;
     const { data: existing } = await supabase
       .from('conversations')
       .select('id')
@@ -3161,13 +3422,18 @@ export default function App() {
     if (!conversationId) {
       const { data: created, error } = await supabase
         .from('conversations')
-        .insert([{ host_id: host.id, renter_user_id: session.user.id }])
+        .insert([{
+          host_id: host.id,
+          renter_user_id: session.user.id,
+          renter_name: myName,
+          renter_email: session.user.email,
+        }])
         .select()
         .single();
       if (error) return;
       conversationId = created.id;
     }
-    setActiveConversation({ id: conversationId, otherName: host.name });
+    setActiveConversation({ id: conversationId, otherName: host.name, otherUserId: host.user_id });
   };
 
   useEffect(() => {
@@ -3213,6 +3479,7 @@ export default function App() {
           conversationId={activeConversation.id}
           myUserId={session.user.id}
           otherName={activeConversation.otherName}
+          otherUserId={activeConversation.otherUserId}
           onBack={() => setActiveConversation(null)}
         />
       );
@@ -3259,6 +3526,7 @@ export default function App() {
           onConnectReturnHandled={() => setConnectReturn(false)}
           bookingPaymentReturn={bookingPaymentReturn}
           onBookingPaymentReturnHandled={() => setBookingPaymentReturn(null)}
+          onOpenConversation={(conv) => setActiveConversation(conv)}
         />
       );
     }
