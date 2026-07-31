@@ -1619,18 +1619,25 @@ function WeatherWidget() {
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
-      try {
-        const lat = 52.208, lon = 21.038;
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code&hourly=temperature_2m,relative_humidity_2m,weather_code&forecast_days=2&timezone=Europe%2FWarsaw`;
-        const res = await fetch(url);
-        const json = await res.json();
-        if (!cancelled) setState({ loading: false, error: null, data: json, place: 'Mokotów, Warszawa' });
-      } catch (e) {
-        if (!cancelled) setState({ loading: false, error: 'Nie udało się pobrać pogody', data: null, place: '' });
-      }
+
+    function fetchWeather(lat, lon, place) {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code&hourly=temperature_2m,relative_humidity_2m,weather_code&forecast_days=2&timezone=auto`;
+      fetch(url)
+        .then(res => res.json())
+        .then(json => { if (!cancelled) setState({ loading: false, error: null, data: json, place }); })
+        .catch(() => { if (!cancelled) setState({ loading: false, error: 'Nie udało się pobrać pogody', data: null, place: '' }); });
     }
-    load();
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude, 'Twoja okolica'),
+        () => fetchWeather(52.208, 21.038, 'Warszawa · Mokotów'),
+        { timeout: 8000 }
+      );
+    } else {
+      fetchWeather(52.208, 21.038, 'Warszawa · Mokotów');
+    }
+
     return () => { cancelled = true; };
   }, []);
 
@@ -1653,8 +1660,16 @@ function WeatherWidget() {
   const nowInfo = weatherFromCode(current.weather_code);
   const NowIcon = nowInfo.Icon;
 
-  const nowIso = state.data.current.time;
-  const startIdx = Math.max(0, hourly.time.findIndex(t => t === nowIso));
+  const nowMs = new Date(current.time).getTime();
+  let startIdx = 0;
+  let smallestDiff = Infinity;
+  hourly.time.forEach((t, idx) => {
+    const diff = Math.abs(new Date(t).getTime() - nowMs);
+    if (diff < smallestDiff) {
+      smallestDiff = diff;
+      startIdx = idx;
+    }
+  });
   const nextHours = hourly.time.slice(startIdx, startIdx + 6).map((t, i) => ({
     time: t,
     temp: hourly.temperature_2m[startIdx + i],
