@@ -31,6 +31,37 @@ function sunlightInfo(value) {
   return { Icon: Sun, tone: colors.gold };
 }
 
+function isTopHost(host) {
+  return (host?.rating ?? 0) >= 4.8 && (host?.reviews ?? 0) >= 5;
+}
+
+function isVerifiedHost(host) {
+  return !!host?.stripe_charges_enabled;
+}
+
+function HostBadges({ host, size = 'small' }) {
+  const verified = isVerifiedHost(host);
+  const top = isTopHost(host);
+  if (!verified && !top) return null;
+  const fontSize = size === 'small' ? 9.5 : 11;
+  return (
+    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+      {verified && (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 3, background: '#EEF3EA', color: colors.fern,
+          fontFamily: 'Inter, sans-serif', fontSize, fontWeight: 700, padding: '2px 7px', borderRadius: 10
+        }}><CheckCircle size={size === 'small' ? 10 : 12} /> Zweryfikowany</span>
+      )}
+      {top && (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 3, background: '#FFF8EC', color: colors.gold,
+          fontFamily: 'Inter, sans-serif', fontSize, fontWeight: 700, padding: '2px 7px', borderRadius: 10
+        }}><Star size={size === 'small' ? 10 : 12} fill={colors.gold} /> Top Host</span>
+      )}
+    </div>
+  );
+}
+
 function distanceKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -219,12 +250,17 @@ function TextField({ icon: Icon, ...props }) {
   );
 }
 
-function AuthScreen() {
+function generateReferralCode() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+function AuthScreen({ referralCodeFromUrl }) {
   const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailConsent, setEmailConsent] = useState(true);
+  const [referralInput, setReferralInput] = useState(referralCodeFromUrl || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
@@ -246,7 +282,18 @@ function AuthScreen() {
         setError(error.message);
       } else {
         if (signUpData?.user) {
-          await supabase.from('profiles').upsert({ id: signUpData.user.id, email_notifications: emailConsent });
+          let referredBy = null;
+          const trimmedCode = referralInput.trim();
+          if (trimmedCode) {
+            const { data: referrer } = await supabase.from('profiles').select('id').eq('referral_code', trimmedCode).maybeSingle();
+            if (referrer && referrer.id !== signUpData.user.id) referredBy = referrer.id;
+          }
+          await supabase.from('profiles').upsert({
+            id: signUpData.user.id,
+            email_notifications: emailConsent,
+            referral_code: generateReferralCode(),
+            referred_by: referredBy,
+          });
         }
         setInfo('Konto utworzone! Możesz się teraz zalogować.');
       }
@@ -273,6 +320,14 @@ function AuthScreen() {
 
       {mode === 'signup' && (
         <TextField icon={User} placeholder="Imię i nazwisko (lub nick)" value={name} onChange={e => setName(e.target.value)} />
+      )}
+      {mode === 'signup' && (
+        <TextField placeholder="Kod polecenia (opcjonalnie)" value={referralInput} onChange={e => setReferralInput(e.target.value)} />
+      )}
+      {mode === 'signup' && referralCodeFromUrl && (
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, marginTop: -6, marginBottom: 12 }}>
+          Zaproszenie od znajomego wykryte automatycznie ✓
+        </div>
       )}
       {mode === 'signup' && (
         <div onClick={() => setEmailConsent(c => !c)} style={{
@@ -620,6 +675,9 @@ function HomeScreen({ onSelectHost, userId }) {
                 <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, fontWeight: 600 }}>
                   <SIcon size={13} color={si.tone} /> {h.sunlight} · przyjmuje {h.plants_capacity} roślin
                 </div>
+                <div style={{ marginTop: 6 }}>
+                  <HostBadges host={h} size="small" />
+                </div>
               </div>
             </div>
           </div>
@@ -676,7 +734,8 @@ function HostDetailScreen({ host, onBack, onBook, onMessage }) {
           )}
           <div>
             <h2 style={{ color: '#fff', margin: 0, fontSize: 22, fontWeight: 600 }}>{host.name}</h2>
-            <div style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Inter, sans-serif', fontSize: 13 }}>{host.location}</div>
+            <div style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Inter, sans-serif', fontSize: 13, marginBottom: 6 }}>{host.location}</div>
+            <HostBadges host={host} size="large" />
           </div>
         </div>
       </div>
@@ -2297,19 +2356,47 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const [profileAvatarUrl, setProfileAvatarUrl] = useState(null);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [savingEmailPref, setSavingEmailPref] = useState(false);
+  const [referralCode, setReferralCode] = useState(null);
+  const [referredCount, setReferredCount] = useState(0);
+  const [referralCopied, setReferralCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     async function loadProfile() {
-      const { data } = await supabase.from('profiles').select('avatar_url, email_notifications').eq('id', user.id).maybeSingle();
+      let { data } = await supabase.from('profiles').select('avatar_url, email_notifications, referral_code').eq('id', user.id).maybeSingle();
+      if (!data?.referral_code) {
+        const code = generateReferralCode();
+        await supabase.from('profiles').upsert({ id: user.id, referral_code: code });
+        data = { ...(data || {}), referral_code: code };
+      }
       if (!cancelled) {
         setProfileAvatarUrl(data?.avatar_url || null);
         setEmailNotifications(data?.email_notifications !== false);
+        setReferralCode(data?.referral_code || null);
       }
     }
     loadProfile();
     return () => { cancelled = true; };
   }, [user.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadReferredCount() {
+      const { data } = await supabase.from('profiles').select('id').eq('referred_by', user.id);
+      if (!cancelled) setReferredCount(data?.length || 0);
+    }
+    loadReferredCount();
+    return () => { cancelled = true; };
+  }, [user.id]);
+
+  const copyReferralLink = () => {
+    if (!referralCode) return;
+    const link = `${window.location.origin}/?ref=${referralCode}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setReferralCopied(true);
+      setTimeout(() => setReferralCopied(false), 2000);
+    });
+  };
 
   const toggleEmailNotifications = async () => {
     const next = !emailNotifications;
@@ -3240,6 +3327,25 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         </div>
       )}
 
+      {referralCode && (
+        <div style={{ background: colors.card, border: `1.5px solid ${colors.gold}`, borderRadius: 16, padding: 16, marginBottom: 20 }}>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink, marginBottom: 4 }}>Poleć znajomym Leafsit</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#7A7261', marginBottom: 10 }}>
+            Poleconych znajomych: {referredCount}
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{
+              flex: 1, fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.gold,
+              background: '#FFF8EC', borderRadius: 10, padding: '8px 12px', letterSpacing: 0.5
+            }}>{referralCode}</div>
+            <button onClick={copyReferralLink} style={{
+              padding: '9px 14px', borderRadius: 10, background: colors.gold, color: '#fff', border: 'none',
+              fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12, cursor: 'pointer', flexShrink: 0
+            }}>{referralCopied ? 'Skopiowano ✓' : 'Kopiuj link'}</button>
+          </div>
+        </div>
+      )}
+
       <WeatherWidget />
 
       {myHost && pendingIncoming.length > 0 && (
@@ -3413,6 +3519,11 @@ function readBookingPaymentReturnFromUrl() {
   return null;
 }
 
+function readReferralCodeFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('ref') || null;
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -3424,6 +3535,7 @@ export default function App() {
   const [connectReturn, setConnectReturn] = useState(false);
   const [bookingPaymentReturn, setBookingPaymentReturn] = useState(null);
   const [activeConversation, setActiveConversation] = useState(null);
+  const [referralCodeFromUrl, setReferralCodeFromUrl] = useState(null);
 
   const openConversationWithHost = async (host) => {
     const myName = displayNameOf(session.user) !== session.user.email ? displayNameOf(session.user) : null;
@@ -3467,6 +3579,8 @@ export default function App() {
       setBookingPaymentReturn(bookingPaymentPending);
       setTab('profile');
     }
+    const ref = readReferralCodeFromUrl();
+    if (ref) setReferralCodeFromUrl(ref);
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setAuthLoading(false);
@@ -3556,7 +3670,7 @@ export default function App() {
             <Loader2 size={28} color={colors.fern} style={{ animation: 'spin 1s linear infinite' }} />
           </div>
         ) : !session ? (
-          <AuthScreen />
+          <AuthScreen referralCodeFromUrl={referralCodeFromUrl} />
         ) : (
           <>
             {renderTab()}
