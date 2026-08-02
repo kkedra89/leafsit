@@ -254,16 +254,172 @@ function generateReferralCode() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+function TermsScreen({ onBack }) {
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 20, paddingBottom: 14, borderBottom: `1px solid ${colors.line}` }}>
+        <button onClick={onBack} style={{
+          width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+        }}><ArrowLeft size={18} color={colors.ink} /></button>
+        <h2 style={{ fontSize: 16, color: colors.ink, fontWeight: 600, margin: 0 }}>Regulamin i Polityka Prywatności</h2>
+      </div>
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginBottom: 16 }}>
+          Usługodawcą jest Krystian Kędra, ul. Marywilska 60c/89, 03-042 Warszawa.
+        </div>
+
+        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.fern, marginBottom: 8 }}>§1 Postanowienia ogólne</div>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#4A4638', lineHeight: 1.6, marginBottom: 14 }}>
+          Aplikacja Leafsit służy do kojarzenia osób poszukujących opieki nad roślinami doniczkowymi pod czasową nieobecność z osobami oferującymi taką opiekę. Korzystanie z aplikacji oznacza akceptację niniejszego Regulaminu.
+        </p>
+
+        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.fern, marginBottom: 8 }}>§2 Rola platformy</div>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#4A4638', lineHeight: 1.6, marginBottom: 14 }}>
+          Usługodawca pełni funkcję pośrednika technicznego. Nie jest stroną umowy między Właścicielem Rośliny a Hostem i nie ponosi odpowiedzialności za jakość, terminowość ani sposób wykonania opieki, ani za szkody powstałe w związku z realizacją rezerwacji.
+        </p>
+
+        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.fern, marginBottom: 8 }}>§3 Płatności i prowizja</div>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#4A4638', lineHeight: 1.6, marginBottom: 14 }}>
+          Aplikacja pobiera prowizję w wysokości 10% wartości każdej zrealizowanej rezerwacji, potrącaną z wynagrodzenia Hosta. Funkcja Premium (porada AI) jest płatna jednorazowo w wysokości wskazanej w aplikacji. Płatności obsługuje Stripe.
+        </p>
+
+        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.fern, marginBottom: 8 }}>§4 Sztuczna inteligencja</div>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#4A4638', lineHeight: 1.6, marginBottom: 14 }}>
+          Aplikacja wykorzystuje AI do rozpoznawania gatunku rośliny oraz generowania porad pielęgnacyjnych. Wygenerowane treści mają charakter orientacyjny.
+        </p>
+
+        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, color: colors.ink, marginTop: 20, marginBottom: 8 }}>Polityka Prywatności</div>
+
+        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.fern, marginBottom: 8 }}>§1 Jakie dane przetwarzamy</div>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#4A4638', lineHeight: 1.6, marginBottom: 14 }}>
+          Dane konta (email, imię, zdjęcie), dane profilu Hosta (cena, opis, telefon, adres, lokalizacja), dane roślin i rezerwacji, dane transakcyjne (przetwarzane przez Stripe — nie przechowujemy danych kart płatniczych) oraz dane techniczne.
+        </p>
+
+        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.fern, marginBottom: 8 }}>§2 Odbiorcy danych</div>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#4A4638', lineHeight: 1.6, marginBottom: 14 }}>
+          Supabase (baza danych), Vercel (hosting), Stripe (płatności), Pl@ntNet (rozpoznawanie roślin), Anthropic (porady AI — podmiot z siedzibą poza UE, na podstawie standardowych klauzul umownych), Resend (wysyłka maili).
+        </p>
+
+        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.fern, marginBottom: 8 }}>§3 Twoje prawa</div>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#4A4638', lineHeight: 1.6, marginBottom: 14 }}>
+          Masz prawo do dostępu, sprostowania, usunięcia, ograniczenia przetwarzania, przenoszenia danych oraz sprzeciwu wobec przetwarzania, a także wniesienia skargi do Prezesa UODO.
+        </p>
+
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginTop: 10 }}>
+          Pełna, prawnicza wersja obu dokumentów dostępna jest na życzenie u Usługodawcy.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CookieBanner() {
+  const [visible, setVisible] = useState(() => {
+    try { return !localStorage.getItem('leafsit_cookie_choice'); } catch (e) { return true; }
+  });
+
+  const choose = (value) => {
+    try { localStorage.setItem('leafsit_cookie_choice', value); } catch (e) { /* ignore */ }
+    setVisible(false);
+  };
+
+  if (!visible) return null;
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000,
+      background: colors.ink, padding: '16px 20px', display: 'flex', flexWrap: 'wrap',
+      alignItems: 'center', justifyContent: 'center', gap: 14
+    }}>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#EDE7DA', maxWidth: 480, flex: '1 1 260px' }}>
+        Używamy plików cookie niezbędnych do działania aplikacji oraz — za Twoją zgodą — analitycznych. Więcej w Polityce Prywatności.
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+        <button onClick={() => choose('essential')} style={{
+          padding: '9px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.12)', color: '#EDE7DA', border: 'none',
+          fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12, cursor: 'pointer'
+        }}>Tylko niezbędne</button>
+        <button onClick={() => choose('all')} style={{
+          padding: '9px 14px', borderRadius: 10, background: colors.fern, color: '#fff', border: 'none',
+          fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12, cursor: 'pointer'
+        }}>Akceptuj wszystkie</button>
+      </div>
+    </div>
+  );
+}
+
+const ONBOARDING_SLIDES = [
+  { Icon: Sparkles, title: 'Witaj w Leafsit!', text: 'Aplikacja łącząca osoby wyjeżdżające z tymi, którzy zaopiekują się ich roślinami pod nieobecność.' },
+  { Icon: Search, title: 'Znajdź opiekuna', text: 'Przeglądaj hostów w okolicy, sprawdź opinie i ceny, wyślij prośbę o rezerwację na wybrane daty.' },
+  { Icon: Camera, title: 'Dodaj swoje rośliny', text: 'Zrób zdjęcie, a AI rozpozna gatunek. Możesz też odblokować płatny, spersonalizowany przewodnik pielęgnacyjny.' },
+  { Icon: Wallet, title: 'Zarabiaj jako host', text: 'Masz wolne miejsce? Ustal cenę i przyjmuj rośliny sąsiadów — pieniądze trafiają prosto na Twoje konto.' },
+  { Icon: MessageCircle, title: 'Bądź na bieżąco', text: 'Powiadomienia i czat w aplikacji pomogą Ci domówić szczegóły z drugą stroną rezerwacji.' },
+];
+
+function OnboardingScreen({ onFinish }) {
+  const [step, setStep] = useState(0);
+  const slide = ONBOARDING_SLIDES[step];
+  const isLast = step === ONBOARDING_SLIDES.length - 1;
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 28 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button onClick={onFinish} style={{
+          background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+          fontSize: 12.5, color: '#A9A08B', fontWeight: 600
+        }}>Pomiń</button>
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+        <div style={{
+          width: 88, height: 88, borderRadius: 44, background: `linear-gradient(135deg, ${colors.fern}, ${colors.fernDark})`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28
+        }}>
+          <slide.Icon size={38} color="#fff" />
+        </div>
+        <h2 style={{ fontSize: 21, color: colors.ink, fontWeight: 600, margin: '0 0 12px' }}>{slide.title}</h2>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#7A7261', lineHeight: 1.6, maxWidth: 280 }}>{slide.text}</p>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 24 }}>
+        {ONBOARDING_SLIDES.map((_, i) => (
+          <div key={i} style={{
+            width: i === step ? 20 : 6, height: 6, borderRadius: 3,
+            background: i === step ? colors.fern : colors.line, transition: 'width 0.2s'
+          }} />
+        ))}
+      </div>
+
+      <button
+        onClick={() => isLast ? onFinish() : setStep(s => s + 1)}
+        style={{
+          width: '100%', padding: 16, borderRadius: 16, background: colors.fern, color: '#fff',
+          border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer'
+        }}
+      >
+        {isLast ? 'Zaczynajmy!' : 'Dalej'}
+      </button>
+    </div>
+  );
+}
+
 function AuthScreen({ referralCodeFromUrl }) {
   const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailConsent, setEmailConsent] = useState(true);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [referralInput, setReferralInput] = useState(referralCodeFromUrl || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
+
+  if (showTerms) {
+    return <TermsScreen onBack={() => setShowTerms(false)} />;
+  }
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -293,6 +449,7 @@ function AuthScreen({ referralCodeFromUrl }) {
             email_notifications: emailConsent,
             referral_code: generateReferralCode(),
             referred_by: referredBy,
+            terms_accepted_at: new Date().toISOString(),
           });
         }
         setInfo('Konto utworzone! Możesz się teraz zalogować.');
@@ -301,7 +458,7 @@ function AuthScreen({ referralCodeFromUrl }) {
     setLoading(false);
   };
 
-  const canSubmit = mode === 'login' ? (email && password) : (name && email && password);
+  const canSubmit = mode === 'login' ? (email && password) : (name && email && password && termsAccepted);
 
   return (
     <div style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -343,6 +500,24 @@ function AuthScreen({ referralCodeFromUrl }) {
           </div>
           <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#7A7261' }}>
             Chcę otrzymywać powiadomienia email (np. o nowych rezerwacjach)
+          </span>
+        </div>
+      )}
+      {mode === 'signup' && (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 16, cursor: 'pointer' }} onClick={() => setTermsAccepted(a => !a)}>
+          <div style={{
+            width: 20, height: 20, borderRadius: 6, flexShrink: 0, marginTop: 1,
+            border: `2px solid ${termsAccepted ? colors.fern : colors.line}`,
+            background: termsAccepted ? colors.fern : 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {termsAccepted && <Check size={13} color="#fff" strokeWidth={3} />}
+          </div>
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#7A7261' }}>
+            Akceptuję{' '}
+            <span onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} style={{ color: colors.clay, fontWeight: 700, textDecoration: 'underline' }}>
+              Regulamin i Politykę Prywatności
+            </span>{' '}Leafsit
           </span>
         </div>
       )}
@@ -3536,6 +3711,28 @@ export default function App() {
   const [bookingPaymentReturn, setBookingPaymentReturn] = useState(null);
   const [activeConversation, setActiveConversation] = useState(null);
   const [referralCodeFromUrl, setReferralCodeFromUrl] = useState(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+
+  useEffect(() => {
+    if (!session) { setOnboardingChecked(false); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from('profiles').select('onboarding_seen').eq('id', session.user.id).maybeSingle();
+      if (!cancelled) {
+        setShowOnboarding(!data || data.onboarding_seen !== true);
+        setOnboardingChecked(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [session]);
+
+  const finishOnboarding = async () => {
+    if (session) {
+      await supabase.from('profiles').upsert({ id: session.user.id, onboarding_seen: true });
+    }
+    setShowOnboarding(false);
+  };
 
   const openConversationWithHost = async (host) => {
     const myName = displayNameOf(session.user) !== session.user.email ? displayNameOf(session.user) : null;
@@ -3671,6 +3868,12 @@ export default function App() {
           </div>
         ) : !session ? (
           <AuthScreen referralCodeFromUrl={referralCodeFromUrl} />
+        ) : !onboardingChecked ? (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Loader2 size={28} color={colors.fern} style={{ animation: 'spin 1s linear infinite' }} />
+          </div>
+        ) : showOnboarding ? (
+          <OnboardingScreen onFinish={finishOnboarding} />
         ) : (
           <>
             {renderTab()}
@@ -3678,6 +3881,7 @@ export default function App() {
           </>
         )}
       </Screen>
+      <CookieBanner />
     </div>
   );
 }
