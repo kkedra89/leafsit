@@ -2501,6 +2501,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const [showHostForm, setShowHostForm] = useState(false);
   const [editingHost, setEditingHost] = useState(false);
   const [showHostDashboard, setShowHostDashboard] = useState(false);
+  const [showTermsInProfile, setShowTermsInProfile] = useState(false);
   const [hostRefresh, setHostRefresh] = useState(0);
 
   const [myBookings, setMyBookings] = useState([]);
@@ -3019,6 +3020,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
   if (showHostDashboard) {
     return <HostDashboardScreen myHost={myHost} onBack={() => setShowHostDashboard(false)} />;
+  }
+
+  if (showTermsInProfile) {
+    return <TermsScreen onBack={() => setShowTermsInProfile(false)} />;
   }
 
   if (showHostForm || editingHost) {
@@ -3648,6 +3653,15 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, opacity: 0.9 }}>Ustal cenę i przyjmuj rośliny sąsiadów pod nieobecność</div>
         </div>
       )}
+
+      <div
+        onClick={() => setShowTermsInProfile(true)}
+        style={{ textAlign: 'center', marginTop: 24, cursor: 'pointer' }}
+      >
+        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', textDecoration: 'underline' }}>
+          Regulamin i Polityka Prywatności
+        </span>
+      </div>
     </div>
   );
 }
