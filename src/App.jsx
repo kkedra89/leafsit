@@ -463,12 +463,9 @@ function AuthScreen({ referralCodeFromUrl }) {
   return (
     <div style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <div style={{
-          width: 56, height: 56, borderRadius: 18, background: colors.fern, margin: '0 auto 14px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <Sparkles size={26} color="#fff" />
-        </div>
+        <img src="/logo-mark.png" alt="Leafsit" style={{
+          width: 72, height: 72, margin: '0 auto 14px', display: 'block'
+        }} />
         <h1 style={{ fontSize: 24, color: colors.ink, fontWeight: 600, margin: 0 }}>Leafsit</h1>
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginTop: 4 }}>
           {mode === 'login' ? 'Zaloguj się do swojego konta' : 'Załóż nowe konto'}
