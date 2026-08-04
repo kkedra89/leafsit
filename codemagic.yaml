@@ -15,12 +15,12 @@ workflows:
           test -d ios || npx cap add ios
       - name: Synchronizacja Capacitor
         script: npx cap sync ios
-      - name: Instalacja CocoaPods
-        script: cd ios/App && pod install
+      - name: Sprawdzenie struktury projektu iOS
+        script: ls -la ios/App
       - name: Budowanie na symulator (bez podpisywania)
         script: |
           cd ios/App
-          xcodebuild -workspace App.xcworkspace \
+          xcodebuild -project App.xcodeproj \
             -scheme App \
             -configuration Debug \
             -sdk iphonesimulator \
