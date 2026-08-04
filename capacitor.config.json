@@ -1,0 +1,8 @@
+{
+  "appId": "com.leafsit.app",
+  "appName": "leafsit",
+  "webDir": "dist",
+  "server": {
+    "url": "https://leafsit-ten.vercel.app"
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">leafsit</string>
+    <string name="title_activity_main">leafsit</string>
+    <string name="package_name">com.leafsit.app</string>
+    <string name="custom_url_scheme">com.leafsit.app</string>
+</resources>
