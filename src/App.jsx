@@ -256,7 +256,7 @@ function generateReferralCode() {
 
 function TermsScreen({ onBack }) {
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 20, paddingBottom: 14, borderBottom: `1px solid ${colors.line}` }}>
         <button onClick={onBack} style={{
           width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
@@ -2213,7 +2213,7 @@ function ChatScreen({ conversationId, myUserId, otherName, otherUserId, onBack }
   };
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 20, paddingBottom: 14, borderBottom: `1px solid ${colors.line}` }}>
         <button onClick={onBack} style={{
           width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
