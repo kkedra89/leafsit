@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard, Bell, Heart, Map as MapIcon, List, Send } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard, Bell, Heart, Map as MapIcon, List, Send, HelpCircle } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -286,19 +286,19 @@ function TermsScreen({ onBack }) {
 
         <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.fern, marginBottom: 8 }}>§4 Sztuczna inteligencja</div>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#4A4638', lineHeight: 1.6, marginBottom: 14 }}>
-          Aplikacja wykorzystuje AI do rozpoznawania gatunku rośliny oraz generowania porad pielęgnacyjnych. Wygenerowane treści mają charakter orientacyjny.
+          Aplikacja wykorzystuje AI do rozpoznawania gatunku rośliny, generowania porad pielęgnacyjnych oraz obsługi asystenta wsparcia klienta w zakładce "Wsparcie". Wygenerowane treści mają charakter orientacyjny. Wiadomości wysłane do asystenta wsparcia mogą zostać automatycznie oznaczone jako pilne i przekazane zespołowi Leafsit do dalszej, ręcznej obsługi.
         </p>
 
         <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, color: colors.ink, marginTop: 20, marginBottom: 8 }}>Polityka Prywatności</div>
 
         <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.fern, marginBottom: 8 }}>§1 Jakie dane przetwarzamy</div>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#4A4638', lineHeight: 1.6, marginBottom: 14 }}>
-          Dane konta (email, imię, zdjęcie), dane profilu Hosta (cena, opis, telefon, adres, lokalizacja), dane roślin i rezerwacji, dane transakcyjne (przetwarzane przez Stripe — nie przechowujemy danych kart płatniczych) oraz dane techniczne.
+          Dane konta (email, imię, zdjęcie), dane profilu Hosta (cena, opis, telefon, adres, lokalizacja), dane roślin i rezerwacji, dane transakcyjne (przetwarzane przez Stripe — nie przechowujemy danych kart płatniczych), treść rozmów z asystentem wsparcia AI oraz dane techniczne.
         </p>
 
         <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.fern, marginBottom: 8 }}>§2 Odbiorcy danych</div>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#4A4638', lineHeight: 1.6, marginBottom: 14 }}>
-          Supabase (baza danych), Vercel (hosting), Stripe (płatności), Pl@ntNet (rozpoznawanie roślin), Anthropic (porady AI — podmiot z siedzibą poza UE, na podstawie standardowych klauzul umownych), Resend (wysyłka maili).
+          Supabase (baza danych), Vercel (hosting), Stripe (płatności), Pl@ntNet (rozpoznawanie roślin), Anthropic (porady AI i asystent wsparcia — podmiot z siedzibą poza UE, na podstawie standardowych klauzul umownych), Resend (wysyłka maili, w tym powiadomień o pilnych zgłoszeniach wsparcia).
         </p>
 
         <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.fern, marginBottom: 8 }}>§3 Twoje prawa</div>
@@ -355,6 +355,7 @@ const ONBOARDING_SLIDES = [
   { Icon: Camera, title: 'Dodaj swoje rośliny', text: 'Zrób zdjęcie, a AI rozpozna gatunek. Możesz też odblokować płatny, spersonalizowany przewodnik pielęgnacyjny.' },
   { Icon: Wallet, title: 'Zarabiaj jako host', text: 'Masz wolne miejsce? Ustal cenę i przyjmuj rośliny sąsiadów — pieniądze trafiają prosto na Twoje konto.' },
   { Icon: MessageCircle, title: 'Bądź na bieżąco', text: 'Powiadomienia i czat w aplikacji pomogą Ci domówić szczegóły z drugą stroną rezerwacji.' },
+  { Icon: HelpCircle, title: 'Masz pytanie?', text: 'Asystent wsparcia w Profilu odpowie od razu. Jeśli sprawa jest pilna, automatycznie przekażemy ją naszemu zespołowi.' },
 ];
 
 function OnboardingScreen({ onFinish }) {
@@ -372,12 +373,16 @@ function OnboardingScreen({ onFinish }) {
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-        <div style={{
-          width: 88, height: 88, borderRadius: 44, background: `linear-gradient(135deg, ${colors.fern}, ${colors.fernDark})`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28
-        }}>
-          <slide.Icon size={38} color="#fff" />
-        </div>
+        {step === 0 ? (
+          <img src="/logo-mark.png" alt="Leafsit" style={{ width: 96, height: 96, marginBottom: 28 }} />
+        ) : (
+          <div style={{
+            width: 88, height: 88, borderRadius: 44, background: `linear-gradient(135deg, ${colors.fern}, ${colors.fernDark})`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28
+          }}>
+            <slide.Icon size={38} color="#fff" />
+          </div>
+        )}
         <h2 style={{ fontSize: 21, color: colors.ink, fontWeight: 600, margin: '0 0 12px' }}>{slide.title}</h2>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#7A7261', lineHeight: 1.6, maxWidth: 280 }}>{slide.text}</p>
       </div>
@@ -2140,6 +2145,145 @@ function ContactBlock({ title, phone, address, extra }) {
   );
 }
 
+function SupportScreen({ userId, userEmail, onBack }) {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const { data } = await supabase
+        .from('support_messages')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
+      if (!cancelled) {
+        setMessages(data || []);
+        setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, sending]);
+
+  const handleSend = async () => {
+    const userText = text.trim();
+    if (!userText || sending) return;
+    setText('');
+    setSending(true);
+
+    const { data: savedUserMsg } = await supabase
+      .from('support_messages')
+      .insert([{ user_id: userId, sender: 'user', content: userText }])
+      .select()
+      .single();
+    if (savedUserMsg) setMessages(prev => [...prev, savedUserMsg]);
+
+    try {
+      const history = messages.slice(-8).map(m => ({ sender: m.sender, content: m.content }));
+      const res = await fetch('/api/support-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userText, history, userEmail }),
+      });
+      const data = await res.json();
+      const replyText = data.reply || 'Przepraszam, wystąpił błąd. Spróbuj ponownie.';
+
+      const { data: savedReply } = await supabase
+        .from('support_messages')
+        .insert([{ user_id: userId, sender: 'assistant', content: replyText }])
+        .select()
+        .single();
+      if (savedReply) setMessages(prev => [...prev, savedReply]);
+
+      if (data.escalated) {
+        await supabase.from('profiles').upsert({ id: userId, support_escalated: true });
+      }
+    } catch (e) {
+      const { data: errMsg } = await supabase
+        .from('support_messages')
+        .insert([{ user_id: userId, sender: 'assistant', content: 'Przepraszam, wystąpił problem z połączeniem. Spróbuj ponownie.' }])
+        .select()
+        .single();
+      if (errMsg) setMessages(prev => [...prev, errMsg]);
+    }
+    setSending(false);
+  };
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 20, paddingBottom: 14, borderBottom: `1px solid ${colors.line}` }}>
+        <button onClick={onBack} style={{
+          width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+        }}><ArrowLeft size={18} color={colors.ink} /></button>
+        <div>
+          <h2 style={{ fontSize: 16, color: colors.ink, fontWeight: 600, margin: 0 }}>Wsparcie</h2>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Zwykle odpowiadamy od razu</div>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+        {loading && (
+          <div style={{ textAlign: 'center', color: '#A9A08B', fontFamily: 'Inter, sans-serif', fontSize: 13, marginTop: 20 }}>Ładowanie...</div>
+        )}
+        {!loading && messages.length === 0 && (
+          <div style={{ textAlign: 'center', color: '#A9A08B', fontFamily: 'Inter, sans-serif', fontSize: 13, marginTop: 20, padding: '0 20px' }}>
+            Cześć! W czym mogę pomóc? Zapytaj o rezerwacje, płatności, albo bycie hostem.
+          </div>
+        )}
+        {messages.map(m => (
+          <div key={m.id} style={{ display: 'flex', justifyContent: m.sender === 'user' ? 'flex-end' : 'flex-start', marginBottom: 10 }}>
+            <div style={{
+              maxWidth: '78%', padding: '10px 14px', borderRadius: 16,
+              background: m.sender === 'user' ? colors.fern : colors.clayLight,
+              color: m.sender === 'user' ? '#fff' : colors.ink,
+              fontFamily: 'Inter, sans-serif', fontSize: 13.5, lineHeight: 1.4,
+            }}>
+              {m.content}
+            </div>
+          </div>
+        ))}
+        {sending && (
+          <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 10 }}>
+            <div style={{ padding: '10px 14px', borderRadius: 16, background: colors.clayLight, display: 'flex', alignItems: 'center' }}>
+              <Loader2 size={14} color={colors.ink} style={{ animation: 'spin 1s linear infinite' }} />
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, padding: 16, borderTop: `1px solid ${colors.line}` }}>
+        <input
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !sending) handleSend(); }}
+          placeholder="Napisz wiadomość..."
+          style={{
+            flex: 1, padding: '12px 14px', borderRadius: 12, border: `1px solid ${colors.line}`,
+            fontFamily: 'Inter, sans-serif', fontSize: 13.5, outline: 'none'
+          }}
+        />
+        <button onClick={handleSend} disabled={sending || !text.trim()} style={{
+          width: 44, height: 44, borderRadius: 12, background: colors.fern, border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+          opacity: (sending || !text.trim()) ? 0.6 : 1, flexShrink: 0
+        }}>
+          <Send size={18} color="#fff" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ChatScreen({ conversationId, myUserId, otherName, otherUserId, onBack }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -2499,6 +2643,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const [editingHost, setEditingHost] = useState(false);
   const [showHostDashboard, setShowHostDashboard] = useState(false);
   const [showTermsInProfile, setShowTermsInProfile] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
   const [hostRefresh, setHostRefresh] = useState(0);
 
   const [myBookings, setMyBookings] = useState([]);
@@ -3023,6 +3168,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     return <TermsScreen onBack={() => setShowTermsInProfile(false)} />;
   }
 
+  if (showSupport) {
+    return <SupportScreen userId={user.id} userEmail={user.email} onBack={() => setShowSupport(false)} />;
+  }
+
   if (showHostForm || editingHost) {
     return (
       <BecomeHostForm
@@ -3386,6 +3535,12 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           <div style={{ fontSize: 15, fontWeight: 600, color: colors.ink, wordBreak: 'break-word' }}>{displayNameOf(user)}</div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', wordBreak: 'break-all' }}>{user.email}</div>
         </div>
+        <button onClick={() => setShowSupport(true)} style={{
+          background: colors.clayLight, border: 'none', borderRadius: 12, padding: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+        }}>
+          <HelpCircle size={16} color={colors.ink} />
+        </button>
         <button onClick={() => setShowConversations(true)} style={{
           background: colors.clayLight, border: 'none', borderRadius: 12, padding: 10,
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
