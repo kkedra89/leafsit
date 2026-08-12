@@ -24,6 +24,997 @@ const colors = {
   card: '#FFFFFF',
 };
 
+// ============================================================
+// SYSTEM JĘZYKÓW (i18n)
+// ============================================================
+
+const LANGUAGES = [
+  { code: 'pl', flag: '🇵🇱', name: 'Polski' },
+  { code: 'en', flag: '🇬🇧', name: 'English' },
+  { code: 'uk', flag: '🇺🇦', name: 'Українська' },
+];
+
+const TRANSLATIONS = {
+  pl: {
+    // Nawigacja
+    'tab.home': 'Szukaj',
+    'tab.add': 'Dodaj',
+    'tab.scan': 'Rozpoznaj',
+    'tab.profile': 'Profil',
+
+    // Logowanie / rejestracja
+    'auth.loginSubtitle': 'Zaloguj się do swojego konta',
+    'auth.signupSubtitle': 'Załóż nowe konto',
+    'auth.namePlaceholder': 'Imię i nazwisko (lub nick)',
+    'auth.referralPlaceholder': 'Kod polecenia (opcjonalnie)',
+    'auth.referralDetected': 'Zaproszenie od znajomego wykryte automatycznie ✓',
+    'auth.emailConsent': 'Chcę otrzymywać powiadomienia email (np. o nowych rezerwacjach)',
+    'auth.acceptPrefix': 'Akceptuję',
+    'auth.termsLink': 'Regulamin i Politykę Prywatności',
+    'auth.acceptSuffix': 'Leafsit',
+    'auth.emailPlaceholder': 'Adres email',
+    'auth.passwordPlaceholder': 'Hasło',
+    'auth.loginButton': 'Zaloguj się',
+    'auth.signupButton': 'Zarejestruj się',
+    'auth.noAccount': 'Nie masz jeszcze konta?',
+    'auth.hasAccount': 'Masz już konto?',
+    'auth.accountCreated': 'Konto utworzone! Możesz się teraz zalogować.',
+    'auth.languageLabel': 'Język',
+
+    // Samouczek
+    'onb.skip': 'Pomiń',
+    'onb.next': 'Dalej',
+    'onb.start': 'Zaczynajmy!',
+    'onb.1.title': 'Witaj w Leafsit!',
+    'onb.1.text': 'Aplikacja łącząca osoby wyjeżdżające z tymi, którzy zaopiekują się ich roślinami pod nieobecność.',
+    'onb.2.title': 'Znajdź opiekuna',
+    'onb.2.text': 'Przeglądaj hostów w okolicy, sprawdź opinie i ceny, wyślij prośbę o rezerwację na wybrane daty.',
+    'onb.3.title': 'Dodaj swoje rośliny',
+    'onb.3.text': 'Zrób zdjęcie, a AI rozpozna gatunek. Możesz też odblokować płatny, spersonalizowany przewodnik pielęgnacyjny.',
+    'onb.4.title': 'Zarabiaj jako host',
+    'onb.4.text': 'Masz wolne miejsce? Ustal cenę i przyjmuj rośliny sąsiadów — pieniądze trafiają prosto na Twoje konto.',
+    'onb.5.title': 'Bądź na bieżąco',
+    'onb.5.text': 'Powiadomienia i czat w aplikacji pomogą Ci domówić szczegóły z drugą stroną rezerwacji.',
+    'onb.6.title': 'Masz pytanie?',
+    'onb.6.text': 'Asystent wsparcia w Profilu odpowie od razu. Jeśli sprawa jest pilna, automatycznie przekażemy ją naszemu zespołowi.',
+
+    // Cookies
+    'cookie.text': 'Używamy plików cookie niezbędnych do działania aplikacji oraz — za Twoją zgodą — analitycznych. Więcej w Polityce Prywatności.',
+    'cookie.essential': 'Tylko niezbędne',
+    'cookie.acceptAll': 'Akceptuj wszystkie',
+
+    // Ekran wyszukiwania
+    'home.yourArea': 'Twoja okolica',
+    'home.defaultArea': 'Warszawa · Mokotów',
+    'home.titleLine1': 'Komu zostawisz',
+    'home.titleLine2': 'swoje rośliny?',
+    'home.locationDenied': 'Brak dostępu do lokalizacji — hosty pokazane bez sortowania po odległości.',
+    'home.searchPlaceholder': 'Szukaj po imieniu lub lokalizacji...',
+    'home.filterNear': 'W pobliżu',
+    'home.filterTop': 'Najwyżej oceniani',
+    'home.filterAvailable': 'Dostępni teraz',
+    'home.filterFavorites': 'Ulubione',
+    'home.filterPrice': 'Cena',
+    'home.filterDates': 'Terminy',
+    'home.viewList': 'Lista',
+    'home.viewMap': 'Mapa',
+    'home.priceFrom': 'Cena od',
+    'home.priceTo': 'Cena do',
+    'home.howManyPlants': 'Ile roślin?',
+    'home.loading': 'Ładowanie...',
+    'home.hostsFound': '{n} hostów {suffix}',
+    'home.suffixMatching': 'pasujących do wyszukiwania',
+    'home.suffixNearby': 'w pobliżu',
+    'home.noHostsQuery': 'Brak hostów pasujących do "{q}".',
+    'home.noHostsCriteria': 'Nie ma jeszcze żadnych hostów spełniających te kryteria.',
+    'home.perPlantPerDay': '/roślinę/dzień',
+    'home.acceptsPlants': 'przyjmuje {n} roślin',
+    'home.away': '{km} km',
+
+    // Szczegóły hosta
+    'host.reviewsCount': '{n} opinii',
+    'host.freeSpots': 'miejsca wolne',
+    'host.perPlantDay': 'za roślinę/dzień',
+    'host.privacyNote': 'Dokładny adres i numer telefonu hosta zobaczysz dopiero po zaakceptowaniu Twojej rezerwacji — dla bezpieczeństwa obu stron.',
+    'host.bookButton': 'Zarezerwuj termin',
+    'host.reviewsHeader': 'Opinie',
+    'host.loading': 'Ładowanie...',
+    'host.noReviews': 'Ten host nie ma jeszcze żadnych opinii.',
+    'host.anonymousGuest': 'Anonimowy gość',
+
+    // Formularz rezerwacji
+    'booking.requestSent': 'Prośba wysłana!',
+    'booking.backToList': 'Wróć do listy',
+    'booking.loadingPlants': 'Ładowanie Twoich roślin...',
+    'booking.noPlants': 'Nie masz jeszcze żadnych roślin. Dodaj pierwszą w zakładce "Dodaj", żeby móc zarezerwować hosta.',
+    'booking.whichPlant': 'Która roślina?',
+    'booking.howMany': 'Ile sztuk? (masz {max})',
+    'booking.estimatedCost': 'Szacowany koszt: {total} zł ({days} {dayWord}) — płatność dopiero po akceptacji przez hosta',
+    'booking.day': 'dzień',
+    'booking.days': 'dni',
+    'booking.yourPhone': 'Twój telefon (opcjonalnie)',
+    'booking.phoneNote': 'Host zobaczy go dopiero po zaakceptowaniu — ułatwi ustalenie godziny odbioru',
+    'booking.sending': 'Wysyłanie...',
+    'booking.sendRequest': 'Wyślij prośbę o rezerwację',
+    'booking.sendFailed': 'Nie udało się wysłać prośby: ',
+
+    // Dodawanie rośliny
+    'plant.title': 'Dodaj roślinę',
+    'plant.subtitle': 'Zrób zdjęcie, a rozpoznamy gatunek',
+    'plant.takePhoto': 'Zrób zdjęcie rośliny',
+    'plant.identifying': 'Rozpoznaję gatunek...',
+    'plant.recognized': 'Rozpoznano: {name}',
+    'plant.confidence': '(pewność {n}%)',
+    'plant.wrongName': 'Nazwa nie zgadza się? Popraw ją:',
+    'plant.howManySame': 'Ile masz takich samych roślin?',
+    'plant.unlockPremium': 'Odblokuj pełny przewodnik Premium',
+    'plant.premiumTitle': 'Przewodnik Premium — 9 zł',
+    'plant.checkingPayment': 'Sprawdzam płatność...',
+    'plant.sunlightQuestion': 'Jaki poziom nasłonecznienia ma ta roślina u Ciebie?',
+    'plant.redirecting': 'Przekierowuję do płatności...',
+    'plant.payButton': 'Zapłać 9 zł i odblokuj przewodnik',
+    'plant.testMode': 'Tryb testowy — użyj karty 4242 4242 4242 4242, dowolna data i CVC',
+    'plant.generating': 'Generuję Twój przewodnik...',
+    'plant.guidePaid': 'Twój przewodnik pielęgnacji (opłacony ✓)',
+    'plant.added': 'Roślina dodana!',
+    'plant.checkProfile': 'Sprawdź ją w zakładce Profil',
+    'plant.errIdentify': 'Nie udało się rozpoznać rośliny.',
+    'plant.errNoSpecies': 'Nie rozpoznano gatunku. Spróbuj wyraźniejszego zdjęcia liścia.',
+    'plant.errConnection': 'Błąd połączenia z rozpoznawaniem roślin.',
+    'plant.errGuide': 'Nie udało się wygenerować porady.',
+    'plant.errGuideConn': 'Błąd połączenia z generatorem porad.',
+    'plant.errPayment': 'Nie udało się utworzyć płatności.',
+    'plant.errPaymentConn': 'Błąd połączenia z systemem płatności.',
+    'plant.errPaymentConfirm': 'Nie udało się potwierdzić płatności. Spróbuj ponownie.',
+    'plant.errPaymentCheck': 'Błąd sprawdzania płatności.',
+    'plant.errSave': 'Nie udało się zapisać: ',
+
+    // Rozpoznawanie
+    'scan.title': 'Rozpoznaj roślinę',
+    'scan.takeOrUpload': 'Zrób lub wgraj zdjęcie',
+    'scan.confidence': 'Pewność rozpoznania: {n}%',
+    'scan.addPrompt': 'Chcesz dodać ją do swoich roślin?',
+    'scan.addHint': 'Przejdź do zakładki "Dodaj" — tam też odblokujesz pełny przewodnik Premium.',
+
+    // Statusy rezerwacji
+    'status.accepted': 'Zaakceptowana',
+    'status.rejected': 'Odrzucona',
+    'status.cancelled': 'Anulowana',
+    'status.pending': 'Oczekuje',
+
+    // Opinie
+    'review.rateHost': 'Oceń hosta',
+    'review.rateRenter': 'Oceń wynajmującego',
+    'review.commentPlaceholder': 'Jak przebiegła współpraca? (opcjonalnie)',
+    'review.submit': 'Wyślij opinię',
+    'review.saveFailed': 'Nie udało się zapisać opinii: ',
+    'review.guest': 'Gość',
+    'review.receivedTitle': 'Otrzymałeś opinię',
+
+    // Wsparcie
+    'support.title': 'Wsparcie',
+    'support.subtitle': 'Zwykle odpowiadamy od razu',
+    'support.welcome': 'Cześć! W czym mogę pomóc? Zapytaj o rezerwacje, płatności, albo bycie hostem.',
+    'support.inputPlaceholder': 'Napisz wiadomość...',
+    'support.errGeneric': 'Przepraszam, wystąpił błąd. Spróbuj ponownie.',
+    'support.errConnection': 'Przepraszam, wystąpił problem z połączeniem. Spróbuj ponownie.',
+
+    // Czat
+    'chat.firstMessage': 'Napisz pierwszą wiadomość!',
+    'chat.loading': 'Ładowanie...',
+    'chat.messagesTitle': 'Wiadomości',
+    'chat.noConversations': 'Nie masz jeszcze żadnych rozmów.',
+    'chat.startConversation': 'Rozpocznij rozmowę',
+    'chat.renter': 'Wynajmujący',
+
+    // Panel hosta
+    'dash.title': 'Panel hosta',
+    'dash.loading': 'Ładowanie...',
+    'dash.totalEarned': 'Łącznie zarobione',
+    'dash.completed': 'Zrealizowane',
+    'dash.pending': 'Oczekujące',
+    'dash.rating': 'Ocena',
+    'dash.historyTitle': 'Historia rezerwacji',
+    'dash.noHistory': 'Brak historii rezerwacji.',
+
+    // Listy
+    'list.newest': 'Najnowsze',
+    'list.oldest': 'Najstarsze',
+    'list.all': 'Wszystkie',
+    'list.noResults': 'Brak wyników.',
+
+    // Zostań hostem
+    'becomeHost.titleNew': 'Zostań hostem',
+    'becomeHost.titleEdit': 'Edytuj profil hosta',
+    'becomeHost.photoFromAccount': 'Zdjęcie z Twojego konta',
+    'becomeHost.namePlaceholder': 'Twoje imię',
+    'becomeHost.areaPlaceholder': 'Okolica (np. Mokotów, Warszawa)',
+    'becomeHost.addressPlaceholder': 'Dokładny adres (opcjonalnie, widoczny po akceptacji)',
+    'becomeHost.phonePlaceholder': 'Telefon (opcjonalnie, widoczny po akceptacji)',
+    'becomeHost.pricePlaceholder': 'Cena za roślinę / dzień (zł)',
+    'becomeHost.priceHint': 'Sugerowana cena: 2-5 zł za roślinę dziennie',
+    'becomeHost.capacityPlaceholder': 'Ile roślin możesz przyjąć?',
+    'becomeHost.descPlaceholder': 'Krótki opis (opcjonalnie) — np. doświadczenie z roślinami, jak często wysyłasz zdjęcia...',
+    'becomeHost.sunlightLabel': 'Nasłonecznienie u Ciebie',
+    'becomeHost.useLocation': 'Użyj mojej lokalizacji (dla odległości)',
+    'becomeHost.locationSaved': 'Lokalizacja zapisana ✓ (kliknij by zaktualizować)',
+    'becomeHost.locationLoading': 'Pobieram lokalizację...',
+    'becomeHost.locationUnsupported': 'Twoja przeglądarka nie obsługuje lokalizacji.',
+    'becomeHost.locationFailed': 'Nie udało się pobrać lokalizacji. Sprawdź uprawnienia przeglądarki.',
+    'becomeHost.saveChanges': 'Zapisz zmiany',
+    'becomeHost.saveFailed': 'Nie udało się zapisać: ',
+    'sun.full': 'Pełne słońce',
+    'sun.partial': 'Półcień',
+    'sun.shade': 'Cień',
+
+    // Profil
+    'profile.loading': 'Ładowanie...',
+    'profile.changeName': 'Zmień imię',
+    'profile.namePlaceholder': 'Twoje imię i nazwisko',
+    'profile.fillNameHint': 'Uzupełnij swoje imię — host zobaczy je zamiast samego emaila',
+    'profile.notifications': 'Powiadomienia',
+    'profile.noNotifications': 'Brak powiadomień.',
+    'profile.emailNotifications': 'Powiadomienia email',
+    'profile.saving': 'Zapisywanie...',
+    'profile.referralTitle': 'Poleć znajomym Leafsit',
+    'profile.referredCount': 'Poleconych znajomych: {n}',
+    'profile.copyLink': 'Kopiuj link',
+    'profile.copied': 'Skopiowano ✓',
+    'profile.viewAll': 'Wyświetl wszystkie ({n})',
+    'profile.hostPanel': 'Panel hosta',
+    'profile.yourPlants': 'Twoje rośliny',
+    'profile.noPlants': 'Nie masz jeszcze żadnych roślin — dodaj pierwszą w zakładce "Dodaj".',
+    'profile.yourBookings': 'Twoje rezerwacje',
+    'profile.noBookings': 'Nie masz jeszcze żadnych rezerwacji.',
+    'profile.bookingRequests': 'Prośby o rezerwację',
+    'profile.acceptedBookings': 'Zaakceptowane rezerwacje',
+    'profile.accept': 'Akceptuj',
+    'profile.reject': 'Odrzuć',
+    'profile.contactHost': 'Kontakt do hosta',
+    'profile.contactOwner': 'Kontakt do właściciela rośliny',
+    'profile.noNameGiven': 'Bez podanego imienia',
+    'profile.from': 'od',
+    'profile.leaveReview': 'Zostaw opinię',
+    'profile.rateRenter': 'Oceń wynajmującego',
+    'profile.reviewGiven': 'Opinia wystawiona',
+    'profile.renterReviewGiven': 'Opinia o wynajmującym wystawiona',
+    'profile.hostReviewOfYou': 'Opinia hosta o Tobie',
+    'profile.checkingPayment': 'Sprawdzam płatność...',
+    'profile.redirecting': 'Przekierowuję...',
+    'profile.payConfirm': 'Zapłać i potwierdź ({total} zł)',
+    'profile.paymentReceived': 'Otrzymano płatność',
+    'profile.cancelBooking': 'Anuluj rezerwację',
+    'profile.cancelAndRefund': 'Anuluj i zwróć płatność',
+    'profile.confirmCancel': 'Na pewno anulować tę rezerwację?',
+    'profile.refundFailed': 'Nie udało się zwrócić płatności. Spróbuj ponownie lub skontaktuj się z pomocą.',
+    'profile.currentlyAt': 'Obecnie u {name}',
+    'profile.atYourHome': 'U Ciebie w domu',
+    'profile.hostHistory': 'Historia u hostów',
+    'profile.neverAtHost': 'Ta roślina nigdy nie była jeszcze u hosta.',
+    'profile.becomeHostTitle': 'Chcesz zostać hostem?',
+    'profile.becomeHostText': 'Ustal cenę i przyjmuj rośliny sąsiadów pod nieobecność',
+    'profile.connectStripe': 'Podłącz konto Stripe',
+    'profile.checkingPayoutAccount': 'Sprawdzam status konta wypłat...',
+    'profile.payoutConnected': 'Konto do wypłat podłączone',
+    'profile.pending': 'Oczekujące',
+    'profile.terms': 'Regulamin i Polityka Prywatności',
+    'profile.yourHostProfile': 'Twój profil hosta',
+    'profile.confirmCancelPaid': 'Na pewno anulować? Zapłacone {amount} zł zostanie w pełni zwrócone.',
+    'weather.loading': 'Ładowanie pogody dla Twojej lokalizacji...',
+    'weather.humidity': 'wilgotność',
+    'weather.lowHumidity': 'Niska wilgotność powietrza — rozważ zraszanie liści.',
+    'becomeHost.changePhotoHint': 'Aby je zmienić, przejdź do zakładki Profil i kliknij w swój awatar.',
+    'becomeHost.priceWarning': 'To znacznie powyżej średniej — czy na pewno?',
+    'profile.awaitingPayment': 'Oczekuje na opłacenie przez wynajmującego',
+    'profile.hostNoPayout': 'Host jeszcze nie podłączył konta do wypłat — spróbuj ponownie za chwilę.',
+    'profile.photoAlsoOnListing': 'To zdjęcie jest też widoczne na Twoim ogłoszeniu hosta.',
+    'profile.connectStripeHint': 'Aby otrzymywać wypłaty za rezerwacje, podłącz konto Stripe (kilka minut).',
+    'plant.yourPlantAlt': 'Twoja roślina',
+    'weather.clear': 'Bezchmurnie',
+    'weather.partlyCloudy': 'Częściowe zachmurzenie',
+    'weather.cloudy': 'Pochmurno',
+    'weather.fog': 'Mgła',
+    'weather.rain': 'Opady',
+    'weather.variable': 'Zmiennie',
+    'weather.conditionsFor': '{place} · warunki dla Twoich roślin',
+    'weather.fetchFailed': 'Nie udało się pobrać pogody',
+    'scan.subtitle': 'Szybkie sprawdzenie gatunku — bez zapisywania w profilu',
+    'booking.waitingAcceptance': 'Czeka na akceptację przez {host}. Gdy host zaakceptuje, będziesz mógł opłacić i potwierdzić rezerwację.',
+    'booking.priceLine': '{price} zł / roślinę / dzień',
+    'review.yourPlant': 'Twoja roślina: {plant}',
+    'review.renterPlant': '{renter} — roślina: {plant}',
+    'profile.earnTitle': 'Zarabiaj na wolnym miejscu w domu',
+    'profile.paidWithShare': 'Opłacona — {total} zł (Twoja część: {share} zł)',
+    'profile.paidAmount': 'Zapłacono {amount} zł',
+    'profile.cancelRequest': 'Anuluj prośbę',
+    'profile.cancelling': 'Anulowanie...',
+    'profile.confirmDeletePlant': 'Usunąć "{name}" z Twoich roślin?',
+    'profile.capacityExceeded': 'Nie możesz zaakceptować tej prośby — w tym terminie masz już {current} zaakceptowanych roślin, a Twój limit to {limit}.',
+    'profile.noRequests': 'Brak próśb o rezerwację.',
+    'profile.noAccepted': 'Brak zaakceptowanych rezerwacji.',
+    'profile.spots': '{n} miejsc',
+    'profile.profileVisible': 'Twój profil jest już widoczny na liście hostów ✓',
+    'profile.gpsSaved': ' · lokalizacja GPS zapisana',
+  },
+
+  en: {
+    // Navigation
+    'tab.home': 'Search',
+    'tab.add': 'Add',
+    'tab.scan': 'Identify',
+    'tab.profile': 'Profile',
+
+    // Login / signup
+    'auth.loginSubtitle': 'Sign in to your account',
+    'auth.signupSubtitle': 'Create a new account',
+    'auth.namePlaceholder': 'Full name (or nickname)',
+    'auth.referralPlaceholder': 'Referral code (optional)',
+    'auth.referralDetected': "Friend's invitation detected automatically ✓",
+    'auth.emailConsent': 'I want to receive email notifications (e.g. about new bookings)',
+    'auth.acceptPrefix': 'I accept the Leafsit',
+    'auth.termsLink': 'Terms and Privacy Policy',
+    'auth.acceptSuffix': '',
+    'auth.emailPlaceholder': 'Email address',
+    'auth.passwordPlaceholder': 'Password',
+    'auth.loginButton': 'Sign in',
+    'auth.signupButton': 'Sign up',
+    'auth.noAccount': "Don't have an account yet?",
+    'auth.hasAccount': 'Already have an account?',
+    'auth.accountCreated': 'Account created! You can sign in now.',
+    'auth.languageLabel': 'Language',
+
+    // Onboarding
+    'onb.skip': 'Skip',
+    'onb.next': 'Next',
+    'onb.start': "Let's go!",
+    'onb.1.title': 'Welcome to Leafsit!',
+    'onb.1.text': 'An app connecting people going away with those who will look after their plants while they are gone.',
+    'onb.2.title': 'Find a plant sitter',
+    'onb.2.text': 'Browse hosts nearby, check reviews and prices, and send a booking request for your chosen dates.',
+    'onb.3.title': 'Add your plants',
+    'onb.3.text': 'Take a photo and AI will identify the species. You can also unlock a paid, personalised care guide.',
+    'onb.4.title': 'Earn as a host',
+    'onb.4.text': 'Got spare space? Set your price and take in your neighbours\u2019 plants — the money goes straight to your account.',
+    'onb.5.title': 'Stay in the loop',
+    'onb.5.text': 'In-app notifications and chat help you sort out the details with the other side of the booking.',
+    'onb.6.title': 'Got a question?',
+    'onb.6.text': 'The support assistant in your Profile answers right away. If it is urgent, we pass it straight to our team.',
+
+    // Cookies
+    'cookie.text': 'We use cookies essential to the app and — with your consent — analytics cookies. More in our Privacy Policy.',
+    'cookie.essential': 'Essential only',
+    'cookie.acceptAll': 'Accept all',
+
+    // Search screen
+    'home.yourArea': 'Your area',
+    'home.defaultArea': 'Warsaw · Mokotów',
+    'home.titleLine1': 'Who will look after',
+    'home.titleLine2': 'your plants?',
+    'home.locationDenied': 'No location access — hosts shown without distance sorting.',
+    'home.searchPlaceholder': 'Search by name or location...',
+    'home.filterNear': 'Nearby',
+    'home.filterTop': 'Top rated',
+    'home.filterAvailable': 'Available now',
+    'home.filterFavorites': 'Favourites',
+    'home.filterPrice': 'Price',
+    'home.filterDates': 'Dates',
+    'home.viewList': 'List',
+    'home.viewMap': 'Map',
+    'home.priceFrom': 'Price from',
+    'home.priceTo': 'Price to',
+    'home.howManyPlants': 'How many plants?',
+    'home.loading': 'Loading...',
+    'home.hostsFound': '{n} hosts {suffix}',
+    'home.suffixMatching': 'matching your search',
+    'home.suffixNearby': 'nearby',
+    'home.noHostsQuery': 'No hosts matching "{q}".',
+    'home.noHostsCriteria': 'There are no hosts matching these criteria yet.',
+    'home.perPlantPerDay': '/plant/day',
+    'home.acceptsPlants': 'takes {n} plants',
+    'home.away': '{km} km',
+
+    // Host detail
+    'host.reviewsCount': '{n} reviews',
+    'host.freeSpots': 'free spots',
+    'host.perPlantDay': 'per plant/day',
+    'host.privacyNote': "You'll see the host's exact address and phone number only after your booking is accepted — for the safety of both sides.",
+    'host.bookButton': 'Book dates',
+    'host.reviewsHeader': 'Reviews',
+    'host.loading': 'Loading...',
+    'host.noReviews': 'This host has no reviews yet.',
+    'host.anonymousGuest': 'Anonymous guest',
+
+    // Booking form
+    'booking.requestSent': 'Request sent!',
+    'booking.backToList': 'Back to list',
+    'booking.loadingPlants': 'Loading your plants...',
+    'booking.noPlants': 'You have no plants yet. Add your first one in the "Add" tab to book a host.',
+    'booking.whichPlant': 'Which plant?',
+    'booking.howMany': 'How many? (you have {max})',
+    'booking.estimatedCost': 'Estimated cost: {total} zł ({days} {dayWord}) — payment only after the host accepts',
+    'booking.day': 'day',
+    'booking.days': 'days',
+    'booking.yourPhone': 'Your phone (optional)',
+    'booking.phoneNote': 'The host will see it only after accepting — it helps arrange the pick-up time',
+    'booking.sending': 'Sending...',
+    'booking.sendRequest': 'Send booking request',
+    'booking.sendFailed': 'Could not send the request: ',
+
+    // Add plant
+    'plant.title': 'Add a plant',
+    'plant.subtitle': 'Take a photo and we will identify the species',
+    'plant.takePhoto': 'Take a photo of the plant',
+    'plant.identifying': 'Identifying species...',
+    'plant.recognized': 'Identified: {name}',
+    'plant.confidence': '({n}% confidence)',
+    'plant.wrongName': 'Name not right? Correct it:',
+    'plant.howManySame': 'How many identical plants do you have?',
+    'plant.unlockPremium': 'Unlock the full Premium guide',
+    'plant.premiumTitle': 'Premium guide — 9 zł',
+    'plant.checkingPayment': 'Checking payment...',
+    'plant.sunlightQuestion': 'How much sunlight does this plant get at your place?',
+    'plant.redirecting': 'Redirecting to payment...',
+    'plant.payButton': 'Pay 9 zł and unlock the guide',
+    'plant.testMode': 'Test mode — use card 4242 4242 4242 4242, any date and CVC',
+    'plant.generating': 'Generating your guide...',
+    'plant.guidePaid': 'Your care guide (paid ✓)',
+    'plant.added': 'Plant added!',
+    'plant.checkProfile': 'See it in the Profile tab',
+    'plant.errIdentify': 'Could not identify the plant.',
+    'plant.errNoSpecies': 'Species not recognised. Try a clearer photo of a leaf.',
+    'plant.errConnection': 'Connection error with plant identification.',
+    'plant.errGuide': 'Could not generate the guide.',
+    'plant.errGuideConn': 'Connection error with the guide generator.',
+    'plant.errPayment': 'Could not create the payment.',
+    'plant.errPaymentConn': 'Connection error with the payment system.',
+    'plant.errPaymentConfirm': 'Could not confirm the payment. Please try again.',
+    'plant.errPaymentCheck': 'Payment check error.',
+    'plant.errSave': 'Could not save: ',
+
+    // Identify
+    'scan.title': 'Identify a plant',
+    'scan.takeOrUpload': 'Take or upload a photo',
+    'scan.confidence': 'Identification confidence: {n}%',
+    'scan.addPrompt': 'Want to add it to your plants?',
+    'scan.addHint': 'Go to the "Add" tab — you can also unlock the full Premium guide there.',
+
+    // Booking statuses
+    'status.accepted': 'Accepted',
+    'status.rejected': 'Rejected',
+    'status.cancelled': 'Cancelled',
+    'status.pending': 'Pending',
+
+    // Reviews
+    'review.rateHost': 'Rate the host',
+    'review.rateRenter': 'Rate the renter',
+    'review.commentPlaceholder': 'How did it go? (optional)',
+    'review.submit': 'Submit review',
+    'review.saveFailed': 'Could not save the review: ',
+    'review.guest': 'Guest',
+    'review.receivedTitle': 'You received a review',
+
+    // Support
+    'support.title': 'Support',
+    'support.subtitle': 'We usually reply right away',
+    'support.welcome': 'Hi! How can I help? Ask about bookings, payments, or becoming a host.',
+    'support.inputPlaceholder': 'Write a message...',
+    'support.errGeneric': 'Sorry, something went wrong. Please try again.',
+    'support.errConnection': 'Sorry, there was a connection problem. Please try again.',
+
+    // Chat
+    'chat.firstMessage': 'Write the first message!',
+    'chat.loading': 'Loading...',
+    'chat.messagesTitle': 'Messages',
+    'chat.noConversations': 'You have no conversations yet.',
+    'chat.startConversation': 'Start a conversation',
+    'chat.renter': 'Renter',
+
+    // Host dashboard
+    'dash.title': 'Host dashboard',
+    'dash.loading': 'Loading...',
+    'dash.totalEarned': 'Total earned',
+    'dash.completed': 'Completed',
+    'dash.pending': 'Pending',
+    'dash.rating': 'Rating',
+    'dash.historyTitle': 'Booking history',
+    'dash.noHistory': 'No booking history yet.',
+
+    // Lists
+    'list.newest': 'Newest',
+    'list.oldest': 'Oldest',
+    'list.all': 'All',
+    'list.noResults': 'No results.',
+
+    // Become a host
+    'becomeHost.titleNew': 'Become a host',
+    'becomeHost.titleEdit': 'Edit host profile',
+    'becomeHost.photoFromAccount': 'Photo from your account',
+    'becomeHost.namePlaceholder': 'Your name',
+    'becomeHost.areaPlaceholder': 'Area (e.g. Mokotów, Warsaw)',
+    'becomeHost.addressPlaceholder': 'Exact address (optional, shown after acceptance)',
+    'becomeHost.phonePlaceholder': 'Phone (optional, shown after acceptance)',
+    'becomeHost.pricePlaceholder': 'Price per plant / day (zł)',
+    'becomeHost.priceHint': 'Suggested price: 2-5 zł per plant per day',
+    'becomeHost.capacityPlaceholder': 'How many plants can you take?',
+    'becomeHost.descPlaceholder': 'Short description (optional) — e.g. your experience with plants, how often you send photos...',
+    'becomeHost.sunlightLabel': 'Sunlight at your place',
+    'becomeHost.useLocation': 'Use my location (for distances)',
+    'becomeHost.locationSaved': 'Location saved ✓ (click to update)',
+    'becomeHost.locationLoading': 'Getting location...',
+    'becomeHost.locationUnsupported': 'Your browser does not support location.',
+    'becomeHost.locationFailed': 'Could not get your location. Check your browser permissions.',
+    'becomeHost.saveChanges': 'Save changes',
+    'becomeHost.saveFailed': 'Could not save: ',
+    'sun.full': 'Full sun',
+    'sun.partial': 'Partial shade',
+    'sun.shade': 'Shade',
+
+    // Profile
+    'profile.loading': 'Loading...',
+    'profile.changeName': 'Change name',
+    'profile.namePlaceholder': 'Your full name',
+    'profile.fillNameHint': 'Add your name — the host will see it instead of just your email',
+    'profile.notifications': 'Notifications',
+    'profile.noNotifications': 'No notifications.',
+    'profile.emailNotifications': 'Email notifications',
+    'profile.saving': 'Saving...',
+    'profile.referralTitle': 'Refer friends to Leafsit',
+    'profile.referredCount': 'Friends referred: {n}',
+    'profile.copyLink': 'Copy link',
+    'profile.copied': 'Copied ✓',
+    'profile.viewAll': 'View all ({n})',
+    'profile.hostPanel': 'Host dashboard',
+    'profile.yourPlants': 'Your plants',
+    'profile.noPlants': 'You have no plants yet — add your first one in the "Add" tab.',
+    'profile.yourBookings': 'Your bookings',
+    'profile.noBookings': 'You have no bookings yet.',
+    'profile.bookingRequests': 'Booking requests',
+    'profile.acceptedBookings': 'Accepted bookings',
+    'profile.accept': 'Accept',
+    'profile.reject': 'Reject',
+    'profile.contactHost': 'Host contact details',
+    'profile.contactOwner': 'Plant owner contact details',
+    'profile.noNameGiven': 'No name given',
+    'profile.from': 'from',
+    'profile.leaveReview': 'Leave a review',
+    'profile.rateRenter': 'Rate the renter',
+    'profile.reviewGiven': 'Review submitted',
+    'profile.renterReviewGiven': 'Renter review submitted',
+    'profile.hostReviewOfYou': "Host's review of you",
+    'profile.checkingPayment': 'Checking payment...',
+    'profile.redirecting': 'Redirecting...',
+    'profile.payConfirm': 'Pay and confirm ({total} zł)',
+    'profile.paymentReceived': 'Payment received',
+    'profile.cancelBooking': 'Cancel booking',
+    'profile.cancelAndRefund': 'Cancel and refund',
+    'profile.confirmCancel': 'Cancel this booking?',
+    'profile.refundFailed': 'Could not refund the payment. Please try again or contact support.',
+    'profile.currentlyAt': 'Currently at {name}',
+    'profile.atYourHome': 'At your home',
+    'profile.hostHistory': 'History with hosts',
+    'profile.neverAtHost': 'This plant has never stayed with a host yet.',
+    'profile.becomeHostTitle': 'Want to become a host?',
+    'profile.becomeHostText': "Set your price and take in your neighbours' plants while they're away",
+    'profile.connectStripe': 'Connect Stripe account',
+    'profile.checkingPayoutAccount': 'Checking payout account status...',
+    'profile.payoutConnected': 'Payout account connected',
+    'profile.pending': 'Pending',
+    'profile.terms': 'Terms and Privacy Policy',
+    'profile.yourHostProfile': 'Your host profile',
+    'profile.confirmCancelPaid': 'Cancel this booking? The {amount} zł you paid will be fully refunded.',
+    'weather.loading': 'Loading weather for your location...',
+    'weather.humidity': 'humidity',
+    'weather.lowHumidity': 'Low air humidity — consider misting the leaves.',
+    'becomeHost.changePhotoHint': 'To change it, go to the Profile tab and tap your avatar.',
+    'becomeHost.priceWarning': 'That is well above average — are you sure?',
+    'profile.awaitingPayment': 'Awaiting payment from the renter',
+    'profile.hostNoPayout': 'The host has not connected a payout account yet — please try again shortly.',
+    'profile.photoAlsoOnListing': 'This photo is also shown on your host listing.',
+    'profile.connectStripeHint': 'To receive payouts for bookings, connect a Stripe account (takes a few minutes).',
+    'plant.yourPlantAlt': 'Your plant',
+    'weather.clear': 'Clear',
+    'weather.partlyCloudy': 'Partly cloudy',
+    'weather.cloudy': 'Cloudy',
+    'weather.fog': 'Fog',
+    'weather.rain': 'Rain',
+    'weather.variable': 'Variable',
+    'weather.conditionsFor': '{place} · conditions for your plants',
+    'weather.fetchFailed': 'Could not fetch the weather',
+    'scan.subtitle': 'Quick species check — without saving to your profile',
+    'booking.waitingAcceptance': 'Waiting for {host} to accept. Once accepted, you will be able to pay and confirm the booking.',
+    'booking.priceLine': '{price} zł / plant / day',
+    'review.yourPlant': 'Your plant: {plant}',
+    'review.renterPlant': '{renter} — plant: {plant}',
+    'profile.earnTitle': 'Earn from spare space at home',
+    'profile.paidWithShare': 'Paid — {total} zł (your share: {share} zł)',
+    'profile.paidAmount': 'Paid {amount} zł',
+    'profile.cancelRequest': 'Cancel request',
+    'profile.cancelling': 'Cancelling...',
+    'profile.confirmDeletePlant': 'Remove "{name}" from your plants?',
+    'profile.capacityExceeded': 'You cannot accept this request — you already have {current} accepted plants for these dates, and your limit is {limit}.',
+    'profile.noRequests': 'No booking requests.',
+    'profile.noAccepted': 'No accepted bookings.',
+    'profile.spots': '{n} spots',
+    'profile.profileVisible': 'Your profile is already visible in the host list ✓',
+    'profile.gpsSaved': ' · GPS location saved',
+  },
+
+  uk: {
+    // Навігація
+    'tab.home': 'Пошук',
+    'tab.add': 'Додати',
+    'tab.scan': 'Розпізнати',
+    'tab.profile': 'Профіль',
+
+    // Вхід / реєстрація
+    'auth.loginSubtitle': 'Увійдіть до свого облікового запису',
+    'auth.signupSubtitle': 'Створити новий обліковий запис',
+    'auth.namePlaceholder': "Ім'я та прізвище (або нікнейм)",
+    'auth.referralPlaceholder': 'Реферальний код (необов\u2019язково)',
+    'auth.referralDetected': 'Запрошення від друга виявлено автоматично ✓',
+    'auth.emailConsent': 'Хочу отримувати сповіщення на email (наприклад, про нові бронювання)',
+    'auth.acceptPrefix': 'Приймаю',
+    'auth.termsLink': 'Правила та Політику конфіденційності',
+    'auth.acceptSuffix': 'Leafsit',
+    'auth.emailPlaceholder': 'Адреса email',
+    'auth.passwordPlaceholder': 'Пароль',
+    'auth.loginButton': 'Увійти',
+    'auth.signupButton': 'Зареєструватися',
+    'auth.noAccount': 'Ще не маєте облікового запису?',
+    'auth.hasAccount': 'Вже маєте обліковий запис?',
+    'auth.accountCreated': 'Обліковий запис створено! Тепер можете увійти.',
+    'auth.languageLabel': 'Мова',
+
+    // Навчання
+    'onb.skip': 'Пропустити',
+    'onb.next': 'Далі',
+    'onb.start': 'Почнімо!',
+    'onb.1.title': 'Вітаємо в Leafsit!',
+    'onb.1.text': 'Застосунок, що з\u2019єднує тих, хто від\u2019їжджає, з тими, хто догляне за їхніми рослинами.',
+    'onb.2.title': 'Знайдіть доглядача',
+    'onb.2.text': 'Перегляньте господарів поблизу, ознайомтеся з відгуками та цінами, надішліть запит на бронювання.',
+    'onb.3.title': 'Додайте свої рослини',
+    'onb.3.text': 'Зробіть фото — ШІ розпізнає вид. Також можна відкрити платний персоналізований довідник з догляду.',
+    'onb.4.title': 'Заробляйте як господар',
+    'onb.4.text': 'Маєте вільне місце? Встановіть ціну та приймайте рослини сусідів — гроші йдуть прямо на ваш рахунок.',
+    'onb.5.title': 'Будьте в курсі',
+    'onb.5.text': 'Сповіщення та чат у застосунку допоможуть узгодити деталі з іншою стороною бронювання.',
+    'onb.6.title': 'Маєте запитання?',
+    'onb.6.text': 'Асистент підтримки в Профілі відповість одразу. Якщо справа термінова, ми передамо її нашій команді.',
+
+    // Cookies
+    'cookie.text': 'Ми використовуємо файли cookie, необхідні для роботи застосунку, та — за вашою згодою — аналітичні. Детальніше в Політиці конфіденційності.',
+    'cookie.essential': 'Лише необхідні',
+    'cookie.acceptAll': 'Прийняти всі',
+
+    // Екран пошуку
+    'home.yourArea': 'Ваш район',
+    'home.defaultArea': 'Варшава · Мокотув',
+    'home.titleLine1': 'Кому довірите',
+    'home.titleLine2': 'свої рослини?',
+    'home.locationDenied': 'Немає доступу до геолокації — господарів показано без сортування за відстанню.',
+    'home.searchPlaceholder': "Пошук за ім'ям або місцем...",
+    'home.filterNear': 'Поблизу',
+    'home.filterTop': 'Найкращі оцінки',
+    'home.filterAvailable': 'Доступні зараз',
+    'home.filterFavorites': 'Улюблені',
+    'home.filterPrice': 'Ціна',
+    'home.filterDates': 'Дати',
+    'home.viewList': 'Список',
+    'home.viewMap': 'Карта',
+    'home.priceFrom': 'Ціна від',
+    'home.priceTo': 'Ціна до',
+    'home.howManyPlants': 'Скільки рослин?',
+    'home.loading': 'Завантаження...',
+    'home.hostsFound': '{n} господарів {suffix}',
+    'home.suffixMatching': 'за вашим пошуком',
+    'home.suffixNearby': 'поблизу',
+    'home.noHostsQuery': 'Немає господарів за запитом «{q}».',
+    'home.noHostsCriteria': 'Поки немає господарів, що відповідають цим критеріям.',
+    'home.perPlantPerDay': '/рослина/день',
+    'home.acceptsPlants': 'приймає {n} рослин',
+    'home.away': '{km} км',
+
+    // Деталі господаря
+    'host.reviewsCount': '{n} відгуків',
+    'host.freeSpots': 'вільних місць',
+    'host.perPlantDay': 'за рослину/день',
+    'host.privacyNote': 'Точну адресу та номер телефону господаря ви побачите лише після підтвердження бронювання — задля безпеки обох сторін.',
+    'host.bookButton': 'Забронювати дати',
+    'host.reviewsHeader': 'Відгуки',
+    'host.loading': 'Завантаження...',
+    'host.noReviews': 'Цей господар ще не має відгуків.',
+    'host.anonymousGuest': 'Анонімний гість',
+
+    // Форма бронювання
+    'booking.requestSent': 'Запит надіслано!',
+    'booking.backToList': 'Назад до списку',
+    'booking.loadingPlants': 'Завантаження ваших рослин...',
+    'booking.noPlants': 'У вас ще немає рослин. Додайте першу у вкладці «Додати», щоб забронювати господаря.',
+    'booking.whichPlant': 'Яка рослина?',
+    'booking.howMany': 'Скільки штук? (у вас {max})',
+    'booking.estimatedCost': 'Орієнтовна вартість: {total} zł ({days} {dayWord}) — оплата лише після підтвердження господарем',
+    'booking.day': 'день',
+    'booking.days': 'днів',
+    'booking.yourPhone': 'Ваш телефон (необов\u2019язково)',
+    'booking.phoneNote': 'Господар побачить його лише після підтвердження — це допоможе узгодити час передачі',
+    'booking.sending': 'Надсилання...',
+    'booking.sendRequest': 'Надіслати запит на бронювання',
+    'booking.sendFailed': 'Не вдалося надіслати запит: ',
+
+    // Додати рослину
+    'plant.title': 'Додати рослину',
+    'plant.subtitle': 'Зробіть фото — ми розпізнаємо вид',
+    'plant.takePhoto': 'Зробити фото рослини',
+    'plant.identifying': 'Розпізнаю вид...',
+    'plant.recognized': 'Розпізнано: {name}',
+    'plant.confidence': '(впевненість {n}%)',
+    'plant.wrongName': 'Назва не збігається? Виправте її:',
+    'plant.howManySame': 'Скільки у вас таких самих рослин?',
+    'plant.unlockPremium': 'Відкрити повний Premium-довідник',
+    'plant.premiumTitle': 'Premium-довідник — 9 zł',
+    'plant.checkingPayment': 'Перевіряю оплату...',
+    'plant.sunlightQuestion': 'Скільки сонця отримує ця рослина у вас?',
+    'plant.redirecting': 'Переходжу до оплати...',
+    'plant.payButton': 'Сплатити 9 zł і відкрити довідник',
+    'plant.testMode': 'Тестовий режим — картка 4242 4242 4242 4242, будь-яка дата та CVC',
+    'plant.generating': 'Генерую ваш довідник...',
+    'plant.guidePaid': 'Ваш довідник з догляду (оплачено ✓)',
+    'plant.added': 'Рослину додано!',
+    'plant.checkProfile': 'Перегляньте її у вкладці Профіль',
+    'plant.errIdentify': 'Не вдалося розпізнати рослину.',
+    'plant.errNoSpecies': 'Вид не розпізнано. Спробуйте чіткіше фото листка.',
+    'plant.errConnection': "Помилка з'єднання з розпізнаванням рослин.",
+    'plant.errGuide': 'Не вдалося згенерувати пораду.',
+    'plant.errGuideConn': "Помилка з'єднання з генератором порад.",
+    'plant.errPayment': 'Не вдалося створити платіж.',
+    'plant.errPaymentConn': "Помилка з'єднання з платіжною системою.",
+    'plant.errPaymentConfirm': 'Не вдалося підтвердити оплату. Спробуйте ще раз.',
+    'plant.errPaymentCheck': 'Помилка перевірки оплати.',
+    'plant.errSave': 'Не вдалося зберегти: ',
+
+    // Розпізнавання
+    'scan.title': 'Розпізнати рослину',
+    'scan.takeOrUpload': 'Зробити або завантажити фото',
+    'scan.confidence': 'Впевненість розпізнавання: {n}%',
+    'scan.addPrompt': 'Бажаєте додати її до своїх рослин?',
+    'scan.addHint': 'Перейдіть до вкладки «Додати» — там також можна відкрити повний Premium-довідник.',
+
+    // Статуси бронювання
+    'status.accepted': 'Підтверджено',
+    'status.rejected': 'Відхилено',
+    'status.cancelled': 'Скасовано',
+    'status.pending': 'Очікує',
+
+    // Відгуки
+    'review.rateHost': 'Оцініть господаря',
+    'review.rateRenter': 'Оцініть орендаря',
+    'review.commentPlaceholder': 'Як пройшла співпраця? (необов\u2019язково)',
+    'review.submit': 'Надіслати відгук',
+    'review.saveFailed': 'Не вдалося зберегти відгук: ',
+    'review.guest': 'Гість',
+    'review.receivedTitle': 'Ви отримали відгук',
+
+    // Підтримка
+    'support.title': 'Підтримка',
+    'support.subtitle': 'Зазвичай відповідаємо одразу',
+    'support.welcome': 'Вітаю! Чим можу допомогти? Запитайте про бронювання, оплату або як стати господарем.',
+    'support.inputPlaceholder': 'Напишіть повідомлення...',
+    'support.errGeneric': 'Вибачте, сталася помилка. Спробуйте ще раз.',
+    'support.errConnection': "Вибачте, виникла проблема зі з'єднанням. Спробуйте ще раз.",
+
+    // Чат
+    'chat.firstMessage': 'Напишіть перше повідомлення!',
+    'chat.loading': 'Завантаження...',
+    'chat.messagesTitle': 'Повідомлення',
+    'chat.noConversations': 'У вас ще немає розмов.',
+    'chat.startConversation': 'Почати розмову',
+    'chat.renter': 'Орендар',
+
+    // Панель господаря
+    'dash.title': 'Панель господаря',
+    'dash.loading': 'Завантаження...',
+    'dash.totalEarned': 'Усього зароблено',
+    'dash.completed': 'Виконано',
+    'dash.pending': 'Очікує',
+    'dash.rating': 'Оцінка',
+    'dash.historyTitle': 'Історія бронювань',
+    'dash.noHistory': 'Історії бронювань ще немає.',
+
+    // Списки
+    'list.newest': 'Найновіші',
+    'list.oldest': 'Найстаріші',
+    'list.all': 'Усі',
+    'list.noResults': 'Немає результатів.',
+
+    // Стати господарем
+    'becomeHost.titleNew': 'Стати господарем',
+    'becomeHost.titleEdit': 'Редагувати профіль господаря',
+    'becomeHost.photoFromAccount': 'Фото з вашого облікового запису',
+    'becomeHost.namePlaceholder': "Ваше ім'я",
+    'becomeHost.areaPlaceholder': 'Район (напр. Мокотув, Варшава)',
+    'becomeHost.addressPlaceholder': 'Точна адреса (необов\u2019язково, видно після підтвердження)',
+    'becomeHost.phonePlaceholder': 'Телефон (необов\u2019язково, видно після підтвердження)',
+    'becomeHost.pricePlaceholder': 'Ціна за рослину / день (zł)',
+    'becomeHost.priceHint': 'Рекомендована ціна: 2-5 zł за рослину на день',
+    'becomeHost.capacityPlaceholder': 'Скільки рослин можете прийняти?',
+    'becomeHost.descPlaceholder': 'Короткий опис (необов\u2019язково) — напр. досвід з рослинами, як часто надсилаєте фото...',
+    'becomeHost.sunlightLabel': 'Освітлення у вас',
+    'becomeHost.useLocation': 'Використати мою геолокацію (для відстаней)',
+    'becomeHost.locationSaved': 'Геолокацію збережено ✓ (натисніть, щоб оновити)',
+    'becomeHost.locationLoading': 'Отримую геолокацію...',
+    'becomeHost.locationUnsupported': 'Ваш браузер не підтримує геолокацію.',
+    'becomeHost.locationFailed': 'Не вдалося отримати геолокацію. Перевірте дозволи браузера.',
+    'becomeHost.saveChanges': 'Зберегти зміни',
+    'becomeHost.saveFailed': 'Не вдалося зберегти: ',
+    'sun.full': 'Повне сонце',
+    'sun.partial': 'Півтінь',
+    'sun.shade': 'Тінь',
+
+    // Профіль
+    'profile.loading': 'Завантаження...',
+    'profile.changeName': "Змінити ім'я",
+    'profile.namePlaceholder': "Ваше ім'я та прізвище",
+    'profile.fillNameHint': "Додайте своє ім'я — господар побачить його замість самої лише пошти",
+    'profile.notifications': 'Сповіщення',
+    'profile.noNotifications': 'Немає сповіщень.',
+    'profile.emailNotifications': 'Сповіщення на email',
+    'profile.saving': 'Збереження...',
+    'profile.referralTitle': 'Порекомендуйте Leafsit друзям',
+    'profile.referredCount': 'Запрошених друзів: {n}',
+    'profile.copyLink': 'Копіювати посилання',
+    'profile.copied': 'Скопійовано ✓',
+    'profile.viewAll': 'Переглянути всі ({n})',
+    'profile.hostPanel': 'Панель господаря',
+    'profile.yourPlants': 'Ваші рослини',
+    'profile.noPlants': 'У вас ще немає рослин — додайте першу у вкладці «Додати».',
+    'profile.yourBookings': 'Ваші бронювання',
+    'profile.noBookings': 'У вас ще немає бронювань.',
+    'profile.bookingRequests': 'Запити на бронювання',
+    'profile.acceptedBookings': 'Підтверджені бронювання',
+    'profile.accept': 'Підтвердити',
+    'profile.reject': 'Відхилити',
+    'profile.contactHost': 'Контакти господаря',
+    'profile.contactOwner': 'Контакти власника рослини',
+    'profile.noNameGiven': "Ім'я не вказано",
+    'profile.from': 'від',
+    'profile.leaveReview': 'Залишити відгук',
+    'profile.rateRenter': 'Оцінити орендаря',
+    'profile.reviewGiven': 'Відгук надіслано',
+    'profile.renterReviewGiven': 'Відгук про орендаря надіслано',
+    'profile.hostReviewOfYou': 'Відгук господаря про вас',
+    'profile.checkingPayment': 'Перевіряю оплату...',
+    'profile.redirecting': 'Переходжу...',
+    'profile.payConfirm': 'Сплатити та підтвердити ({total} zł)',
+    'profile.paymentReceived': 'Оплату отримано',
+    'profile.cancelBooking': 'Скасувати бронювання',
+    'profile.cancelAndRefund': 'Скасувати та повернути кошти',
+    'profile.confirmCancel': 'Справді скасувати це бронювання?',
+    'profile.refundFailed': "Не вдалося повернути кошти. Спробуйте ще раз або зв'яжіться з підтримкою.",
+    'profile.currentlyAt': 'Зараз у {name}',
+    'profile.atYourHome': 'У вас удома',
+    'profile.hostHistory': 'Історія в господарів',
+    'profile.neverAtHost': 'Ця рослина ще ніколи не була в господаря.',
+    'profile.becomeHostTitle': 'Хочете стати господарем?',
+    'profile.becomeHostText': 'Встановіть ціну та приймайте рослини сусідів на час їхньої відсутності',
+    'profile.connectStripe': 'Підключити рахунок Stripe',
+    'profile.checkingPayoutAccount': 'Перевіряю статус рахунку для виплат...',
+    'profile.payoutConnected': 'Рахунок для виплат підключено',
+    'profile.pending': 'Очікує',
+    'profile.terms': 'Правила та Політика конфіденційності',
+    'profile.yourHostProfile': 'Ваш профіль господаря',
+    'profile.confirmCancelPaid': 'Справді скасувати? Сплачені {amount} zł буде повністю повернено.',
+    'weather.loading': 'Завантаження погоди для вашої локації...',
+    'weather.humidity': 'вологість',
+    'weather.lowHumidity': 'Низька вологість повітря — варто обприскати листя.',
+    'becomeHost.changePhotoHint': 'Щоб змінити його, перейдіть до вкладки Профіль і натисніть на свій аватар.',
+    'becomeHost.priceWarning': 'Це значно вище середнього — ви впевнені?',
+    'profile.awaitingPayment': 'Очікує на оплату від орендаря',
+    'profile.hostNoPayout': 'Господар ще не підключив рахунок для виплат — спробуйте трохи пізніше.',
+    'profile.photoAlsoOnListing': 'Це фото також показується у вашому оголошенні господаря.',
+    'profile.connectStripeHint': 'Щоб отримувати виплати за бронювання, підключіть рахунок Stripe (кілька хвилин).',
+    'plant.yourPlantAlt': 'Ваша рослина',
+    'weather.clear': 'Ясно',
+    'weather.partlyCloudy': 'Мінлива хмарність',
+    'weather.cloudy': 'Хмарно',
+    'weather.fog': 'Туман',
+    'weather.rain': 'Опади',
+    'weather.variable': 'Мінливо',
+    'weather.conditionsFor': '{place} · умови для ваших рослин',
+    'weather.fetchFailed': 'Не вдалося отримати погоду',
+    'scan.subtitle': 'Швидка перевірка виду — без збереження у профілі',
+    'booking.waitingAcceptance': 'Очікує підтвердження від {host}. Після підтвердження ви зможете сплатити та підтвердити бронювання.',
+    'booking.priceLine': '{price} zł / рослина / день',
+    'review.yourPlant': 'Ваша рослина: {plant}',
+    'review.renterPlant': '{renter} — рослина: {plant}',
+    'profile.earnTitle': 'Заробляйте на вільному місці вдома',
+    'profile.paidWithShare': 'Оплачено — {total} zł (ваша частка: {share} zł)',
+    'profile.paidAmount': 'Сплачено {amount} zł',
+    'profile.cancelRequest': 'Скасувати запит',
+    'profile.cancelling': 'Скасування...',
+    'profile.confirmDeletePlant': 'Видалити «{name}» з ваших рослин?',
+    'profile.capacityExceeded': 'Ви не можете підтвердити цей запит — на ці дати у вас уже {current} підтверджених рослин, а ваш ліміт — {limit}.',
+    'profile.noRequests': 'Немає запитів на бронювання.',
+    'profile.noAccepted': 'Немає підтверджених бронювань.',
+    'profile.spots': '{n} місць',
+    'profile.profileVisible': 'Ваш профіль уже видно у списку господарів ✓',
+    'profile.gpsSaved': ' · GPS-локацію збережено',
+  },
+};
+
+const LanguageContext = React.createContext({ lang: 'pl', setLang: () => {} });
+
+function useT() {
+  const { lang } = React.useContext(LanguageContext);
+  return (key, params) => {
+    let str = TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS.pl[key] ?? key;
+    if (params) {
+      Object.keys(params).forEach(p => {
+        str = str.split('{' + p + '}').join(params[p]);
+      });
+    }
+    return str;
+  };
+}
+
+function useLang() {
+  return React.useContext(LanguageContext);
+}
+
+function detectInitialLanguage() {
+  try {
+    const saved = localStorage.getItem('leafsit_lang');
+    if (saved && TRANSLATIONS[saved]) return saved;
+  } catch (e) { /* ignore */ }
+  try {
+    const browser = (navigator.language || 'pl').slice(0, 2).toLowerCase();
+    if (TRANSLATIONS[browser]) return browser;
+  } catch (e) { /* ignore */ }
+  return 'pl';
+}
+
+function LanguagePicker({ compact = false }) {
+  const { lang, setLang } = useLang();
+  return (
+    <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+      {LANGUAGES.map(l => {
+        const isActive = l.code === lang;
+        return (
+          <button
+            key={l.code}
+            onClick={() => setLang(l.code)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: compact ? '5px 10px' : '7px 13px',
+              borderRadius: 999,
+              border: `1.5px solid ${isActive ? colors.fern : colors.line}`,
+              background: isActive ? colors.fern : 'transparent',
+              color: isActive ? '#fff' : '#7A7261',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: compact ? 11.5 : 12.5,
+              fontWeight: isActive ? 700 : 500,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+          >
+            <span style={{ fontSize: compact ? 13 : 15 }}>{l.flag}</span>
+            {l.name}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+const SUNLIGHT_OPTIONS = ['Pełne słońce', 'Półcień', 'Cień'];
+
+function sunlightKey(value) {
+  if (value === 'Pełne słońce') return 'sun.full';
+  if (value === 'Półcień') return 'sun.partial';
+  if (value === 'Cień') return 'sun.shade';
+  return 'sun.full';
+}
+
 function sunlightInfo(value) {
   if (value === 'Pełne słońce') return { Icon: Sun, tone: colors.gold };
   if (value === 'Półcień') return { Icon: CloudSun, tone: colors.gold };
@@ -189,28 +1180,29 @@ function StatusBar() {
 }
 
 function TabBar({ active, onNav }) {
+  const t = useT();
   const tabs = [
-    { id: 'home', icon: Home, label: 'Szukaj' },
-    { id: 'add', icon: PlusCircle, label: 'Dodaj' },
-    { id: 'scan', icon: Camera, label: 'Rozpoznaj' },
-    { id: 'profile', icon: User, label: 'Profil' },
+    { id: 'home', icon: Home, label: t('tab.home') },
+    { id: 'add', icon: PlusCircle, label: t('tab.add') },
+    { id: 'scan', icon: Camera, label: t('tab.scan') },
+    { id: 'profile', icon: User, label: t('tab.profile') },
   ];
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-around', alignItems: 'center',
       padding: '10px 0 16px', borderTop: `1px solid ${colors.line}`, background: colors.card
     }}>
-      {tabs.map(t => {
-        const Icon = t.icon;
-        const isActive = active === t.id;
+      {tabs.map(item => {
+        const Icon = item.icon;
+        const isActive = active === item.id;
         return (
-          <button key={t.id} onClick={() => onNav(t.id)} style={{
+          <button key={item.id} onClick={() => onNav(item.id)} style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
             background: 'none', border: 'none', cursor: 'pointer',
             color: isActive ? colors.fern : '#A9A08B', fontFamily: 'Inter, sans-serif'
           }}>
             <Icon size={22} strokeWidth={isActive ? 2.4 : 1.8} />
-            <span style={{ fontSize: 10, fontWeight: isActive ? 700 : 500 }}>{t.label}</span>
+            <span style={{ fontSize: 10, fontWeight: isActive ? 700 : 500 }}>{item.label}</span>
           </button>
         );
       })}
@@ -315,6 +1307,7 @@ function TermsScreen({ onBack }) {
 }
 
 function CookieBanner() {
+  const t = useT();
   const [visible, setVisible] = useState(() => {
     try { return !localStorage.getItem('leafsit_cookie_choice'); } catch (e) { return true; }
   });
@@ -333,32 +1326,33 @@ function CookieBanner() {
       alignItems: 'center', justifyContent: 'center', gap: 14
     }}>
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#EDE7DA', maxWidth: 480, flex: '1 1 260px' }}>
-        Używamy plików cookie niezbędnych do działania aplikacji oraz — za Twoją zgodą — analitycznych. Więcej w Polityce Prywatności.
+        {t('cookie.text')}
       </div>
       <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
         <button onClick={() => choose('essential')} style={{
           padding: '9px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.12)', color: '#EDE7DA', border: 'none',
           fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12, cursor: 'pointer'
-        }}>Tylko niezbędne</button>
+        }}>{t('cookie.essential')}</button>
         <button onClick={() => choose('all')} style={{
           padding: '9px 14px', borderRadius: 10, background: colors.fern, color: '#fff', border: 'none',
           fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12, cursor: 'pointer'
-        }}>Akceptuj wszystkie</button>
+        }}>{t('cookie.acceptAll')}</button>
       </div>
     </div>
   );
 }
 
 const ONBOARDING_SLIDES = [
-  { Icon: Sparkles, title: 'Witaj w Leafsit!', text: 'Aplikacja łącząca osoby wyjeżdżające z tymi, którzy zaopiekują się ich roślinami pod nieobecność.' },
-  { Icon: Search, title: 'Znajdź opiekuna', text: 'Przeglądaj hostów w okolicy, sprawdź opinie i ceny, wyślij prośbę o rezerwację na wybrane daty.' },
-  { Icon: Camera, title: 'Dodaj swoje rośliny', text: 'Zrób zdjęcie, a AI rozpozna gatunek. Możesz też odblokować płatny, spersonalizowany przewodnik pielęgnacyjny.' },
-  { Icon: Wallet, title: 'Zarabiaj jako host', text: 'Masz wolne miejsce? Ustal cenę i przyjmuj rośliny sąsiadów — pieniądze trafiają prosto na Twoje konto.' },
-  { Icon: MessageCircle, title: 'Bądź na bieżąco', text: 'Powiadomienia i czat w aplikacji pomogą Ci domówić szczegóły z drugą stroną rezerwacji.' },
-  { Icon: HelpCircle, title: 'Masz pytanie?', text: 'Asystent wsparcia w Profilu odpowie od razu. Jeśli sprawa jest pilna, automatycznie przekażemy ją naszemu zespołowi.' },
+  { Icon: Sparkles, key: 'onb.1' },
+  { Icon: Search, key: 'onb.2' },
+  { Icon: Camera, key: 'onb.3' },
+  { Icon: Wallet, key: 'onb.4' },
+  { Icon: MessageCircle, key: 'onb.5' },
+  { Icon: HelpCircle, key: 'onb.6' },
 ];
 
 function OnboardingScreen({ onFinish }) {
+  const t = useT();
   const [step, setStep] = useState(0);
   const slide = ONBOARDING_SLIDES[step];
   const isLast = step === ONBOARDING_SLIDES.length - 1;
@@ -369,7 +1363,7 @@ function OnboardingScreen({ onFinish }) {
         <button onClick={onFinish} style={{
           background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
           fontSize: 12.5, color: '#A9A08B', fontWeight: 600
-        }}>Pomiń</button>
+        }}>{t('onb.skip')}</button>
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
@@ -383,8 +1377,8 @@ function OnboardingScreen({ onFinish }) {
             <slide.Icon size={38} color="#fff" />
           </div>
         )}
-        <h2 style={{ fontSize: 21, color: colors.ink, fontWeight: 600, margin: '0 0 12px' }}>{slide.title}</h2>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#7A7261', lineHeight: 1.6, maxWidth: 280 }}>{slide.text}</p>
+        <h2 style={{ fontSize: 21, color: colors.ink, fontWeight: 600, margin: '0 0 12px' }}>{t(slide.key + '.title')}</h2>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#7A7261', lineHeight: 1.6, maxWidth: 280 }}>{t(slide.key + '.text')}</p>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 24 }}>
@@ -403,13 +1397,15 @@ function OnboardingScreen({ onFinish }) {
           border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer'
         }}
       >
-        {isLast ? 'Zaczynajmy!' : 'Dalej'}
+        {isLast ? t('onb.start') : t('onb.next')}
       </button>
     </div>
   );
 }
 
 function AuthScreen({ referralCodeFromUrl }) {
+  const t = useT();
+  const { lang } = useLang();
   const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -455,9 +1451,10 @@ function AuthScreen({ referralCodeFromUrl }) {
             referral_code: generateReferralCode(),
             referred_by: referredBy,
             terms_accepted_at: new Date().toISOString(),
+            language: lang,
           });
         }
-        setInfo('Konto utworzone! Możesz się teraz zalogować.');
+        setInfo(t('auth.accountCreated'));
       }
     }
     setLoading(false);
@@ -467,25 +1464,29 @@ function AuthScreen({ referralCodeFromUrl }) {
 
   return (
     <div style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+      <div style={{ marginBottom: 24 }}>
+        <LanguagePicker />
+      </div>
+
+      <div style={{ textAlign: 'center', marginBottom: 28 }}>
         <img src="/logo-mark.png" alt="Leafsit" style={{
           width: 72, height: 72, margin: '0 auto 14px', display: 'block'
         }} />
         <h1 style={{ fontSize: 24, color: colors.ink, fontWeight: 600, margin: 0 }}>Leafsit</h1>
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginTop: 4 }}>
-          {mode === 'login' ? 'Zaloguj się do swojego konta' : 'Załóż nowe konto'}
+          {mode === 'login' ? t('auth.loginSubtitle') : t('auth.signupSubtitle')}
         </div>
       </div>
 
       {mode === 'signup' && (
-        <TextField icon={User} placeholder="Imię i nazwisko (lub nick)" value={name} onChange={e => setName(e.target.value)} />
+        <TextField icon={User} placeholder={t('auth.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} />
       )}
       {mode === 'signup' && (
-        <TextField placeholder="Kod polecenia (opcjonalnie)" value={referralInput} onChange={e => setReferralInput(e.target.value)} />
+        <TextField placeholder={t('auth.referralPlaceholder')} value={referralInput} onChange={e => setReferralInput(e.target.value)} />
       )}
       {mode === 'signup' && referralCodeFromUrl && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, marginTop: -6, marginBottom: 12 }}>
-          Zaproszenie od znajomego wykryte automatycznie ✓
+          {t('auth.referralDetected')}
         </div>
       )}
       {mode === 'signup' && (
@@ -501,7 +1502,7 @@ function AuthScreen({ referralCodeFromUrl }) {
             {emailConsent && <Check size={13} color="#fff" strokeWidth={3} />}
           </div>
           <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#7A7261' }}>
-            Chcę otrzymywać powiadomienia email (np. o nowych rezerwacjach)
+            {t('auth.emailConsent')}
           </span>
         </div>
       )}
@@ -516,15 +1517,15 @@ function AuthScreen({ referralCodeFromUrl }) {
             {termsAccepted && <Check size={13} color="#fff" strokeWidth={3} />}
           </div>
           <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#7A7261' }}>
-            Akceptuję{' '}
+            {t('auth.acceptPrefix')}{' '}
             <span onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} style={{ color: colors.clay, fontWeight: 700, textDecoration: 'underline' }}>
-              Regulamin i Politykę Prywatności
-            </span>{' '}Leafsit
+              {t('auth.termsLink')}
+            </span>{t('auth.acceptSuffix') ? ' ' + t('auth.acceptSuffix') : ''}
           </span>
         </div>
       )}
-      <TextField icon={Mail} type="email" placeholder="Adres email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && canSubmit) handleSubmit(); }} />
-      <TextField icon={Lock} type="password" placeholder="Hasło" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && canSubmit) handleSubmit(); }} />
+      <TextField icon={Mail} type="email" placeholder={t('auth.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && canSubmit) handleSubmit(); }} />
+      <TextField icon={Lock} type="password" placeholder={t('auth.passwordPlaceholder')} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && canSubmit) handleSubmit(); }} />
 
       {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
       {info && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.fern, marginBottom: 12 }}>{info}</div>}
@@ -536,16 +1537,16 @@ function AuthScreen({ referralCodeFromUrl }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4, marginBottom: 16
       }}>
         {loading && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
-        {mode === 'login' ? 'Zaloguj się' : 'Zarejestruj się'}
+        {mode === 'login' ? t('auth.loginButton') : t('auth.signupButton')}
       </button>
 
       <div style={{ textAlign: 'center', fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7261' }}>
-        {mode === 'login' ? 'Nie masz jeszcze konta?' : 'Masz już konto?'}{' '}
+        {mode === 'login' ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
         <span
           onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(null); setInfo(null); }}
           style={{ color: colors.clay, fontWeight: 700, cursor: 'pointer' }}
         >
-          {mode === 'login' ? 'Zarejestruj się' : 'Zaloguj się'}
+          {mode === 'login' ? t('auth.signupButton') : t('auth.loginButton')}
         </span>
       </div>
     </div>
@@ -553,6 +1554,7 @@ function AuthScreen({ referralCodeFromUrl }) {
 }
 
 function HomeScreen({ onSelectHost, userId }) {
+  const t = useT();
   const [hosts, setHosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -695,14 +1697,14 @@ function HomeScreen({ onSelectHost, userId }) {
     <div style={{ flex: 1, overflow: 'auto', padding: '20px 20px 0' }}>
       <div style={{ marginBottom: 18 }}>
         <div style={{ fontSize: 11, color: colors.clay, fontWeight: 700, letterSpacing: 1.5, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 5 }}>
-          {locStatus === 'granted' ? <><Navigation size={11} /> Twoja okolica</> : 'Warszawa · Mokotów'}
+          {locStatus === 'granted' ? <><Navigation size={11} /> {t('home.yourArea')}</> : t('home.defaultArea')}
         </div>
-        <h1 style={{ fontSize: 28, color: colors.ink, margin: '4px 0 2px', fontWeight: 600 }}>Komu zostawisz<br/>swoje rośliny?</h1>
+        <h1 style={{ fontSize: 28, color: colors.ink, margin: '4px 0 2px', fontWeight: 600 }}>{t('home.titleLine1')}<br/>{t('home.titleLine2')}</h1>
       </div>
 
       {locStatus === 'denied' && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginBottom: 14 }}>
-          Brak dostępu do lokalizacji — hosty pokazane bez sortowania po odległości.
+          {t('home.locationDenied')}
         </div>
       )}
 
@@ -713,7 +1715,7 @@ function HomeScreen({ onSelectHost, userId }) {
         <Search size={18} color="#A9A08B" />
         <input
           type="text"
-          placeholder="Szukaj po imieniu lub lokalizacji..."
+          placeholder={t('home.searchPlaceholder')}
           value={query}
           onChange={e => setQuery(e.target.value)}
           style={{ border: 'none', outline: 'none', flex: 1, fontFamily: 'Inter, sans-serif', fontSize: 14, background: 'transparent', color: colors.ink }}
@@ -726,24 +1728,24 @@ function HomeScreen({ onSelectHost, userId }) {
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 12, overflowX: 'auto' }}>
-        <Pill tone="fern" active={activeFilter === 'near'} onClick={() => toggleFilter('near')}>W pobliżu</Pill>
-        <Pill tone="gold" active={activeFilter === 'top'} onClick={() => toggleFilter('top')}>Najwyżej oceniani</Pill>
-        <Pill tone="clay" active={activeFilter === 'available'} onClick={() => toggleFilter('available')}>Dostępni teraz</Pill>
-        <Pill tone="gold" active={activeFilter === 'favorites'} onClick={() => toggleFilter('favorites')}>❤️ Ulubione</Pill>
-        <Pill tone="gray" active={showFilters || priceMin !== '' || priceMax !== ''} onClick={() => setShowFilters(s => !s)}>Cena</Pill>
-        <Pill tone="gray" active={showDateFilter || (filterStartDate && filterEndDate)} onClick={() => setShowDateFilter(s => !s)}>Terminy</Pill>
+        <Pill tone="fern" active={activeFilter === 'near'} onClick={() => toggleFilter('near')}>{t('home.filterNear')}</Pill>
+        <Pill tone="gold" active={activeFilter === 'top'} onClick={() => toggleFilter('top')}>{t('home.filterTop')}</Pill>
+        <Pill tone="clay" active={activeFilter === 'available'} onClick={() => toggleFilter('available')}>{t('home.filterAvailable')}</Pill>
+        <Pill tone="gold" active={activeFilter === 'favorites'} onClick={() => toggleFilter('favorites')}>❤️ {t('home.filterFavorites')}</Pill>
+        <Pill tone="gray" active={showFilters || priceMin !== '' || priceMax !== ''} onClick={() => setShowFilters(s => !s)}>{t('home.filterPrice')}</Pill>
+        <Pill tone="gray" active={showDateFilter || (filterStartDate && filterEndDate)} onClick={() => setShowDateFilter(s => !s)}>{t('home.filterDates')}</Pill>
         <Pill tone="fern" active={viewMode === 'map'} onClick={() => setViewMode(v => v === 'map' ? 'list' : 'map')}>
-          {viewMode === 'map' ? <List size={12} /> : <MapIcon size={12} />} {viewMode === 'map' ? 'Lista' : 'Mapa'}
+          {viewMode === 'map' ? <List size={12} /> : <MapIcon size={12} />} {viewMode === 'map' ? t('home.viewList') : t('home.viewMap')}
         </Pill>
       </div>
 
       {showFilters && (
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, background: colors.card, border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: 12 }}>
-          <input type="number" placeholder="Cena od" value={priceMin} onChange={e => setPriceMin(e.target.value)} style={{
+          <input type="number" placeholder={t('home.priceFrom')} value={priceMin} onChange={e => setPriceMin(e.target.value)} style={{
             flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
           }} />
           <span style={{ color: '#A9A08B', fontFamily: 'Inter, sans-serif' }}>—</span>
-          <input type="number" placeholder="Cena do" value={priceMax} onChange={e => setPriceMax(e.target.value)} style={{
+          <input type="number" placeholder={t('home.priceTo')} value={priceMax} onChange={e => setPriceMax(e.target.value)} style={{
             flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
           }} />
           {(priceMin !== '' || priceMax !== '') && (
@@ -772,7 +1774,7 @@ function HomeScreen({ onSelectHost, userId }) {
       )}
       {showDateFilter && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>Ile roślin?</span>
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{t('home.howManyPlants')}</span>
           <button onClick={() => setFilterQuantity(q => Math.max(1, q - 1))} style={{
             width: 28, height: 28, borderRadius: 8, background: colors.clayLight, border: 'none', fontSize: 15, fontWeight: 700, color: colors.ink, cursor: 'pointer'
           }}>−</button>
@@ -784,12 +1786,12 @@ function HomeScreen({ onSelectHost, userId }) {
       )}
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>
-        {loading ? 'Ładowanie...' : `${list.length} hostów${q ? ' pasujących do wyszukiwania' : ' w pobliżu'}`}
+        {loading ? t('home.loading') : t('home.hostsFound', { n: list.length, suffix: q ? t('home.suffixMatching') : t('home.suffixNearby') })}
       </div>
 
       {!loading && list.length === 0 && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>
-          {q ? `Brak hostów pasujących do "${query}".` : 'Nie ma jeszcze żadnych hostów spełniających te kryteria.'}
+          {q ? t('home.noHostsQuery', { q: query }) : t('home.noHostsCriteria')}
         </div>
       )}
 
@@ -809,7 +1811,7 @@ function HomeScreen({ onSelectHost, userId }) {
                 <Popup>
                   <div onClick={() => onSelectHost(h)} style={{ cursor: 'pointer', fontFamily: 'sans-serif' }}>
                     <b>{h.name}</b><br />
-                    {h.price} zł/roślinę/dzień<br />
+                    {h.price} zł{t('home.perPlantPerDay')}<br />
                     <span style={{ color: '#3A5A40', textDecoration: 'underline' }}>Zobacz profil</span>
                   </div>
                 </Popup>
@@ -841,7 +1843,7 @@ function HomeScreen({ onSelectHost, userId }) {
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontWeight: 600, color: colors.ink, fontSize: 16 }}>{h.name}</span>
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: colors.clay, fontSize: 14 }}>{h.price} zł<span style={{ fontSize: 11, color: '#A9A08B', fontWeight: 500 }}>/roślinę/dzień</span></span>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: colors.clay, fontSize: 14 }}>{h.price} zł<span style={{ fontSize: 11, color: '#A9A08B', fontWeight: 500 }}>{t('home.perPlantPerDay')}</span></span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={12} fill={colors.gold} color={colors.gold} /> {h.rating ?? '—'} ({h.reviews ?? 0})</span>
@@ -850,7 +1852,7 @@ function HomeScreen({ onSelectHost, userId }) {
                   </span>
                 </div>
                 <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, fontWeight: 600 }}>
-                  <SIcon size={13} color={si.tone} /> {h.sunlight} · przyjmuje {h.plants_capacity} roślin
+                  <SIcon size={13} color={si.tone} /> {t(sunlightKey(h.sunlight))} · {t('home.acceptsPlants', { n: h.plants_capacity })}
                 </div>
                 <div style={{ marginTop: 6 }}>
                   <HostBadges host={h} size="small" />
@@ -865,6 +1867,7 @@ function HomeScreen({ onSelectHost, userId }) {
 }
 
 function HostDetailScreen({ host, onBack, onBook, onMessage }) {
+  const t = useT();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -921,15 +1924,15 @@ function HostDetailScreen({ host, onBack, onBook, onMessage }) {
         <div style={{ display: 'flex', gap: 20, marginBottom: 20, fontFamily: 'Inter, sans-serif' }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink, display: 'flex', alignItems: 'center', gap: 4 }}><Star size={16} fill={colors.gold} color={colors.gold}/> {host.rating ?? '—'}</div>
-            <div style={{ fontSize: 11, color: '#A9A08B' }}>{host.reviews ?? 0} opinii</div>
+            <div style={{ fontSize: 11, color: '#A9A08B' }}>{t('host.reviewsCount', { n: host.reviews ?? 0 })}</div>
           </div>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink }}>{host.plants_capacity}</div>
-            <div style={{ fontSize: 11, color: '#A9A08B' }}>miejsca wolne</div>
+            <div style={{ fontSize: 11, color: '#A9A08B' }}>{t('host.freeSpots')}</div>
           </div>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink }}>{host.price} zł</div>
-            <div style={{ fontSize: 11, color: '#A9A08B' }}>za roślinę/dzień</div>
+            <div style={{ fontSize: 11, color: '#A9A08B' }}>{t('host.perPlantDay')}</div>
           </div>
         </div>
 
@@ -938,14 +1941,14 @@ function HostDetailScreen({ host, onBack, onBook, onMessage }) {
         </p>
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          <Pill tone="gold"><SIcon size={13} color="#fff" /> {host.sunlight}</Pill>
+          <Pill tone="gold"><SIcon size={13} color="#fff" /> {t(sunlightKey(host.sunlight))}</Pill>
         </div>
 
         <div style={{
           background: colors.clayLight, borderRadius: 14, padding: 14, marginBottom: 24,
           fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#5A5445', lineHeight: 1.5
         }}>
-          Dokładny adres i numer telefonu hosta zobaczysz dopiero po zaakceptowaniu Twojej rezerwacji — dla bezpieczeństwa obu stron.
+          {t('host.privacyNote')}
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
@@ -957,17 +1960,17 @@ function HostDetailScreen({ host, onBack, onBook, onMessage }) {
           <button onClick={onBook} style={{
             flex: 1, padding: 16, borderRadius: 16, background: colors.clay, color: '#fff',
             border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer'
-          }}>Zarezerwuj termin</button>
+          }}>{t('host.bookButton')}</button>
         </div>
 
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Opinie</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('host.reviewsHeader')}</div>
 
         {loading && (
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('host.loading')}</div>
         )}
 
         {!loading && reviews.length === 0 && (
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ten host nie ma jeszcze żadnych opinii.</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('host.noReviews')}</div>
         )}
 
         {!loading && reviews.map(r => (
@@ -983,7 +1986,7 @@ function HostDetailScreen({ host, onBack, onBook, onMessage }) {
             {r.comment && (
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#5A5445', margin: '0 0 6px', fontStyle: 'italic' }}>{r.comment}</p>
             )}
-            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#7A7261', fontWeight: 600 }}>— {r.renter_name || 'Anonimowy gość'}</div>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#7A7261', fontWeight: 600 }}>— {r.renter_name || t('host.anonymousGuest')}</div>
           </div>
         ))}
       </div>
@@ -992,6 +1995,7 @@ function HostDetailScreen({ host, onBack, onBook, onMessage }) {
 }
 
 function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) {
+  const t = useT();
   const [plants, setPlants] = useState([]);
   const [plantsLoading, setPlantsLoading] = useState(true);
   const [selectedPlantId, setSelectedPlantId] = useState('');
@@ -1053,7 +2057,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
     }]).select().single();
     setSaving(false);
     if (error) {
-      setError('Nie udało się wysłać prośby: ' + error.message);
+      setError(t('booking.sendFailed') + error.message);
     } else {
       if (host.user_id) {
         const qtyLabel = quantity > 1 ? ` (×${quantity} szt.)` : '';
@@ -1076,14 +2080,14 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
         <div style={{ width: 64, height: 64, borderRadius: 32, background: colors.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Clock size={30} color="#fff" />
         </div>
-        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 16, color: colors.ink }}>Prośba wysłana!</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 16, color: colors.ink }}>{t('booking.requestSent')}</div>
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7261', textAlign: 'center' }}>
-          Czeka na akceptację przez {host.name}. Gdy host zaakceptuje, będziesz mógł opłacić i potwierdzić rezerwację w zakładce Profil.
+          {t('booking.waitingAcceptance', { host: host.name })}
         </div>
         <button onClick={onBooked} style={{
           padding: '12px 24px', borderRadius: 14, background: colors.fern, color: '#fff',
           border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginTop: 8
-        }}>Wróć do listy</button>
+        }}>{t('booking.backToList')}</button>
       </div>
     );
   }
@@ -1097,23 +2101,23 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
         }}><ArrowLeft size={18} color={colors.ink} /></button>
         <div>
           <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>Zarezerwuj u {host.name}</h2>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B' }}>{host.price} zł / roślinę / dzień</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B' }}>{t('booking.priceLine', { price: host.price })}</div>
         </div>
       </div>
 
       {plantsLoading && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie Twoich roślin...</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('booking.loadingPlants')}</div>
       )}
 
       {!plantsLoading && plants.length === 0 && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 16 }}>
-          Nie masz jeszcze żadnych roślin. Dodaj pierwszą w zakładce "Dodaj", żeby móc zarezerwować hosta.
+          {t('booking.noPlants')}
         </div>
       )}
 
       {!plantsLoading && plants.length > 0 && (
         <>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>Która roślina?</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>{t('booking.whichPlant')}</div>
           {plants.map(p => (
             <div key={p.id} onClick={() => setSelectedPlantId(p.id)} style={{
               display: 'flex', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14,
@@ -1131,7 +2135,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
 
           {maxQuantity > 1 && (
             <>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginTop: 16, marginBottom: 10 }}>Ile sztuk? (masz {maxQuantity})</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginTop: 16, marginBottom: 10 }}>{t('booking.howMany', { max: maxQuantity })}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
                 <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{
                   width: 36, height: 36, borderRadius: 10, background: colors.clayLight, border: 'none',
@@ -1166,12 +2170,12 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
 
           {estimatedTotal != null && (
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, fontWeight: 600, marginBottom: 16 }}>
-              Szacowany koszt: {estimatedTotal} zł ({estimatedDays} {estimatedDays === 1 ? 'dzień' : 'dni'}) — płatność dopiero po akceptacji przez hosta
+              {t('booking.estimatedCost', { total: estimatedTotal, days: estimatedDays, dayWord: estimatedDays === 1 ? t('booking.day') : t('booking.days') })}
             </div>
           )}
 
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>Twój telefon (opcjonalnie)</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginBottom: 8 }}>Host zobaczy go dopiero po zaakceptowaniu — ułatwi ustalenie godziny odbioru</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>{t('booking.yourPhone')}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginBottom: 8 }}>{t('booking.phoneNote')}</div>
           <TextField icon={Phone} type="tel" placeholder="np. 500 100 200" value={renterPhone} onChange={e => setRenterPhone(e.target.value)} />
 
           {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
@@ -1183,7 +2187,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
           }}>
             {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
-            {saving ? 'Wysyłanie...' : 'Wyślij prośbę o rezerwację'}
+            {saving ? t('booking.sending') : t('booking.sendRequest')}
           </button>
         </>
       )}
@@ -1192,6 +2196,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
 }
 
 function ReviewForm({ booking, userId, userName, onCancel, onSaved }) {
+  const t = useT();
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
@@ -1211,7 +2216,7 @@ function ReviewForm({ booking, userId, userName, onCancel, onSaved }) {
     }]);
     if (error) {
       setSaving(false);
-      setError('Nie udało się zapisać opinii: ' + error.message);
+      setError(t('review.saveFailed') + error.message);
       return;
     }
     await supabase.rpc('update_host_rating', { host_id_param: booking.host_id });
@@ -1236,11 +2241,11 @@ function ReviewForm({ booking, userId, userName, onCancel, onSaved }) {
           width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
         }}><ArrowLeft size={18} color={colors.ink} /></button>
-        <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>Oceń hosta</h2>
+        <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>{t('review.rateHost')}</h2>
       </div>
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7261', marginBottom: 20 }}>
-        Twoja roślina: {booking.plant_name}
+        {t('review.yourPlant', { plant: booking.plant_name })}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
@@ -1252,7 +2257,7 @@ function ReviewForm({ booking, userId, userName, onCancel, onSaved }) {
       </div>
 
       <textarea
-        placeholder="Jak przebiegła współpraca? (opcjonalnie)"
+        placeholder={t('review.commentPlaceholder')}
         value={comment}
         onChange={e => setComment(e.target.value)}
         rows={4}
@@ -1272,13 +2277,14 @@ function ReviewForm({ booking, userId, userName, onCancel, onSaved }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
       }}>
         {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
-        {saving ? 'Zapisywanie...' : 'Wyślij opinię'}
+        {saving ? t('booking.sending') : t('review.submit')}
       </button>
     </div>
   );
 }
 
 function HostReviewForm({ booking, hostName, onCancel, onSaved }) {
+  const t = useT();
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
@@ -1298,7 +2304,7 @@ function HostReviewForm({ booking, hostName, onCancel, onSaved }) {
     }]);
     if (error) {
       setSaving(false);
-      setError('Nie udało się zapisać opinii: ' + error.message);
+      setError(t('review.saveFailed') + error.message);
       return;
     }
     await createNotification(
@@ -1320,11 +2326,11 @@ function HostReviewForm({ booking, hostName, onCancel, onSaved }) {
           width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
         }}><ArrowLeft size={18} color={colors.ink} /></button>
-        <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>Oceń wynajmującego</h2>
+        <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>{t('review.rateRenter')}</h2>
       </div>
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7261', marginBottom: 20 }}>
-        {booking.renter_name || booking.renter_email} — roślina: {booking.plant_name}
+        {t('review.renterPlant', { renter: booking.renter_name || booking.renter_email, plant: booking.plant_name })}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
@@ -1336,7 +2342,7 @@ function HostReviewForm({ booking, hostName, onCancel, onSaved }) {
       </div>
 
       <textarea
-        placeholder="Jak przebiegła współpraca? (opcjonalnie)"
+        placeholder={t('review.commentPlaceholder')}
         value={comment}
         onChange={e => setComment(e.target.value)}
         rows={4}
@@ -1356,7 +2362,7 @@ function HostReviewForm({ booking, hostName, onCancel, onSaved }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
       }}>
         {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
-        {saving ? 'Zapisywanie...' : 'Wyślij opinię'}
+        {saving ? t('booking.sending') : t('review.submit')}
       </button>
     </div>
   );
@@ -1385,6 +2391,7 @@ function CareGuide({ text }) {
 const PENDING_PLANT_KEY = 'leafsit_pending_plant';
 
 function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHandled }) {
+  const t = useT();
   const fileInputRef = useRef(null);
   const [photoDataUrl, setPhotoDataUrl] = useState(null);
   const [identifying, setIdentifying] = useState(false);
@@ -1433,10 +2440,10 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
           sessionStorage.removeItem(PENDING_PLANT_KEY);
           await generateGuide(restoredName, premiumReturn.sunlight || 'Pełne słońce');
         } else {
-          setGuideError('Nie udało się potwierdzić płatności. Spróbuj ponownie.');
+          setGuideError(t('plant.errPaymentConfirm'));
         }
       } catch (err) {
-        setGuideError('Błąd sprawdzania płatności.');
+        setGuideError(t('plant.errPaymentCheck'));
       }
       setVerifyingPayment(false);
       onPremiumReturnHandled();
@@ -1465,15 +2472,15 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
       });
       const data = await res.json();
       if (!res.ok) {
-        setIdentifyError(data.error || 'Nie udało się rozpoznać rośliny.');
+        setIdentifyError(data.error || t('plant.errIdentify'));
       } else if (!data.name) {
-        setIdentifyError('Nie rozpoznano gatunku. Spróbuj wyraźniejszego zdjęcia liścia.');
+        setIdentifyError(t('plant.errNoSpecies'));
       } else {
         setPlantName(data.name);
         setConfidence(data.confidence);
       }
     } catch (err) {
-      setIdentifyError('Błąd połączenia z rozpoznawaniem roślin.');
+      setIdentifyError(t('plant.errConnection'));
     }
     setIdentifying(false);
   };
@@ -1489,12 +2496,12 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
       });
       const data = await res.json();
       if (!res.ok) {
-        setGuideError(data.error || 'Nie udało się wygenerować porady.');
+        setGuideError(data.error || t('plant.errGuide'));
       } else {
         setCareGuide(data.guide);
       }
     } catch (err) {
-      setGuideError('Błąd połączenia z generatorem porad.');
+      setGuideError(t('plant.errGuideConn'));
     }
     setGeneratingGuide(false);
   };
@@ -1511,13 +2518,13 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
-        setGuideError(data.error || 'Nie udało się utworzyć płatności.');
+        setGuideError(data.error || t('plant.errPayment'));
         setCheckoutLoading(false);
         return;
       }
       window.location.href = data.url;
     } catch (err) {
-      setGuideError('Błąd połączenia z systemem płatności.');
+      setGuideError(t('plant.errPaymentConn'));
       setCheckoutLoading(false);
     }
   };
@@ -1537,7 +2544,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
       }]);
     setSaving(false);
     if (error) {
-      setError('Nie udało się zapisać: ' + error.message);
+      setError(t('plant.errSave') + error.message);
     } else {
       setSaved(true);
       if (onPlantAdded) onPlantAdded();
@@ -1546,8 +2553,8 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
 
   return (
     <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-      <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>Dodaj roślinę</h2>
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 20 }}>Zrób zdjęcie, a rozpoznamy gatunek</div>
+      <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>{t('plant.title')}</h2>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 20 }}>{t('plant.subtitle')}</div>
 
       <input
         ref={fileInputRef}
@@ -1567,7 +2574,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
         }}>
           {photoDataUrl ? (
             <>
-              <img src={photoDataUrl} alt="Twoja roślina" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: identifying ? 0.5 : 1 }} />
+              <img src={photoDataUrl} alt={t('plant.yourPlantAlt')} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: identifying ? 0.5 : 1 }} />
               <div style={{ position: 'absolute', bottom: 10, right: 10, background: 'rgba(0,0,0,0.5)', borderRadius: 10, padding: 8, display: 'flex' }}>
                 <RefreshCw size={16} color="#fff" />
               </div>
@@ -1575,7 +2582,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
           ) : (
             <>
               <Camera size={40} color={colors.clay} />
-              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: colors.clay, fontSize: 14 }}>Zrób zdjęcie rośliny</span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: colors.clay, fontSize: 14 }}>{t('plant.takePhoto')}</span>
             </>
           )}
         </div>
@@ -1583,7 +2590,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
 
       {identifying && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>
-          <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Rozpoznaję gatunek...
+          <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> {t('plant.identifying')}
         </div>
       )}
 
@@ -1602,18 +2609,18 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
           }}>
             <Sparkles size={18} color={colors.fern} style={{ flexShrink: 0, marginTop: 2 }} />
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.fernDark, lineHeight: 1.5 }}>
-              <b>Rozpoznano: {plantName}</b> {confidence != null && `(pewność ${confidence}%)`}
+              <b>{t('plant.recognized', { name: plantName })}</b> {confidence != null && t('plant.confidence', { n: confidence })}
             </div>
           </div>
 
           {!premiumReturn && (
             <>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 8 }}>Nazwa nie zgadza się? Popraw ją:</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 8 }}>{t('plant.wrongName')}</div>
               <TextField value={plantName} onChange={e => setPlantName(e.target.value)} />
             </>
           )}
 
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 8 }}>Ile masz takich samych roślin?</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 8 }}>{t('plant.howManySame')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
             <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{
               width: 36, height: 36, borderRadius: 10, background: colors.clayLight, border: 'none',
@@ -1632,7 +2639,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
               color: '#fff', border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16
             }}>
-              <Crown size={16} /> Odblokuj pełny przewodnik Premium
+              <Crown size={16} /> {t('plant.unlockPremium')}
             </button>
           )}
 
@@ -1640,19 +2647,19 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
             <div style={{ background: colors.card, border: `1.5px solid ${colors.gold}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <Crown size={16} color={colors.gold} />
-                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink }}>Przewodnik Premium — 9 zł</span>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink }}>{t('plant.premiumTitle')}</span>
               </div>
 
               {verifyingPayment && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', padding: '8px 0' }}>
-                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Sprawdzam płatność...
+                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> {t('plant.checkingPayment')}
                 </div>
               )}
 
               {!verifyingPayment && (
                 <>
-                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 10 }}>Jaki poziom nasłonecznienia ma ta roślina u Ciebie?</div>
-                  {['Pełne słońce', 'Półcień', 'Cień'].map((l) => {
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 10 }}>{t('plant.sunlightQuestion')}</div>
+                  {SUNLIGHT_OPTIONS.map((l) => {
                     const si = sunlightInfo(l);
                     const SIcon = si.Icon;
                     return (
@@ -1662,7 +2669,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
                         background: premiumSunlight === l ? '#FFF8EC' : colors.bg, cursor: 'pointer'
                       }}>
                         <SIcon size={16} color={premiumSunlight === l ? si.tone : '#A9A08B'} />
-                        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, fontWeight: premiumSunlight === l ? 700 : 500 }}>{l}</span>
+                        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, fontWeight: premiumSunlight === l ? 700 : 500 }}>{t(sunlightKey(l))}</span>
                       </div>
                     );
                   })}
@@ -1676,10 +2683,10 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                   }}>
                     {checkoutLoading && <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />}
-                    {checkoutLoading ? 'Przekierowuję do płatności...' : 'Zapłać 9 zł i odblokuj przewodnik'}
+                    {checkoutLoading ? t('plant.redirecting') : t('plant.payButton')}
                   </button>
                   <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, color: '#A9A08B', textAlign: 'center', marginTop: 8 }}>
-                    Tryb testowy — użyj karty 4242 4242 4242 4242, dowolna data i CVC
+                    {t('plant.testMode')}
                   </div>
                 </>
               )}
@@ -1688,7 +2695,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
 
           {generatingGuide && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 16 }}>
-              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Generuję Twój przewodnik...
+              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> {t('plant.generating')}
             </div>
           )}
 
@@ -1696,7 +2703,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
             <div style={{ background: '#FFF8EC', border: `1.5px solid ${colors.gold}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <Crown size={16} color={colors.gold} />
-                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink }}>Twój przewodnik pielęgnacji (opłacony ✓)</span>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink }}>{t('plant.guidePaid')}</span>
               </div>
               <CareGuide text={careGuide} />
             </div>
@@ -1724,8 +2731,8 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
           <div style={{ width: 64, height: 64, borderRadius: 32, background: colors.fern, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Check size={32} color="#fff" />
           </div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 16, color: colors.ink }}>Roślina dodana!</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7261', textAlign: 'center' }}>Sprawdź ją w zakładce Profil</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 16, color: colors.ink }}>{t('plant.added')}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7261', textAlign: 'center' }}>{t('plant.checkProfile')}</div>
         </div>
       )}
     </div>
@@ -1733,6 +2740,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
 }
 
 function ScanScreen() {
+  const t = useT();
   const fileInputRef = useRef(null);
   const [photoDataUrl, setPhotoDataUrl] = useState(null);
   const [identifying, setIdentifying] = useState(false);
@@ -1757,22 +2765,22 @@ function ScanScreen() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Nie udało się rozpoznać rośliny.');
+        setError(data.error || t('plant.errIdentify'));
       } else if (!data.name) {
-        setError('Nie rozpoznano gatunku. Spróbuj wyraźniejszego zdjęcia liścia.');
+        setError(t('plant.errNoSpecies'));
       } else {
         setResult(data);
       }
     } catch (err) {
-      setError('Błąd połączenia z rozpoznawaniem roślin.');
+      setError(t('plant.errConnection'));
     }
     setIdentifying(false);
   };
 
   return (
     <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
-      <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>Rozpoznaj roślinę</h2>
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>Szybkie sprawdzenie gatunku — bez zapisywania w profilu</div>
+      <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>{t('scan.title')}</h2>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>{t('scan.subtitle')}</div>
 
       <input
         ref={fileInputRef}
@@ -1796,14 +2804,14 @@ function ScanScreen() {
             <div style={{ width: 88, height: 88, borderRadius: 44, background: colors.card, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(0,0,0,0.08)' }}>
               <Camera size={36} color={colors.fern} />
             </div>
-            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: colors.ink, fontSize: 15 }}>Zrób lub wgraj zdjęcie</span>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: colors.ink, fontSize: 15 }}>{t('scan.takeOrUpload')}</span>
           </>
         )}
       </div>
 
       {identifying && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>
-          <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Rozpoznaję gatunek...
+          <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> {t('plant.identifying')}
         </div>
       )}
 
@@ -1822,7 +2830,7 @@ function ScanScreen() {
           <Sparkles size={18} color={colors.fern} style={{ flexShrink: 0, marginTop: 2 }} />
           <div>
             <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, color: colors.fernDark }}>{result.name}</div>
-            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, marginTop: 2 }}>Pewność rozpoznania: {result.confidence}%</div>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, marginTop: 2 }}>{t('scan.confidence', { n: result.confidence })}</div>
           </div>
         </div>
       )}
@@ -1833,8 +2841,8 @@ function ScanScreen() {
       }}>
         <Crown size={20} color={colors.gold} style={{ flexShrink: 0 }} />
         <div style={{ fontFamily: 'Inter, sans-serif' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: colors.ink }}>Chcesz dodać ją do swoich roślin?</div>
-          <div style={{ fontSize: 12, color: '#7A7261', marginTop: 2 }}>Przejdź do zakładki "Dodaj" — tam też odblokujesz pełny przewodnik Premium.</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: colors.ink }}>{t('scan.addPrompt')}</div>
+          <div style={{ fontSize: 12, color: '#7A7261', marginTop: 2 }}>{t('scan.addHint')}</div>
         </div>
       </div>
     </div>
@@ -1842,15 +2850,16 @@ function ScanScreen() {
 }
 
 function weatherFromCode(code) {
-  if (code === 0) return { Icon: Sun, label: 'Bezchmurnie', tone: colors.gold };
-  if ([1, 2].includes(code)) return { Icon: CloudSun, label: 'Częściowe zachmurzenie', tone: colors.gold };
-  if (code === 3) return { Icon: Cloud, label: 'Pochmurno', tone: '#8A8574' };
-  if ([45, 48].includes(code)) return { Icon: Cloud, label: 'Mgła', tone: '#8A8574' };
-  if (code >= 51 && code <= 82) return { Icon: CloudRain, label: 'Opady', tone: '#5A7BA6' };
-  return { Icon: Cloud, label: 'Zmiennie', tone: '#8A8574' };
+  if (code === 0) return { Icon: Sun, labelKey: 'weather.clear', tone: colors.gold };
+  if ([1, 2].includes(code)) return { Icon: CloudSun, labelKey: 'weather.partlyCloudy', tone: colors.gold };
+  if (code === 3) return { Icon: Cloud, labelKey: 'weather.cloudy', tone: '#8A8574' };
+  if ([45, 48].includes(code)) return { Icon: Cloud, labelKey: 'weather.fog', tone: '#8A8574' };
+  if (code >= 51 && code <= 82) return { Icon: CloudRain, labelKey: 'weather.rain', tone: '#5A7BA6' };
+  return { Icon: Cloud, labelKey: 'weather.variable', tone: '#8A8574' };
 }
 
 function WeatherWidget() {
+  const t = useT();
   const [state, setState] = useState({ loading: true, error: null, data: null, place: '' });
 
   useEffect(() => {
@@ -1861,7 +2870,7 @@ function WeatherWidget() {
       fetch(url)
         .then(res => res.json())
         .then(json => { if (!cancelled) setState({ loading: false, error: null, data: json, place }); })
-        .catch(() => { if (!cancelled) setState({ loading: false, error: 'Nie udało się pobrać pogody', data: null, place: '' }); });
+        .catch(() => { if (!cancelled) setState({ loading: false, error: t('weather.fetchFailed'), data: null, place: '' }); });
     }
 
     if (navigator.geolocation) {
@@ -1880,7 +2889,7 @@ function WeatherWidget() {
   if (state.loading) {
     return (
       <div style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 18, padding: 20, marginBottom: 20, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>
-        Ładowanie pogody dla Twojej lokalizacji...
+        {t('weather.loading')}
       </div>
     );
   }
@@ -1917,7 +2926,7 @@ function WeatherWidget() {
     <div style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 18, padding: 18, marginBottom: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
         <MapPin size={13} color="#A9A08B" />
-        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', fontWeight: 600 }}>{state.place} · warunki dla Twoich roślin</span>
+        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', fontWeight: 600 }}>{t('weather.conditionsFor', { place: state.place })}</span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '10px 0 16px' }}>
@@ -1929,13 +2938,13 @@ function WeatherWidget() {
         </div>
         <div>
           <div style={{ fontSize: 26, fontWeight: 700, color: colors.ink, lineHeight: 1 }}>{Math.round(current.temperature_2m)}°C</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#7A7261', marginTop: 2 }}>{nowInfo.label}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#7A7261', marginTop: 2 }}>{t(nowInfo.labelKey)}</div>
         </div>
         <div style={{ marginLeft: 'auto', textAlign: 'right', fontFamily: 'Inter, sans-serif' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#5A7BA6', fontWeight: 700, fontSize: 14 }}>
             <Droplets size={14} /> {current.relative_humidity_2m}%
           </div>
-          <div style={{ fontSize: 10.5, color: '#A9A08B' }}>wilgotność</div>
+          <div style={{ fontSize: 10.5, color: '#A9A08B' }}>{t('weather.humidity')}</div>
         </div>
       </div>
 
@@ -1961,7 +2970,7 @@ function WeatherWidget() {
       {current.relative_humidity_2m < 35 && (
         <div style={{ marginTop: 12, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.clay, display: 'flex', gap: 6, alignItems: 'flex-start' }}>
           <Sparkles size={13} style={{ flexShrink: 0, marginTop: 1 }} />
-          Niska wilgotność powietrza — rozważ zraszanie liści.
+          {t('weather.lowHumidity')}
         </div>
       )}
     </div>
@@ -1969,6 +2978,7 @@ function WeatherWidget() {
 }
 
 function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved }) {
+  const t = useT();
   const isEdit = !!existingHost;
   const [name, setName] = useState(existingHost?.name || '');
   const [price, setPrice] = useState(existingHost ? String(existingHost.price) : '');
@@ -1991,7 +3001,7 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
 
   const handleUseLocation = () => {
     if (!navigator.geolocation) {
-      setLocError('Twoja przeglądarka nie obsługuje lokalizacji.');
+      setLocError(t('becomeHost.locationUnsupported'));
       return;
     }
     setLocLoading(true);
@@ -2002,7 +3012,7 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
         setLocLoading(false);
       },
       () => {
-        setLocError('Nie udało się pobrać lokalizacji. Sprawdź uprawnienia przeglądarki.');
+        setLocError(t('becomeHost.locationFailed'));
         setLocLoading(false);
       },
       { timeout: 8000 }
@@ -2030,7 +3040,7 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
       : await supabase.from('hosts').insert([{ ...payload, user_id: userId, rating: null, reviews: 0 }]);
     setSaving(false);
     if (error) {
-      setError('Nie udało się zapisać: ' + error.message);
+      setError(t('becomeHost.saveFailed') + error.message);
     } else {
       onSaved();
     }
@@ -2043,32 +3053,32 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
           width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
         }}><ArrowLeft size={18} color={colors.ink} /></button>
-        <h2 style={{ fontSize: 20, color: colors.ink, fontWeight: 600, margin: 0 }}>{isEdit ? 'Edytuj profil hosta' : 'Zostań hostem'}</h2>
+        <h2 style={{ fontSize: 20, color: colors.ink, fontWeight: 600, margin: 0 }}>{isEdit ? t('becomeHost.titleEdit') : t('becomeHost.titleNew')}</h2>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
         <Avatar photoUrl={userAvatarUrl} name={name || 'H'} size={64} radius={16} />
         <div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink }}>Zdjęcie z Twojego konta</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink }}>{t('becomeHost.photoFromAccount')}</div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: 2 }}>
-            Aby je zmienić, przejdź do zakładki Profil i kliknij w swój awatar.
+            {t('becomeHost.changePhotoHint')}
           </div>
         </div>
       </div>
 
-      <TextField placeholder="Twoje imię" value={name} onChange={e => setName(e.target.value)} />
-      <TextField icon={DollarSign} type="number" placeholder="Cena za roślinę / dzień (zł)" value={price} onChange={e => setPrice(e.target.value)} />
+      <TextField placeholder={t('becomeHost.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} />
+      <TextField icon={DollarSign} type="number" placeholder={t('becomeHost.pricePlaceholder')} value={price} onChange={e => setPrice(e.target.value)} />
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: -6, marginBottom: 14 }}>
-        Sugerowana cena: 2-5 zł za roślinę dziennie
+        {t('becomeHost.priceHint')}
       </div>
       {Number(price) > 10 && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.clay, marginTop: -6, marginBottom: 14 }}>
-          To znacznie powyżej średniej — czy na pewno?
+          {t('becomeHost.priceWarning')}
         </div>
       )}
-      <TextField icon={MapPin} placeholder="Okolica (np. Mokotów, Warszawa)" value={location} onChange={e => setLocation(e.target.value)} />
-      <TextField icon={Phone} type="tel" placeholder="Telefon (opcjonalnie, widoczny po akceptacji)" value={phone} onChange={e => setPhone(e.target.value)} />
-      <TextField placeholder="Dokładny adres (opcjonalnie, widoczny po akceptacji)" value={address} onChange={e => setAddress(e.target.value)} />
+      <TextField icon={MapPin} placeholder={t('becomeHost.areaPlaceholder')} value={location} onChange={e => setLocation(e.target.value)} />
+      <TextField icon={Phone} type="tel" placeholder={t('becomeHost.phonePlaceholder')} value={phone} onChange={e => setPhone(e.target.value)} />
+      <TextField placeholder={t('becomeHost.addressPlaceholder')} value={address} onChange={e => setAddress(e.target.value)} />
 
       <button onClick={handleUseLocation} disabled={locLoading} style={{
         width: '100%', padding: 12, borderRadius: 12, background: coords ? '#EEF3EA' : colors.clayLight,
@@ -2077,14 +3087,14 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12
       }}>
         {locLoading ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Navigation size={15} />}
-        {locLoading ? 'Pobieram lokalizację...' : coords ? 'Lokalizacja zapisana ✓ (kliknij by zaktualizować)' : 'Użyj mojej lokalizacji (dla odległości)'}
+        {locLoading ? t('becomeHost.locationLoading') : coords ? t('becomeHost.locationSaved') : t('becomeHost.useLocation')}
       </button>
       {locError && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.clay, marginBottom: 12 }}>{locError}</div>}
 
-      <TextField type="number" placeholder="Ile roślin możesz przyjąć?" value={capacity} onChange={e => setCapacity(e.target.value)} />
+      <TextField type="number" placeholder={t('becomeHost.capacityPlaceholder')} value={capacity} onChange={e => setCapacity(e.target.value)} />
 
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: 4 }}>Nasłonecznienie u Ciebie</div>
-      {['Pełne słońce', 'Półcień', 'Cień'].map((l) => {
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: 4 }}>{t('becomeHost.sunlightLabel')}</div>
+      {SUNLIGHT_OPTIONS.map((l) => {
         const si = sunlightInfo(l);
         const SIcon = si.Icon;
         return (
@@ -2094,13 +3104,13 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
             background: sunlight === l ? '#FFF8EC' : colors.card, cursor: 'pointer'
           }}>
             <SIcon size={18} color={sunlight === l ? si.tone : '#A9A08B'} />
-            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: sunlight === l ? 700 : 500 }}>{l}</span>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: sunlight === l ? 700 : 500 }}>{t(sunlightKey(l))}</span>
           </div>
         );
       })}
 
       <textarea
-        placeholder="Krótki opis (opcjonalnie) — np. doświadczenie z roślinami, jak często wysyłasz zdjęcia..."
+        placeholder={t('becomeHost.descPlaceholder')}
         value={description}
         onChange={e => setDescription(e.target.value)}
         rows={4}
@@ -2120,17 +3130,17 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
       }}>
         {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
-        {saving ? 'Zapisywanie...' : isEdit ? 'Zapisz zmiany' : 'Zostań hostem'}
+        {saving ? t('booking.sending') : isEdit ? t('becomeHost.saveChanges') : t('becomeHost.titleNew')}
       </button>
     </div>
   );
 }
 
 function statusInfo(status) {
-  if (status === 'accepted') return { label: 'Zaakceptowana', tone: 'fern' };
-  if (status === 'rejected') return { label: 'Odrzucona', tone: 'clay' };
-  if (status === 'cancelled') return { label: 'Anulowana', tone: 'gray' };
-  return { label: 'Oczekuje', tone: 'gold' };
+  if (status === 'accepted') return { labelKey: 'status.accepted', tone: 'fern' };
+  if (status === 'rejected') return { labelKey: 'status.rejected', tone: 'clay' };
+  if (status === 'cancelled') return { labelKey: 'status.cancelled', tone: 'gray' };
+  return { labelKey: 'status.pending', tone: 'gold' };
 }
 
 function ContactBlock({ title, phone, address, extra }) {
@@ -2146,6 +3156,7 @@ function ContactBlock({ title, phone, address, extra }) {
 }
 
 function SupportScreen({ userId, userEmail, onBack }) {
+  const t = useT();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
@@ -2194,7 +3205,7 @@ function SupportScreen({ userId, userEmail, onBack }) {
         body: JSON.stringify({ message: userText, history, userEmail }),
       });
       const data = await res.json();
-      const replyText = data.reply || 'Przepraszam, wystąpił błąd. Spróbuj ponownie.';
+      const replyText = data.reply || t('support.errGeneric');
 
       const { data: savedReply } = await supabase
         .from('support_messages')
@@ -2209,7 +3220,7 @@ function SupportScreen({ userId, userEmail, onBack }) {
     } catch (e) {
       const { data: errMsg } = await supabase
         .from('support_messages')
-        .insert([{ user_id: userId, sender: 'assistant', content: 'Przepraszam, wystąpił problem z połączeniem. Spróbuj ponownie.' }])
+        .insert([{ user_id: userId, sender: 'assistant', content: t('support.errConnection') }])
         .select()
         .single();
       if (errMsg) setMessages(prev => [...prev, errMsg]);
@@ -2225,18 +3236,18 @@ function SupportScreen({ userId, userEmail, onBack }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
         }}><ArrowLeft size={18} color={colors.ink} /></button>
         <div>
-          <h2 style={{ fontSize: 16, color: colors.ink, fontWeight: 600, margin: 0 }}>Wsparcie</h2>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Zwykle odpowiadamy od razu</div>
+          <h2 style={{ fontSize: 16, color: colors.ink, fontWeight: 600, margin: 0 }}>{t('support.title')}</h2>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>{t('support.subtitle')}</div>
         </div>
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
         {loading && (
-          <div style={{ textAlign: 'center', color: '#A9A08B', fontFamily: 'Inter, sans-serif', fontSize: 13, marginTop: 20 }}>Ładowanie...</div>
+          <div style={{ textAlign: 'center', color: '#A9A08B', fontFamily: 'Inter, sans-serif', fontSize: 13, marginTop: 20 }}>{t('chat.loading')}</div>
         )}
         {!loading && messages.length === 0 && (
           <div style={{ textAlign: 'center', color: '#A9A08B', fontFamily: 'Inter, sans-serif', fontSize: 13, marginTop: 20, padding: '0 20px' }}>
-            Cześć! W czym mogę pomóc? Zapytaj o rezerwacje, płatności, albo bycie hostem.
+            {t('support.welcome')}
           </div>
         )}
         {messages.map(m => (
@@ -2266,7 +3277,7 @@ function SupportScreen({ userId, userEmail, onBack }) {
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !sending) handleSend(); }}
-          placeholder="Napisz wiadomość..."
+          placeholder={t('support.inputPlaceholder')}
           style={{
             flex: 1, padding: '12px 14px', borderRadius: 12, border: `1px solid ${colors.line}`,
             fontFamily: 'Inter, sans-serif', fontSize: 13.5, outline: 'none'
@@ -2285,6 +3296,7 @@ function SupportScreen({ userId, userEmail, onBack }) {
 }
 
 function ChatScreen({ conversationId, myUserId, otherName, otherUserId, onBack }) {
+  const t = useT();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
@@ -2364,9 +3376,9 @@ function ChatScreen({ conversationId, myUserId, otherName, otherUserId, onBack }
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
-        {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>}
+        {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('chat.loading')}</div>}
         {!loading && messages.length === 0 && (
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', textAlign: 'center', marginTop: 30 }}>Napisz pierwszą wiadomość!</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', textAlign: 'center', marginTop: 30 }}>{t('chat.firstMessage')}</div>
         )}
         {messages.map(m => {
           const mine = m.sender_id === myUserId;
@@ -2391,7 +3403,7 @@ function ChatScreen({ conversationId, myUserId, otherName, otherUserId, onBack }
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
-          placeholder="Napisz wiadomość..."
+          placeholder={t('support.inputPlaceholder')}
           style={{
             flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 14, padding: '10px 14px',
             fontFamily: 'Inter, sans-serif', fontSize: 13.5, color: colors.ink, boxSizing: 'border-box'
@@ -2410,6 +3422,7 @@ function ChatScreen({ conversationId, myUserId, otherName, otherUserId, onBack }
 }
 
 function ConversationsListScreen({ myUserId, onOpenConversation, onBack }) {
+  const t = useT();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadByConvo, setUnreadByConvo] = useState({});
@@ -2452,16 +3465,16 @@ function ConversationsListScreen({ myUserId, onOpenConversation, onBack }) {
           width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
         }}><ArrowLeft size={18} color={colors.ink} /></button>
-        <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>Wiadomości</h2>
+        <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>{t('chat.messagesTitle')}</h2>
       </div>
 
-      {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>}
+      {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('chat.loading')}</div>}
       {!loading && conversations.length === 0 && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Nie masz jeszcze żadnych rozmów.</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('chat.noConversations')}</div>
       )}
       {!loading && conversations.map(c => {
         const isHostSide = c.hosts?.user_id === myUserId;
-        const otherName = isHostSide ? (c.renter_name || c.renter_email || 'Wynajmujący') : (c.hosts?.name || 'Host');
+        const otherName = isHostSide ? (c.renter_name || c.renter_email || t('chat.renter')) : (c.hosts?.name || 'Host');
         const otherUserId = isHostSide ? c.renter_user_id : c.hosts?.user_id;
         const unread = unreadByConvo[c.id] || 0;
         return (
@@ -2485,7 +3498,7 @@ function ConversationsListScreen({ myUserId, onOpenConversation, onBack }) {
                 fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: unread > 0 ? colors.ink : '#7A7261',
                 fontWeight: unread > 0 ? 700 : 400, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
               }}>
-                {c.last_message || 'Rozpocznij rozmowę'}
+                {c.last_message || t('chat.startConversation')}
               </div>
             </div>
             {unread > 0 && (
@@ -2503,6 +3516,7 @@ function ConversationsListScreen({ myUserId, onOpenConversation, onBack }) {
 }
 
 function HostDashboardScreen({ myHost, onBack }) {
+  const t = useT();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -2536,35 +3550,35 @@ function HostDashboardScreen({ myHost, onBack }) {
           width: 34, height: 34, borderRadius: 17, background: colors.clayLight, border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
         }}><ArrowLeft size={18} color={colors.ink} /></button>
-        <h2 style={{ fontSize: 20, color: colors.ink, fontWeight: 600, margin: 0 }}>Panel hosta</h2>
+        <h2 style={{ fontSize: 20, color: colors.ink, fontWeight: 600, margin: 0 }}>{t('dash.title')}</h2>
       </div>
 
       <div style={{ background: colors.fern, borderRadius: 16, padding: 16, marginBottom: 12 }}>
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.4 }}>Łącznie zarobione</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.4 }}>{t('dash.totalEarned')}</div>
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 26, fontWeight: 700, color: '#fff', marginTop: 4 }}>{Math.round(totalEarned * 100) / 100} zł</div>
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
         <div style={{ flex: 1, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, textAlign: 'center' }}>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 20, fontWeight: 700, color: colors.ink }}>{completedCount}</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Zrealizowane</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>{t('dash.completed')}</div>
         </div>
         <div style={{ flex: 1, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, textAlign: 'center' }}>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 20, fontWeight: 700, color: colors.ink }}>{pendingCount}</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Oczekujące</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>{t('dash.pending')}</div>
         </div>
         <div style={{ flex: 1, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, textAlign: 'center' }}>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 20, fontWeight: 700, color: colors.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
             <Star size={14} fill={colors.gold} color={colors.gold} /> {myHost.rating ?? '—'}
           </div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Ocena</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>{t('dash.rating')}</div>
         </div>
       </div>
 
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Historia rezerwacji</div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('dash.historyTitle')}</div>
 
-      {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>}
-      {!loading && bookings.length === 0 && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Brak historii rezerwacji.</div>}
+      {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('chat.loading')}</div>}
+      {!loading && bookings.length === 0 && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('dash.noHistory')}</div>}
       {!loading && bookings.map(b => {
         const si = statusInfo(b.status);
         return (
@@ -2576,7 +3590,7 @@ function HostDashboardScreen({ myHost, onBack }) {
                 </div>
                 <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.renter_name || b.renter_email}</div>
               </div>
-              <Pill tone={si.tone}>{si.label}</Pill>
+              <Pill tone={si.tone}>{t(si.labelKey)}</Pill>
             </div>
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
             {b.payment_status === 'paid' && (
@@ -2592,6 +3606,7 @@ function HostDashboardScreen({ myHost, onBack }) {
 }
 
 function FullListScreen({ title, items, renderItem, statusOptions, getStatus, getDate, onBack, emptyText }) {
+  const t = useT();
   const [sortDesc, setSortDesc] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -2616,10 +3631,10 @@ function FullListScreen({ title, items, renderItem, statusOptions, getStatus, ge
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, overflowX: 'auto' }}>
-        <Pill tone="fern" active={sortDesc} onClick={() => setSortDesc(true)}>Najnowsze</Pill>
-        <Pill tone="fern" active={!sortDesc} onClick={() => setSortDesc(false)}>Najstarsze</Pill>
+        <Pill tone="fern" active={sortDesc} onClick={() => setSortDesc(true)}>{t('list.newest')}</Pill>
+        <Pill tone="fern" active={!sortDesc} onClick={() => setSortDesc(false)}>{t('list.oldest')}</Pill>
         {statusOptions && (
-          <Pill tone="clay" active={statusFilter === 'all'} onClick={() => setStatusFilter('all')}>Wszystkie</Pill>
+          <Pill tone="clay" active={statusFilter === 'all'} onClick={() => setStatusFilter('all')}>{t('list.all')}</Pill>
         )}
         {statusOptions && statusOptions.map(opt => (
           <Pill key={opt.value} tone="gold" active={statusFilter === opt.value} onClick={() => setStatusFilter(opt.value)}>{opt.label}</Pill>
@@ -2627,7 +3642,7 @@ function FullListScreen({ title, items, renderItem, statusOptions, getStatus, ge
       </div>
 
       {list.length === 0 && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{emptyText || 'Brak wyników.'}</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{emptyText || t('list.noResults')}</div>
       )}
       {list.map(renderItem)}
     </div>
@@ -2635,6 +3650,7 @@ function FullListScreen({ title, items, renderItem, statusOptions, getStatus, ge
 }
 
 function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectReturn, onConnectReturnHandled, bookingPaymentReturn, onBookingPaymentReturnHandled, onOpenConversation }) {
+  const t = useT();
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myHost, setMyHost] = useState(null);
@@ -2976,7 +3992,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             await createNotification(
               bd.hosts.user_id,
               'booking_paid',
-              'Otrzymano płatność',
+              t('profile.paymentReceived'),
               `Rezerwacja "${bd.plant_name}" została opłacona — ${data.amountTotal} zł`,
               bookingPaymentReturn.bookingId,
               bd.hosts.email || null
@@ -3004,7 +4020,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         .gte('end_date', b.start_date);
       const currentCount = (overlapping || []).reduce((sum, o) => sum + (o.quantity || 1), 0);
       if (currentCount + (b.quantity || 1) > myHost.plants_capacity) {
-        alert(`Nie możesz zaakceptować tej prośby — w tym terminie masz już ${currentCount} zaakceptowanych roślin, a Twój limit to ${myHost.plants_capacity}.`);
+        alert(t('profile.capacityExceeded', { current: currentCount, limit: myHost.plants_capacity }));
         return;
       }
     }
@@ -3039,13 +4055,13 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         });
         if (!res.ok) {
           setCancellingBookingId(null);
-          alert('Nie udało się zwrócić płatności. Spróbuj ponownie lub skontaktuj się z pomocą.');
+          alert(t('profile.refundFailed'));
           return;
         }
         await supabase.from('bookings').update({ status: 'cancelled', payment_status: 'refunded' }).eq('id', bookingId);
       } catch (e) {
         setCancellingBookingId(null);
-        alert('Nie udało się zwrócić płatności. Spróbuj ponownie lub skontaktuj się z pomocą.');
+        alert(t('profile.refundFailed'));
         return;
       }
     } else {
@@ -3225,19 +4241,19 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 700, color: colors.ink, marginBottom: 2 }}>
         {b.plant_name}{b.quantity > 1 ? ` × ${b.quantity}` : ''}
       </div>
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 2 }}>od {b.renter_name || b.renter_email}</div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 2 }}>{t('profile.from')} {b.renter_name || b.renter_email}</div>
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 10 }}>{b.start_date} → {b.end_date}</div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={() => respondToBooking(b.id, 'accepted')} style={{
           flex: 1, padding: 10, borderRadius: 10, background: colors.fern, color: '#fff', border: 'none',
           fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
-        }}><CheckCircle size={14} /> Akceptuj</button>
+        }}><CheckCircle size={14} /> {t('profile.accept')}</button>
         <button onClick={() => respondToBooking(b.id, 'rejected')} style={{
           flex: 1, padding: 10, borderRadius: 10, background: colors.clayLight, color: colors.clay, border: 'none',
           fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
-        }}><XCircle size={14} /> Odrzuć</button>
+        }}><XCircle size={14} /> {t('profile.reject')}</button>
       </div>
     </div>
   );
@@ -3250,24 +4266,24 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
       {b.payment_status === 'paid' ? (
         <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <CheckCircle size={13} /> Opłacona — {b.amount_total} zł (Twoja część: {Math.round(b.amount_total * 0.9 * 100) / 100} zł)
+          <CheckCircle size={13} /> {t('profile.paidWithShare', { total: b.amount_total, share: Math.round(b.amount_total * 0.9 * 100) / 100 })}
         </div>
       ) : (
         <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B' }}>
-          Oczekuje na opłacenie przez wynajmującego
+          {t('profile.awaitingPayment')}
         </div>
       )}
-      <ContactBlock title="Kontakt do właściciela rośliny" phone={b.renter_phone} extra={`${b.renter_name || 'Bez podanego imienia'} · ${b.renter_email}`} />
+      <ContactBlock title={t('profile.contactOwner')} phone={b.renter_phone} extra={`${b.renter_name || t('profile.noNameGiven')} · ${b.renter_email}`} />
       {b.payment_status === 'paid' && !hostReviewedBookingIds.has(b.id) && (
         <button onClick={() => setReviewingAsHostBooking(b)} style={{
           marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.gold, color: '#fff',
           border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
-        }}><MessageCircle size={14} /> Oceń wynajmującego</button>
+        }}><MessageCircle size={14} /> {t('profile.rateRenter')}</button>
       )}
       {b.payment_status === 'paid' && hostReviewedBookingIds.has(b.id) && (
         <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Check size={13} /> Opinia o wynajmującym wystawiona
+          <Check size={13} /> {t('profile.renterReviewGiven')}
         </div>
       )}
     </div>
@@ -3289,24 +4305,24 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             </div>
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>u {b.hosts?.name} · {b.hosts?.location}</div>
           </div>
-          <Pill tone={si.tone}>{si.label}</Pill>
+          <Pill tone={si.tone}>{t(si.labelKey)}</Pill>
         </div>
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{b.start_date} → {b.end_date}</div>
 
         {b.status === 'accepted' && (
-          <ContactBlock title="Kontakt do hosta" phone={b.hosts?.phone} address={b.hosts?.address} />
+          <ContactBlock title={t('profile.contactHost')} phone={b.hosts?.phone} address={b.hosts?.address} />
         )}
 
         {b.payment_status === 'paid' && (
           <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <CheckCircle size={13} /> Zapłacono {b.amount_total} zł
+            <CheckCircle size={13} /> {t('profile.paidAmount', { amount: b.amount_total })}
           </div>
         )}
 
         {receivedReviews[b.id] && (
           <div style={{ marginTop: 10, background: '#FFF8EC', borderRadius: 10, padding: 10 }}>
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, fontWeight: 700, color: colors.gold, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4 }}>
-              Opinia hosta o Tobie
+              {t('profile.hostReviewOfYou')}
             </div>
             <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
               {[1,2,3,4,5].map(n => (
@@ -3321,7 +4337,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
         {needsPayment && verifyingBookingPayment && (
           <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>
-            <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Sprawdzam płatność...
+            <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> {t('profile.checkingPayment')}
           </div>
         )}
 
@@ -3335,13 +4351,13 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             {payingBookingId === b.id
               ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
               : <CreditCard size={14} />}
-            {payingBookingId === b.id ? 'Przekierowuję...' : `Zapłać i potwierdź (${estTotal} zł)`}
+            {payingBookingId === b.id ? t('profile.redirecting') : t('profile.payConfirm', { total: estTotal })}
           </button>
         )}
 
         {needsPayment && !verifyingBookingPayment && !hostReady && (
           <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B' }}>
-            Host jeszcze nie podłączył konta do wypłat — spróbuj ponownie za chwilę.
+            {t('profile.hostNoPayout')}
           </div>
         )}
 
@@ -3353,7 +4369,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             opacity: cancellingBookingId === b.id ? 0.7 : 1
           }}>
             {cancellingBookingId === b.id ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <X size={14} />}
-            Anuluj prośbę
+            {t('profile.cancelRequest')}
           </button>
         )}
 
@@ -3361,8 +4377,8 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           <button
             onClick={() => {
               const msg = b.payment_status === 'paid'
-                ? `Na pewno anulować? Zapłacone ${b.amount_total} zł zostanie w pełni zwrócone.`
-                : 'Na pewno anulować tę rezerwację?';
+                ? t('profile.confirmCancelPaid', { amount: b.amount_total })
+                : t('profile.confirmCancel');
               if (window.confirm(msg)) cancelMyBooking(b.id);
             }}
             disabled={cancellingBookingId === b.id}
@@ -3374,7 +4390,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             }}
           >
             {cancellingBookingId === b.id ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <X size={14} />}
-            {cancellingBookingId === b.id ? 'Anulowanie...' : b.payment_status === 'paid' ? 'Anuluj i zwróć płatność' : 'Anuluj rezerwację'}
+            {cancellingBookingId === b.id ? t('profile.cancelling') : b.payment_status === 'paid' ? t('profile.cancelAndRefund') : t('profile.cancelBooking')}
           </button>
         )}
 
@@ -3383,11 +4399,11 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             marginTop: 10, width: '100%', padding: 10, borderRadius: 10, background: colors.gold, color: '#fff',
             border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
-          }}><MessageCircle size={14} /> Zostaw opinię</button>
+          }}><MessageCircle size={14} /> {t('profile.leaveReview')}</button>
         )}
         {b.status === 'accepted' && alreadyReviewed && (
           <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Check size={13} /> Opinia wystawiona
+            <Check size={13} /> {t('profile.reviewGiven')}
           </div>
         )}
       </div>
@@ -3417,15 +4433,15 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
               )}
               {active ? (
                 <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.fern, fontWeight: 700 }}>
-                  Obecnie u {active.hosts?.name}
+                  {t('profile.currentlyAt', { name: active.hosts?.name })}
                 </div>
               ) : (
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>U Ciebie w domu</div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>{t('profile.atYourHome')}</div>
               )}
             </div>
           </div>
           <button
-            onClick={() => { if (window.confirm(`Usunąć "${p.name}" z Twoich roślin?`)) deletePlant(p.id); }}
+            onClick={() => { if (window.confirm(t('profile.confirmDeletePlant', { name: p.name }))) deletePlant(p.id); }}
             disabled={deletingPlantId === p.id}
             style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: 6, flexShrink: 0,
@@ -3441,13 +4457,13 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           <div style={{ padding: '0 16px 16px' }}>
             {p.care_guide && <div style={{ marginBottom: 14 }}><CareGuide text={p.care_guide} /></div>}
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 700, color: colors.ink, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 }}>
-              Historia u hostów
+              {t('profile.hostHistory')}
             </div>
             {loadingPlantHistory === p.id && (
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>Ładowanie...</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>{t('profile.loading')}</div>
             )}
             {loadingPlantHistory !== p.id && history.length === 0 && (
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>Ta roślina nigdy nie była jeszcze u hosta.</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>{t('profile.neverAtHost')}</div>
             )}
             {loadingPlantHistory !== p.id && history.map(h => (
               <div key={h.id} style={{ background: colors.bg, borderRadius: 10, padding: 10, marginBottom: 6 }}>
@@ -3458,7 +4474,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
                   {h.start_date} → {h.end_date}
                 </div>
                 <div style={{ marginTop: 4 }}>
-                  <Pill tone={statusInfo(h.status).tone}>{statusInfo(h.status).label}</Pill>
+                  <Pill tone={statusInfo(h.status).tone}>{t(statusInfo(h.status).labelKey)}</Pill>
                 </div>
               </div>
             ))}
@@ -3475,14 +4491,14 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
   if (fullListView === 'pending') {
     return (
-      <FullListScreen title="Prośby o rezerwację" items={pendingIncoming} renderItem={renderPendingCard}
-        getDate={(b) => b.created_at} onBack={() => setFullListView(null)} emptyText="Brak próśb o rezerwację." />
+      <FullListScreen title={t('profile.bookingRequests')} items={pendingIncoming} renderItem={renderPendingCard}
+        getDate={(b) => b.created_at} onBack={() => setFullListView(null)} emptyText={t('profile.noRequests')} />
     );
   }
   if (fullListView === 'accepted') {
     return (
-      <FullListScreen title="Zaakceptowane rezerwacje" items={acceptedIncoming} renderItem={renderAcceptedCard}
-        getDate={(b) => b.created_at} onBack={() => setFullListView(null)} emptyText="Brak zaakceptowanych rezerwacji." />
+      <FullListScreen title={t('profile.acceptedBookings')} items={acceptedIncoming} renderItem={renderAcceptedCard}
+        getDate={(b) => b.created_at} onBack={() => setFullListView(null)} emptyText={t('profile.noAccepted')} />
     );
   }
   if (fullListView === 'bookings') {
@@ -3490,22 +4506,22 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       <FullListScreen
         title="Twoje rezerwacje" items={myBookings} renderItem={renderBookingCard}
         statusOptions={[
-          { value: 'pending', label: 'Oczekujące' },
-          { value: 'accepted', label: 'Zaakceptowane' },
-          { value: 'rejected', label: 'Odrzucone' },
-          { value: 'cancelled', label: 'Anulowane' },
+          { value: 'pending', label: t('status.pending') },
+          { value: 'accepted', label: t('status.accepted') },
+          { value: 'rejected', label: t('status.rejected') },
+          { value: 'cancelled', label: t('status.cancelled') },
         ]}
         getStatus={(b) => b.status}
         getDate={(b) => b.created_at}
         onBack={() => setFullListView(null)}
-        emptyText="Nie masz jeszcze żadnych rezerwacji."
+        emptyText={t('profile.noBookings')}
       />
     );
   }
   if (fullListView === 'plants') {
     return (
-      <FullListScreen title="Twoje rośliny" items={plants} renderItem={renderPlantCard}
-        getDate={(p) => p.created_at} onBack={() => setFullListView(null)} emptyText="Nie masz jeszcze żadnych roślin." />
+      <FullListScreen title={t('profile.yourPlants')} items={plants} renderItem={renderPlantCard}
+        getDate={(p) => p.created_at} onBack={() => setFullListView(null)} emptyText={t('profile.noPlants')} />
     );
   }
 
@@ -3583,15 +4599,15 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           marginBottom: 20, overflow: 'hidden'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: `1px solid ${colors.line}` }}>
-            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, color: colors.ink }}>Powiadomienia</span>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, color: colors.ink }}>{t('profile.notifications')}</span>
             <button onClick={() => setShowNotifications(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
               <X size={15} color="#A9A08B" />
             </button>
           </div>
           <div style={{ maxHeight: 300, overflow: 'auto' }}>
-            {notifLoading && <div style={{ padding: 14, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>Ładowanie...</div>}
+            {notifLoading && <div style={{ padding: 14, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>{t('profile.loading')}</div>}
             {!notifLoading && notifications.length === 0 && (
-              <div style={{ padding: 14, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>Brak powiadomień.</div>
+              <div style={{ padding: 14, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>{t('profile.noNotifications')}</div>
             )}
             {!notifLoading && notifications.map(n => (
               <div key={n.id} onClick={() => !n.read && markNotificationRead(n.id)} style={{
@@ -3620,7 +4636,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
               }} />
             </div>
             <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>
-              {savingEmailPref ? 'Zapisywanie...' : 'Powiadomienia email'}
+              {savingEmailPref ? t('profile.saving') : t('profile.emailNotifications')}
             </span>
           </div>
         </div>
@@ -3628,7 +4644,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
       {myHost && (
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginBottom: 20 }}>
-          To zdjęcie jest też widoczne na Twoim ogłoszeniu hosta.
+          {t('profile.photoAlsoOnListing')}
         </div>
       )}
 
@@ -3638,19 +4654,19 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           borderRadius: 12, padding: 12, marginBottom: 20, cursor: 'pointer'
         }}>
           <Pencil size={14} color={colors.gold} />
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink }}>Uzupełnij swoje imię — host zobaczy je zamiast samego emaila</span>
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink }}>{t('profile.fillNameHint')}</span>
         </div>
       )}
       {hasName && !editingName && (
         <div onClick={() => setEditingName(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 20, cursor: 'pointer' }}>
           <Pencil size={11} color="#A9A08B" />
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Zmień imię</span>
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>{t('profile.changeName')}</span>
         </div>
       )}
       {editingName && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
           <div style={{ flex: 1 }}>
-            <TextField placeholder="Twoje imię i nazwisko" value={nameInput} onChange={e => setNameInput(e.target.value)} />
+            <TextField placeholder={t('profile.namePlaceholder')} value={nameInput} onChange={e => setNameInput(e.target.value)} />
           </div>
           <button onClick={handleSaveName} disabled={savingName || !nameInput.trim()} style={{
             padding: '0 16px', borderRadius: 14, background: colors.fern, color: '#fff', border: 'none',
@@ -3661,9 +4677,9 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
       {referralCode && (
         <div style={{ background: colors.card, border: `1.5px solid ${colors.gold}`, borderRadius: 16, padding: 16, marginBottom: 20 }}>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink, marginBottom: 4 }}>Poleć znajomym Leafsit</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: colors.ink, marginBottom: 4 }}>{t('profile.referralTitle')}</div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#7A7261', marginBottom: 10 }}>
-            Poleconych znajomych: {referredCount}
+            {t('profile.referredCount', { n: referredCount })}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div style={{
@@ -3673,7 +4689,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             <button onClick={copyReferralLink} style={{
               padding: '9px 14px', borderRadius: 10, background: colors.gold, color: '#fff', border: 'none',
               fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12, cursor: 'pointer', flexShrink: 0
-            }}>{referralCopied ? 'Skopiowano ✓' : 'Kopiuj link'}</button>
+            }}>{referralCopied ? t('profile.copied') : t('profile.copyLink')}</button>
           </div>
         </div>
       )}
@@ -3683,11 +4699,11 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       {myHost && pendingIncoming.length > 0 && (
         <>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Prośby o rezerwację ({pendingIncoming.length})
+            {t('profile.bookingRequests')} ({pendingIncoming.length})
           </div>
           {renderPendingCard([...pendingIncoming].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])}
           {pendingIncoming.length > 1 && (
-            <button onClick={() => setFullListView('pending')} style={viewAllBtnStyle}>Wyświetl wszystkie ({pendingIncoming.length})</button>
+            <button onClick={() => setFullListView('pending')} style={viewAllBtnStyle}>{t('profile.viewAll', { n: pendingIncoming.length })}</button>
           )}
         </>
       )}
@@ -3695,45 +4711,45 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       {myHost && acceptedIncoming.length > 0 && (
         <>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: pendingIncoming.length > 0 ? 20 : 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Zaakceptowane rezerwacje ({acceptedIncoming.length})
+            {t('profile.acceptedBookings')} ({acceptedIncoming.length})
           </div>
           {renderAcceptedCard([...acceptedIncoming].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])}
           {acceptedIncoming.length > 1 && (
-            <button onClick={() => setFullListView('accepted')} style={viewAllBtnStyle}>Wyświetl wszystkie ({acceptedIncoming.length})</button>
+            <button onClick={() => setFullListView('accepted')} style={viewAllBtnStyle}>{t('profile.viewAll', { n: acceptedIncoming.length })}</button>
           )}
         </>
       )}
 
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: (myHost && (pendingIncoming.length > 0 || acceptedIncoming.length > 0)) ? 20 : 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>Twoje rezerwacje</div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: (myHost && (pendingIncoming.length > 0 || acceptedIncoming.length > 0)) ? 20 : 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('profile.yourBookings')}</div>
       {myBookingsLoading && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>Ładowanie...</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>{t('profile.loading')}</div>
       )}
       {!myBookingsLoading && myBookings.length === 0 && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>Nie masz jeszcze żadnych rezerwacji.</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>{t('profile.noBookings')}</div>
       )}
       {!myBookingsLoading && myBookings.length > 0 && renderBookingCard([...myBookings].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])}
       {!myBookingsLoading && myBookings.length > 1 && (
-        <button onClick={() => setFullListView('bookings')} style={viewAllBtnStyle}>Wyświetl wszystkie ({myBookings.length})</button>
+        <button onClick={() => setFullListView('bookings')} style={viewAllBtnStyle}>{t('profile.viewAll', { n: myBookings.length })}</button>
       )}
 
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>Twoje rośliny</div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('profile.yourPlants')}</div>
 
       {loading && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('profile.loading')}</div>
       )}
 
       {!loading && plants.length === 0 && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Nie masz jeszcze żadnych roślin — dodaj pierwszą w zakładce "Dodaj".</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('profile.noPlants')}</div>
       )}
 
       {!loading && plants.length > 0 && renderPlantCard([...plants].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])}
       {!loading && plants.length > 1 && (
-        <button onClick={() => setFullListView('plants')} style={viewAllBtnStyle}>Wyświetl wszystkie ({plants.length})</button>
+        <button onClick={() => setFullListView('plants')} style={viewAllBtnStyle}>{t('profile.viewAll', { n: plants.length })}</button>
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '20px 0 10px' }}>
         <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          {myHost ? 'Twój profil hosta' : 'Chcesz zostać hostem?'}
+          {myHost ? t('profile.yourHostProfile') : t('profile.becomeHostTitle')}
         </span>
         {myHost && (
           <div style={{ display: 'flex', gap: 14 }}>
@@ -3741,7 +4757,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
               background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: 0
             }}>
               <DollarSign size={11} color={colors.fern} />
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.fern, fontWeight: 700 }}>Panel hosta</span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.fern, fontWeight: 700 }}>{t('profile.hostPanel')}</span>
             </button>
             <button onClick={() => setEditingHost(true)} style={{
               background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: 0
@@ -3754,7 +4770,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       </div>
 
       {hostLoading && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>Ładowanie...</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('profile.loading')}</div>
       )}
 
       {!hostLoading && myHost && (
@@ -3768,22 +4784,22 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           </div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>{myHost.location} · {myHost.plants_capacity} miejsc</div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.fern, marginTop: 6 }}>
-            Twój profil jest już widoczny na liście hostów ✓{myHost.latitude != null ? ' · lokalizacja GPS zapisana' : ''}
+            {t('profile.profileVisible')}{myHost.latitude != null ? t('profile.gpsSaved') : ''}
           </div>
 
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${colors.line}` }}>
             {connectChecking ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>
-                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Sprawdzam status konta wypłat...
+                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> {t('profile.checkingPayoutAccount')}
               </div>
             ) : myHost.stripe_charges_enabled ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.fern, fontWeight: 700 }}>
-                <CheckCircle size={14} /> Konto do wypłat podłączone
+                <CheckCircle size={14} /> {t('profile.payoutConnected')}
               </div>
             ) : (
               <>
                 <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261', marginBottom: 8 }}>
-                  Aby otrzymywać wypłaty za rezerwacje, podłącz konto Stripe (kilka minut).
+                  {t('profile.connectStripeHint')}
                 </div>
                 <button onClick={handleConnectStripe} disabled={connectLoading} style={{
                   width: '100%', padding: 12, borderRadius: 12, background: colors.ink, color: '#fff', border: 'none',
@@ -3791,7 +4807,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: connectLoading ? 0.7 : 1
                 }}>
                   {connectLoading ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Wallet size={15} />}
-                  {connectLoading ? 'Przekierowuję...' : 'Podłącz konto Stripe'}
+                  {connectLoading ? t('profile.redirecting') : t('profile.connectStripe')}
                 </button>
               </>
             )}
@@ -3801,17 +4817,27 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
       {!hostLoading && !myHost && (
         <div onClick={() => setShowHostForm(true)} style={{ background: colors.fern, borderRadius: 16, padding: 16, color: '#fff', cursor: 'pointer' }}>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>Zarabiaj na wolnym miejscu w domu</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, opacity: 0.9 }}>Ustal cenę i przyjmuj rośliny sąsiadów pod nieobecność</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{t('profile.earnTitle')}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, opacity: 0.9 }}>{t('profile.becomeHostText')}</div>
         </div>
       )}
 
+      <div style={{ marginTop: 28, paddingTop: 20, borderTop: `1px solid ${colors.line}` }}>
+        <div style={{
+          fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 700, color: '#A9A08B',
+          textTransform: 'uppercase', letterSpacing: 0.4, textAlign: 'center', marginBottom: 10
+        }}>
+          {t('auth.languageLabel')}
+        </div>
+        <LanguagePicker compact />
+      </div>
+
       <div
         onClick={() => setShowTermsInProfile(true)}
-        style={{ textAlign: 'center', marginTop: 24, cursor: 'pointer' }}
+        style={{ textAlign: 'center', marginTop: 20, cursor: 'pointer' }}
       >
         <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', textDecoration: 'underline' }}>
-          Regulamin i Polityka Prywatności
+          {t('profile.terms')}
         </span>
       </div>
     </div>
@@ -3879,15 +4905,31 @@ export default function App() {
   const [referralCodeFromUrl, setReferralCodeFromUrl] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [lang, setLangState] = useState(detectInitialLanguage);
+
+  const setLang = React.useCallback((newLang) => {
+    setLangState(newLang);
+    try { localStorage.setItem('leafsit_lang', newLang); } catch (e) { /* ignore */ }
+    supabase.auth.getSession().then(({ data }) => {
+      const uid = data?.session?.user?.id;
+      if (uid) supabase.from('profiles').upsert({ id: uid, language: newLang });
+    });
+  }, []);
+
+  const langValue = React.useMemo(() => ({ lang, setLang }), [lang, setLang]);
 
   useEffect(() => {
     if (!session) { setOnboardingChecked(false); return; }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.from('profiles').select('onboarding_seen').eq('id', session.user.id).maybeSingle();
+      const { data } = await supabase.from('profiles').select('onboarding_seen, language').eq('id', session.user.id).maybeSingle();
       if (!cancelled) {
         setShowOnboarding(!data || data.onboarding_seen !== true);
         setOnboardingChecked(true);
+        if (data?.language && TRANSLATIONS[data.language]) {
+          setLangState(data.language);
+          try { localStorage.setItem('leafsit_lang', data.language); } catch (e) { /* ignore */ }
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -4025,29 +5067,31 @@ export default function App() {
   };
 
   return (
-    <div className="app-outer" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#EDE7DA', padding: 40 }}>
-      <Screen>
-        <StatusBar />
-        {authLoading ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Loader2 size={28} color={colors.fern} style={{ animation: 'spin 1s linear infinite' }} />
-          </div>
-        ) : !session ? (
-          <AuthScreen referralCodeFromUrl={referralCodeFromUrl} />
-        ) : !onboardingChecked ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Loader2 size={28} color={colors.fern} style={{ animation: 'spin 1s linear infinite' }} />
-          </div>
-        ) : showOnboarding ? (
-          <OnboardingScreen onFinish={finishOnboarding} />
-        ) : (
-          <>
-            {renderTab()}
-            <TabBar active={tab} onNav={(t) => { setTab(t); setView('list'); }} />
-          </>
-        )}
-      </Screen>
-      <CookieBanner />
-    </div>
+    <LanguageContext.Provider value={langValue}>
+      <div className="app-outer" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#EDE7DA', padding: 40 }}>
+        <Screen>
+          <StatusBar />
+          {authLoading ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Loader2 size={28} color={colors.fern} style={{ animation: 'spin 1s linear infinite' }} />
+            </div>
+          ) : !session ? (
+            <AuthScreen referralCodeFromUrl={referralCodeFromUrl} />
+          ) : !onboardingChecked ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Loader2 size={28} color={colors.fern} style={{ animation: 'spin 1s linear infinite' }} />
+            </div>
+          ) : showOnboarding ? (
+            <OnboardingScreen onFinish={finishOnboarding} />
+          ) : (
+            <>
+              {renderTab()}
+              <TabBar active={tab} onNav={(t) => { setTab(t); setView('list'); }} />
+            </>
+          )}
+        </Screen>
+        <CookieBanner />
+      </div>
+    </LanguageContext.Provider>
   );
 }
