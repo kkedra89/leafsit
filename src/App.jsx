@@ -310,6 +310,32 @@ const TRANSLATIONS = {
     'profile.photoAlsoOnListing': 'To zdjęcie jest też widoczne na Twoim ogłoszeniu hosta.',
     'profile.connectStripeHint': 'Aby otrzymywać wypłaty za rezerwacje, podłącz konto Stripe (kilka minut).',
     'plant.yourPlantAlt': 'Twoja roślina',
+
+    // Powiadomienia (tresc budowana w jezyku ODBIORCY)
+    'notif.someone': 'Ktoś',
+    'notif.qtySuffix': ' (×{n} szt.)',
+    'notif.booking_request.title': 'Nowa prośba o rezerwację',
+    'notif.booking_request.body': '{name} chce zostawić u Ciebie roślinę "{plant}"{qtySuffix}',
+    'notif.new_review.title': 'Nowa opinia',
+    'notif.new_review.body': '{name} wystawił(a) Ci ocenę {rating}/5 za "{plant}"',
+    'notif.review_received.title': 'Otrzymałeś opinię',
+    'notif.review_received.body': '{name} wystawił(a) Ci ocenę {rating}/5 za rezerwację "{plant}"',
+    'notif.new_message.title': 'Nowa wiadomość',
+    'notif.new_message.body': '{text}',
+    'notif.booking_paid.title': 'Otrzymano płatność',
+    'notif.booking_paid.body': 'Rezerwacja "{plant}" została opłacona — {amount} zł',
+    'notif.booking_accepted.title': 'Rezerwacja zaakceptowana!',
+    'notif.booking_accepted.body': 'Twoja prośba dla "{plant}"{qtySuffix} została zaakceptowana — możesz teraz opłacić rezerwację w Profilu.',
+    'notif.booking_rejected.title': 'Rezerwacja odrzucona',
+    'notif.booking_rejected.body': 'Twoja prośba dla "{plant}"{qtySuffix} została odrzucona przez hosta.',
+    'notif.booking_cancelled.title': 'Rezerwacja anulowana',
+    'notif.booking_cancelled.body': 'Prośba dla "{plant}" została anulowana przez wynajmującego.',
+    'notif.booking_cancelled_refund.title': 'Rezerwacja anulowana',
+    'notif.booking_cancelled_refund.body': 'Rezerwacja "{plant}" została anulowana i zwrócona — środki zostaną wycofane z Twojego konta.',
+    'notif.booking_reminder_renter.title': 'Jutro zaczyna się Twoja rezerwacja',
+    'notif.booking_reminder_renter.body': 'Pamiętaj o dostarczeniu rośliny "{plant}" do {host} ({date}).',
+    'notif.booking_reminder_host.title': 'Jutro przyjmujesz rośliny',
+    'notif.booking_reminder_host.body': '{name} dostarczy Ci roślinę "{plant}"{qtySuffix} ({date}).',
     'weather.clear': 'Bezchmurnie',
     'weather.partlyCloudy': 'Częściowe zachmurzenie',
     'weather.cloudy': 'Pochmurno',
@@ -612,6 +638,32 @@ const TRANSLATIONS = {
     'profile.photoAlsoOnListing': 'This photo is also shown on your host listing.',
     'profile.connectStripeHint': 'To receive payouts for bookings, connect a Stripe account (takes a few minutes).',
     'plant.yourPlantAlt': 'Your plant',
+
+    // Notifications (rendered in the RECIPIENT's language)
+    'notif.someone': 'Someone',
+    'notif.qtySuffix': ' (×{n} pcs)',
+    'notif.booking_request.title': 'New booking request',
+    'notif.booking_request.body': '{name} would like to leave the plant "{plant}"{qtySuffix} with you',
+    'notif.new_review.title': 'New review',
+    'notif.new_review.body': '{name} rated you {rating}/5 for "{plant}"',
+    'notif.review_received.title': 'You received a review',
+    'notif.review_received.body': '{name} rated you {rating}/5 for the booking "{plant}"',
+    'notif.new_message.title': 'New message',
+    'notif.new_message.body': '{text}',
+    'notif.booking_paid.title': 'Payment received',
+    'notif.booking_paid.body': 'Booking "{plant}" has been paid — {amount} zł',
+    'notif.booking_accepted.title': 'Booking accepted!',
+    'notif.booking_accepted.body': 'Your request for "{plant}"{qtySuffix} was accepted — you can now pay for it in your Profile.',
+    'notif.booking_rejected.title': 'Booking rejected',
+    'notif.booking_rejected.body': 'Your request for "{plant}"{qtySuffix} was rejected by the host.',
+    'notif.booking_cancelled.title': 'Booking cancelled',
+    'notif.booking_cancelled.body': 'The request for "{plant}" was cancelled by the renter.',
+    'notif.booking_cancelled_refund.title': 'Booking cancelled',
+    'notif.booking_cancelled_refund.body': 'Booking "{plant}" was cancelled and refunded — the funds will be withdrawn from your account.',
+    'notif.booking_reminder_renter.title': 'Your booking starts tomorrow',
+    'notif.booking_reminder_renter.body': 'Remember to bring the plant "{plant}" to {host} ({date}).',
+    'notif.booking_reminder_host.title': 'You are taking in plants tomorrow',
+    'notif.booking_reminder_host.body': '{name} will bring you the plant "{plant}"{qtySuffix} ({date}).',
     'weather.clear': 'Clear',
     'weather.partlyCloudy': 'Partly cloudy',
     'weather.cloudy': 'Cloudy',
@@ -914,6 +966,32 @@ const TRANSLATIONS = {
     'profile.photoAlsoOnListing': 'Це фото також показується у вашому оголошенні господаря.',
     'profile.connectStripeHint': 'Щоб отримувати виплати за бронювання, підключіть рахунок Stripe (кілька хвилин).',
     'plant.yourPlantAlt': 'Ваша рослина',
+
+    // Сповіщення (формуються мовою ОТРИМУВАЧА)
+    'notif.someone': 'Хтось',
+    'notif.qtySuffix': ' (×{n} шт.)',
+    'notif.booking_request.title': 'Новий запит на бронювання',
+    'notif.booking_request.body': '{name} хоче залишити у вас рослину «{plant}»{qtySuffix}',
+    'notif.new_review.title': 'Новий відгук',
+    'notif.new_review.body': '{name} оцінив(ла) вас на {rating}/5 за «{plant}»',
+    'notif.review_received.title': 'Ви отримали відгук',
+    'notif.review_received.body': '{name} оцінив(ла) вас на {rating}/5 за бронювання «{plant}»',
+    'notif.new_message.title': 'Нове повідомлення',
+    'notif.new_message.body': '{text}',
+    'notif.booking_paid.title': 'Оплату отримано',
+    'notif.booking_paid.body': 'Бронювання «{plant}» оплачено — {amount} zł',
+    'notif.booking_accepted.title': 'Бронювання підтверджено!',
+    'notif.booking_accepted.body': 'Ваш запит на «{plant}»{qtySuffix} підтверджено — тепер ви можете оплатити його у Профілі.',
+    'notif.booking_rejected.title': 'Бронювання відхилено',
+    'notif.booking_rejected.body': 'Ваш запит на «{plant}»{qtySuffix} відхилено господарем.',
+    'notif.booking_cancelled.title': 'Бронювання скасовано',
+    'notif.booking_cancelled.body': 'Запит на «{plant}» скасовано орендарем.',
+    'notif.booking_cancelled_refund.title': 'Бронювання скасовано',
+    'notif.booking_cancelled_refund.body': 'Бронювання «{plant}» скасовано та повернуто кошти — їх буде списано з вашого рахунку.',
+    'notif.booking_reminder_renter.title': 'Ваше бронювання починається завтра',
+    'notif.booking_reminder_renter.body': 'Не забудьте привезти рослину «{plant}» до {host} ({date}).',
+    'notif.booking_reminder_host.title': 'Завтра ви приймаєте рослини',
+    'notif.booking_reminder_host.body': '{name} привезе вам рослину «{plant}»{qtySuffix} ({date}).',
     'weather.clear': 'Ясно',
     'weather.partlyCloudy': 'Мінлива хмарність',
     'weather.cloudy': 'Хмарно',
@@ -944,17 +1022,30 @@ const TRANSLATIONS = {
 
 const LanguageContext = React.createContext({ lang: 'pl', setLang: () => {} });
 
+function translate(lang, key, params) {
+  let str = TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS.pl[key] ?? key;
+  if (params) {
+    Object.keys(params).forEach(p => {
+      str = str.split('{' + p + '}').join(params[p]);
+    });
+  }
+  return str;
+}
+
+// Buduje tresc powiadomienia w JEZYKU ODBIORCY na podstawie typu zdarzenia i danych.
+function notificationText(lang, type, params) {
+  const p = { ...(params || {}) };
+  if (!p.name) p.name = translate(lang, 'notif.someone');
+  p.qtySuffix = p.qty && Number(p.qty) > 1 ? translate(lang, 'notif.qtySuffix', { n: p.qty }) : '';
+  return {
+    title: translate(lang, 'notif.' + type + '.title', p),
+    body: translate(lang, 'notif.' + type + '.body', p),
+  };
+}
+
 function useT() {
   const { lang } = React.useContext(LanguageContext);
-  return (key, params) => {
-    let str = TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS.pl[key] ?? key;
-    if (params) {
-      Object.keys(params).forEach(p => {
-        str = str.split('{' + p + '}').join(params[p]);
-      });
-    }
-    return str;
-  };
+  return (key, params) => translate(lang, key, params);
 }
 
 function useLang() {
@@ -1116,24 +1207,39 @@ function resizeImage(file, maxSize = 800) {
 }
 
 // Central place for creating an in-app notification, with optional email.
-async function createNotification(userId, type, title, body, bookingId = null, recipientEmail = null) {
+// Zapisuje TYP zdarzenia + dane (params), zamiast gotowego tekstu.
+// Dzieki temu kazdy odbiorca widzi powiadomienie w SWOIM jezyku.
+async function createNotification(userId, type, params = {}, bookingId = null, recipientEmail = null) {
   if (!userId) return;
+
+  // Pobieramy jezyk odbiorcy (i preferencje email) jednym zapytaniem.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('email_notifications, language')
+    .eq('id', userId)
+    .maybeSingle();
+  const recipientLang = profile?.language && TRANSLATIONS[profile.language] ? profile.language : 'pl';
+
+  // title/body zapisujemy dodatkowo jako zapas (starsze wpisy i ewentualne wymagania kolumn).
+  const rendered = notificationText(recipientLang, type, params);
+
   await supabase.from('notifications').insert([{
     user_id: userId,
     type,
-    title,
-    body,
+    params,
+    title: rendered.title,
+    body: rendered.body,
     related_booking_id: bookingId,
   }]);
+
   if (recipientEmail) {
-    const { data: profile } = await supabase.from('profiles').select('email_notifications').eq('id', userId).maybeSingle();
     const wantsEmail = profile ? profile.email_notifications !== false : true;
     if (wantsEmail) {
       try {
         await fetch('/api/send-notification-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: recipientEmail, title, body }),
+          body: JSON.stringify({ to: recipientEmail, title: rendered.title, body: rendered.body }),
         });
       } catch (e) { /* email jest opcjonalne, powiadomienie w apce już zapisane */ }
     }
@@ -2064,8 +2170,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
         await createNotification(
           host.user_id,
           'booking_request',
-          'Nowa prośba o rezerwację',
-          `${userName || userEmail} chce zostawić u Ciebie roślinę "${selectedPlant ? selectedPlant.name : ''}"${qtyLabel}`,
+          { name: userName || userEmail, plant: selectedPlant ? selectedPlant.name : '', qty: quantity },
           data?.id || null,
           host.email || null
         );
@@ -2224,8 +2329,7 @@ function ReviewForm({ booking, userId, userName, onCancel, onSaved }) {
       await createNotification(
         booking.hosts.user_id,
         'new_review',
-        'Nowa opinia',
-        `${userName || 'Gość'} wystawił(a) Ci ocenę ${rating}/5 za "${booking.plant_name}"`,
+        { name: userName || '', rating, plant: booking.plant_name },
         booking.id,
         booking.hosts.email || null
       );
@@ -2309,9 +2413,8 @@ function HostReviewForm({ booking, hostName, onCancel, onSaved }) {
     }
     await createNotification(
       booking.renter_user_id,
-      'new_review',
-      'Otrzymałeś opinię',
-      `${hostName || 'Host'} wystawił(a) Ci ocenę ${rating}/5 za rezerwację "${booking.plant_name}"`,
+      'review_received',
+      { name: hostName || '', rating, plant: booking.plant_name },
       booking.id,
       booking.renter_email || null
     );
@@ -3355,8 +3458,7 @@ function ChatScreen({ conversationId, myUserId, otherName, otherUserId, onBack }
         await createNotification(
           otherUserId,
           'new_message',
-          `Nowa wiadomość`,
-          sentText.length > 80 ? sentText.slice(0, 80) + '…' : sentText,
+          { text: sentText.length > 80 ? sentText.slice(0, 80) + '…' : sentText },
           null,
           null
         );
@@ -3651,6 +3753,7 @@ function FullListScreen({ title, items, renderItem, statusOptions, getStatus, ge
 
 function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectReturn, onConnectReturnHandled, bookingPaymentReturn, onBookingPaymentReturnHandled, onOpenConversation }) {
   const t = useT();
+  const { lang } = useLang();
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myHost, setMyHost] = useState(null);
@@ -3992,8 +4095,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             await createNotification(
               bd.hosts.user_id,
               'booking_paid',
-              t('profile.paymentReceived'),
-              `Rezerwacja "${bd.plant_name}" została opłacona — ${data.amountTotal} zł`,
+              { plant: bd.plant_name, amount: data.amountTotal },
               bookingPaymentReturn.bookingId,
               bd.hosts.email || null
             );
@@ -4031,10 +4133,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       await createNotification(
         b.renter_user_id,
         newStatus === 'accepted' ? 'booking_accepted' : 'booking_rejected',
-        newStatus === 'accepted' ? 'Rezerwacja zaakceptowana!' : 'Rezerwacja odrzucona',
-        newStatus === 'accepted'
-          ? `Twoja prośba dla "${b.plant_name}"${qtyLabel} została zaakceptowana — możesz teraz opłacić rezerwację w Profilu.`
-          : `Twoja prośba dla "${b.plant_name}"${qtyLabel} została odrzucona przez hosta.`,
+        { plant: b.plant_name, qty: b.quantity },
         bookingId,
         b.renter_email || null
       );
@@ -4071,11 +4170,8 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     if (b?.hosts?.user_id) {
       await createNotification(
         b.hosts.user_id,
-        'booking_cancelled',
-        'Rezerwacja anulowana',
-        b.payment_status === 'paid'
-          ? `Rezerwacja "${b.plant_name}" została anulowana i zwrócona — środki zostaną wycofane z Twojego konta.`
-          : `Prośba dla "${b.plant_name}" została anulowana przez wynajmującego.`,
+        b.payment_status === 'paid' ? 'booking_cancelled_refund' : 'booking_cancelled',
+        { plant: b.plant_name },
         bookingId,
         b.hosts.email || null
       );
@@ -4609,19 +4705,26 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             {!notifLoading && notifications.length === 0 && (
               <div style={{ padding: 14, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>{t('profile.noNotifications')}</div>
             )}
-            {!notifLoading && notifications.map(n => (
+            {!notifLoading && notifications.map(n => {
+              // Nowe powiadomienia maja params -> tlumaczymy na biezaco.
+              // Starsze (sprzed zmiany) maja tylko zapisany tekst -> pokazujemy go bez zmian.
+              const nt = n.params
+                ? notificationText(lang, n.type, n.params)
+                : { title: n.title, body: n.body };
+              return (
               <div key={n.id} onClick={() => !n.read && markNotificationRead(n.id)} style={{
                 padding: '12px 14px', borderBottom: `1px solid ${colors.line}`, cursor: n.read ? 'default' : 'pointer',
                 background: n.read ? 'transparent' : '#FFF8EC'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {!n.read && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.gold, flexShrink: 0 }} />}
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, color: colors.ink }}>{n.title}</span>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, color: colors.ink }}>{nt.title}</span>
                 </div>
-                {n.body && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#7A7261', marginTop: 3 }}>{n.body}</div>}
+                {nt.body && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#7A7261', marginTop: 3 }}>{nt.body}</div>}
                 <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#A9A08B', marginTop: 4 }}>{formatDate(n.created_at)}</div>
               </div>
-            ))}
+              );
+            })}
           </div>
           <div onClick={toggleEmailNotifications} style={{
             display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderTop: `1px solid ${colors.line}`, cursor: 'pointer'
