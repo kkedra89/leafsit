@@ -2599,10 +2599,10 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
 
     (async () => {
       try {
-        const res = await fetch('/api/verify-payment', {
+        const res = await fetch('/api/stripe-verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: premiumReturn.sessionId }),
+          body: JSON.stringify({ action: 'verify-premium', sessionId: premiumReturn.sessionId }),
         });
         const data = await res.json();
         if (data.paid) {
@@ -2680,10 +2680,10 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
     setGuideError(null);
     sessionStorage.setItem(PENDING_PLANT_KEY, JSON.stringify({ photoDataUrl, plantName, confidence }));
     try {
-      const res = await fetch('/api/create-checkout', {
+      const res = await fetch('/api/stripe-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plantName, sunlight: premiumSunlight, origin: window.location.origin }),
+        body: JSON.stringify({ action: 'premium', plantName, sunlight: premiumSunlight, origin: window.location.origin }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
@@ -4117,10 +4117,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     (async () => {
       setConnectChecking(true);
       try {
-        const res = await fetch('/api/check-connect-status', {
+        const res = await fetch('/api/stripe-connect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accountId: myHost.stripe_account_id }),
+          body: JSON.stringify({ action: 'status', accountId: myHost.stripe_account_id }),
         });
         const data = await res.json();
         if (res.ok) {
@@ -4139,10 +4139,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
     (async () => {
       setVerifyingBookingPayment(true);
       try {
-        const res = await fetch('/api/verify-booking-payment', {
+        const res = await fetch('/api/stripe-verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: bookingPaymentReturn.sessionId }),
+          body: JSON.stringify({ action: 'verify-booking', sessionId: bookingPaymentReturn.sessionId }),
         });
         const data = await res.json();
         if (res.ok && data.paid) {
@@ -4213,10 +4213,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
     if (b?.payment_status === 'paid' && b?.stripe_payment_intent_id) {
       try {
-        const res = await fetch('/api/refund-booking', {
+        const res = await fetch('/api/stripe-verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentIntentId: b.stripe_payment_intent_id }),
+          body: JSON.stringify({ action: 'refund', paymentIntentId: b.stripe_payment_intent_id }),
         });
         if (!res.ok) {
           setCancellingBookingId(null);
@@ -4285,10 +4285,11 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const handleConnectStripe = async () => {
     setConnectLoading(true);
     try {
-      const res = await fetch('/api/create-connect-account', {
+      const res = await fetch('/api/stripe-connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'create',
           hostId: myHost.id,
           existingAccountId: myHost.stripe_account_id || null,
           email: user.email,
@@ -4312,10 +4313,11 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
   const handlePayForBooking = async (booking) => {
     setPayingBookingId(booking.id);
     try {
-      const res = await fetch('/api/create-booking-checkout', {
+      const res = await fetch('/api/stripe-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'booking',
           bookingId: booking.id,
           hostStripeAccountId: booking.hosts?.stripe_account_id,
           hostPricePerDay: booking.hosts?.price,
