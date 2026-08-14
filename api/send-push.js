@@ -2,19 +2,27 @@
 // Wysyla powiadomienie push na wszystkie zarejestrowane urzadzenia danego uzytkownika.
 // Wywolywane "w tle" przez createNotification() w App.jsx - jego ewentualny
 // blad NIE przerywa zapisu powiadomienia w aplikacji ani wysylki maila.
+//
+// UWAGA: uzywamy nowoczesnego, modularnego API firebase-admin
+// (import { initializeApp } from 'firebase-admin/app'), zamiast starszego
+// `import admin from 'firebase-admin'` - ten drugi styl powodowal blad
+// (admin.apps byl undefined) przez niepoprawna interoperacyjnosc ESM/CJS
+// w srodowisku Vercela.
 
-import admin from 'firebase-admin';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 import { createClient } from '@supabase/supabase-js';
 
 function getFirebaseApp() {
-  if (admin.apps.length > 0) return admin.apps[0];
+  const existing = getApps();
+  if (existing.length > 0) return existing[0];
 
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (!raw) throw new Error('Brak zmiennej FIREBASE_SERVICE_ACCOUNT');
   const serviceAccount = JSON.parse(raw);
 
-  return admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+  return initializeApp({
+    credential: cert(serviceAccount),
   });
 }
 
@@ -51,7 +59,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, sent: 0, message: 'Brak zarejestrowanych urzadzen.' });
     }
 
-    getFirebaseApp();
+    const app = getFirebaseApp();
+    const messaging = getMessaging(app);
 
     let sent = 0;
     const deadTokenIds = [];
@@ -59,7 +68,7 @@ export default async function handler(req, res) {
     await Promise.all(
       tokens.map(async (t) => {
         try {
-          await admin.messaging().send({
+          await messaging.send({
             token: t.token,
             notification: { title, body: body || '' },
           });
