@@ -3,6 +3,8 @@ import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, C
 import { supabase } from './supabaseClient';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 import 'leaflet/dist/leaflet.css';
 
 const hostMapIcon = L.divIcon({
@@ -1209,6 +1211,60 @@ function resizeImage(file, maxSize = 800) {
 // Central place for creating an in-app notification, with optional email.
 // Zapisuje TYP zdarzenia + dane (params), zamiast gotowego tekstu.
 // Dzieki temu kazdy odbiorca widzi powiadomienie w SWOIM jezyku.
+// Rejestruje urzadzenie (tylko na Androidzie/iOS, nie w przegladarce) do odbierania
+// powiadomien push, i zapisuje otrzymany "adres" (token) w bazie danych.
+async function setupPushNotifications(userId) {
+  if (!Capacitor.isNativePlatform()) {
+    console.log('[push] pominieto - nie jest to platforma natywna');
+    return;
+  }
+  console.log('[push] start konfiguracji dla userId=', userId);
+
+  try {
+    // WAZNA KOLEJNOSC: najpierw nasluchiwanie, dopiero potem register().
+    // Firebase moze odpowiedziec bardzo szybko - jesli register() jest
+    // wywolane pierwsze, odpowiedz moze przyjsc zanim ktokolwiek jej sluchat.
+    PushNotifications.addListener('registration', async (token) => {
+      console.log('[push] otrzymano token:', token.value ? token.value.slice(0, 20) + '...' : '(pusty!)');
+      try {
+        const { error } = await supabase.from('push_tokens').upsert(
+          { user_id: userId, token: token.value, platform: Capacitor.getPlatform() },
+          { onConflict: 'token' }
+        );
+        if (error) {
+          console.error('[push] BLAD zapisu tokena do Supabase:', JSON.stringify(error));
+        } else {
+          console.log('[push] token zapisany do Supabase poprawnie');
+        }
+      } catch (e) {
+        console.error('[push] WYJATEK przy zapisie tokena:', e?.message || e);
+      }
+    });
+
+    PushNotifications.addListener('registrationError', (err) => {
+      console.error('[push] BLAD rejestracji (registrationError):', JSON.stringify(err));
+    });
+
+    let perm = await PushNotifications.checkPermissions();
+    console.log('[push] status uprawnien:', perm.receive);
+    if (perm.receive === 'prompt') {
+      perm = await PushNotifications.requestPermissions();
+      console.log('[push] status po requestPermissions:', perm.receive);
+    }
+    if (perm.receive !== 'granted') {
+      console.log('[push] przerwano - brak zgody (status:', perm.receive, ')');
+      return;
+    }
+
+    console.log('[push] wywoluje register()...');
+    await PushNotifications.register();
+    console.log('[push] register() zakonczone bez bledu');
+  } catch (e) {
+    console.error('[push] WYJATEK w setupPushNotifications:', e?.message || e);
+  }
+}
+
+
 async function createNotification(userId, type, params = {}, bookingId = null, recipientEmail = null) {
   if (!userId) return;
 
@@ -1244,6 +1300,16 @@ async function createNotification(userId, type, params = {}, bookingId = null, r
       } catch (e) { /* email jest opcjonalne, powiadomienie w apce już zapisane */ }
     }
   }
+
+  // Push wysylamy "w tle" - jego ewentualny brak/blad nie powinien
+  // zepsuc reszty (powiadomienie w apce i mail juz sa zapisane/wyslane).
+  try {
+    fetch('/api/send-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, title: rendered.title, body: rendered.body }),
+    });
+  } catch (e) { /* push jest opcjonalny */ }
 }
 
 function Avatar({ photoUrl, name, size = 56, radius = 14 }) {
@@ -5036,6 +5102,10 @@ export default function App() {
       }
     })();
     return () => { cancelled = true; };
+  }, [session]);
+
+  useEffect(() => {
+    if (session) setupPushNotifications(session.user.id);
   }, [session]);
 
   const finishOnboarding = async () => {

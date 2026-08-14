@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "728583346764",
+    "project_id": "leafsit",
+    "storage_bucket": "leafsit.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:728583346764:android:b49c48856f6e038acc32e9",
+        "android_client_info": {
+          "package_name": "com.leafsit.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUkStfXixf6uOwaVdUE6JcOvJcjcEgmJk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
