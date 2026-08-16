@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard, Bell, Heart, Map as MapIcon, List, Send, HelpCircle } from 'lucide-react';
+import { Camera, Sun, MapPin, Star, ArrowLeft, Home, Search, PlusCircle, User, Check, Sparkles, Droplets, Cloud, CloudRain, CloudSun, Loader2, LogOut, Mail, Lock, X, DollarSign, Calendar, Clock, XCircle, CheckCircle, MessageCircle, RefreshCw, Crown, Phone, Navigation, Pencil, Trash2, Wallet, CreditCard, Bell, Heart, Map as MapIcon, List, Send, HelpCircle, Moon } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -14,16 +14,20 @@ const hostMapIcon = L.divIcon({
   iconAnchor: [15, 15],
 });
 
+// Kazda wartosc wskazuje na zmienna CSS (zdefiniowana w index.css, w :root i [data-theme="dark"]).
+// Dzieki temu WSZYSTKIE miejsca uzywajace colors.xxx w calej apce automatycznie
+// zmieniaja sie po przelaczeniu motywu - nie trzeba nic wiecej dotykac.
 const colors = {
-  bg: '#F7F4EC',
-  ink: '#232017',
-  fern: '#3A5A40',
-  fernDark: '#28402C',
-  clay: '#C1652F',
-  clayLight: '#E8DCC8',
-  gold: '#D4A24C',
-  line: '#DDD5C0',
-  card: '#FFFFFF',
+  bg: 'var(--lf-bg)',
+  ink: 'var(--lf-ink)',
+  fern: 'var(--lf-fern)',
+  fernDark: 'var(--lf-fern-dark)',
+  clay: 'var(--lf-clay)',
+  clayLight: 'var(--lf-clay-light)',
+  gold: 'var(--lf-gold)',
+  line: 'var(--lf-line)',
+  card: 'var(--lf-card)',
+  muted: 'var(--lf-muted)',
 };
 
 // ============================================================
@@ -112,6 +116,7 @@ const TRANSLATIONS = {
     'home.perPlantPerDay': '/roślinę/dzień',
     'home.acceptsPlants': 'przyjmuje {n} roślin',
     'home.away': '{km} km',
+    'home.recentlyViewed': 'Ostatnio oglądani',
 
     // Szczegóły hosta
     'host.reviewsCount': '{n} opinii',
@@ -123,6 +128,11 @@ const TRANSLATIONS = {
     'host.loading': 'Ładowanie...',
     'host.noReviews': 'Ten host nie ma jeszcze żadnych opinii.',
     'host.anonymousGuest': 'Anonimowy gość',
+    'host.watchOff': 'Powiadom mnie, gdy zwolni się miejsce',
+    'host.watchingOn': 'Obserwujesz — kliknij, aby przestać',
+    'host.respondsHour': '⚡ Zwykle odpowiada w ciągu godziny',
+    'host.respondsFewHours': 'Zwykle odpowiada w ciągu kilku godzin',
+    'host.respondsDay': 'Zwykle odpowiada w ciągu doby',
 
     // Formularz rezerwacji
     'booking.requestSent': 'Prośba wysłana!',
@@ -202,6 +212,10 @@ const TRANSLATIONS = {
     'support.errConnection': 'Przepraszam, wystąpił problem z połączeniem. Spróbuj ponownie.',
 
     // Czat
+    'chat.quickAccept': 'Tak, chętnie przyjmę! 🌿',
+    'chat.quickBusy': 'Niestety w tym terminie nie dam rady.',
+    'chat.quickWhen': 'O której godzinie Ci pasuje?',
+    'chat.quickThanks': 'Dziękuję!',
     'chat.firstMessage': 'Napisz pierwszą wiadomość!',
     'chat.loading': 'Ładowanie...',
     'chat.messagesTitle': 'Wiadomości',
@@ -245,6 +259,11 @@ const TRANSLATIONS = {
     'becomeHost.locationFailed': 'Nie udało się pobrać lokalizacji. Sprawdź uprawnienia przeglądarki.',
     'becomeHost.saveChanges': 'Zapisz zmiany',
     'becomeHost.saveFailed': 'Nie udało się zapisać: ',
+    'becomeHost.spacePhotosLabel': 'Zdjęcia miejsca',
+    'becomeHost.spacePhotosHint': 'Pokaż, gdzie dokładnie będzie stała roślina (maks. 4 zdjęcia).',
+    'host.spacePhotosTitle': 'Zdjęcia miejsca',
+    'becomeHost.priceInvalid': 'Podaj poprawną cenę, w rozsądnym przedziale (0,50 – 1000 zł).',
+    'becomeHost.capacityInvalid': 'Podaj poprawną liczbę miejsc, w rozsądnym przedziale (1 – 50).',
     'sun.full': 'Pełne słońce',
     'sun.partial': 'Półcień',
     'sun.shade': 'Cień',
@@ -300,6 +319,9 @@ const TRANSLATIONS = {
     'profile.payoutConnected': 'Konto do wypłat podłączone',
     'profile.pending': 'Oczekujące',
     'profile.terms': 'Regulamin i Polityka Prywatności',
+    'profile.darkMode': 'Ciemny motyw',
+    'profile.lightMode': 'Jasny motyw',
+    'profile.toggleTheme': 'Przełącz motyw',
     'profile.yourHostProfile': 'Twój profil hosta',
     'profile.confirmCancelPaid': 'Na pewno anulować? Zapłacone {amount} zł zostanie w pełni zwrócone.',
     'weather.loading': 'Ładowanie pogody dla Twojej lokalizacji...',
@@ -334,10 +356,13 @@ const TRANSLATIONS = {
     'notif.booking_cancelled.body': 'Prośba dla "{plant}" została anulowana przez wynajmującego.',
     'notif.booking_cancelled_refund.title': 'Rezerwacja anulowana',
     'notif.booking_cancelled_refund.body': 'Rezerwacja "{plant}" została anulowana i zwrócona — środki zostaną wycofane z Twojego konta.',
+    'notif.host_spot_available.title': 'Zwolniło się miejsce!',
+    'notif.host_spot_available.body': 'U hosta {host} zwolniło się miejsce — sprawdź, zanim ktoś inny je zajmie.',
     'notif.booking_reminder_renter.title': 'Jutro zaczyna się Twoja rezerwacja',
     'notif.booking_reminder_renter.body': 'Pamiętaj o dostarczeniu rośliny "{plant}" do {host} ({date}).',
     'notif.booking_reminder_host.title': 'Jutro przyjmujesz rośliny',
     'notif.booking_reminder_host.body': '{name} dostarczy Ci roślinę "{plant}"{qtySuffix} ({date}).',
+    'rail.referralText': 'Za każde polecenie Ty i znajomy zyskujecie zniżkę na Premium.',
     'weather.clear': 'Bezchmurnie',
     'weather.partlyCloudy': 'Częściowe zachmurzenie',
     'weather.cloudy': 'Pochmurno',
@@ -440,6 +465,7 @@ const TRANSLATIONS = {
     'home.perPlantPerDay': '/plant/day',
     'home.acceptsPlants': 'takes {n} plants',
     'home.away': '{km} km',
+    'home.recentlyViewed': 'Recently viewed',
 
     // Host detail
     'host.reviewsCount': '{n} reviews',
@@ -451,6 +477,11 @@ const TRANSLATIONS = {
     'host.loading': 'Loading...',
     'host.noReviews': 'This host has no reviews yet.',
     'host.anonymousGuest': 'Anonymous guest',
+    'host.watchOff': 'Notify me when a spot opens up',
+    'host.watchingOn': "You're watching — click to stop",
+    'host.respondsHour': '⚡ Usually responds within an hour',
+    'host.respondsFewHours': 'Usually responds within a few hours',
+    'host.respondsDay': 'Usually responds within a day',
 
     // Booking form
     'booking.requestSent': 'Request sent!',
@@ -530,6 +561,10 @@ const TRANSLATIONS = {
     'support.errConnection': 'Sorry, there was a connection problem. Please try again.',
 
     // Chat
+    'chat.quickAccept': "Yes, I'd be happy to take it! 🌿",
+    'chat.quickBusy': "Sorry, I can't manage those dates.",
+    'chat.quickWhen': 'What time works for you?',
+    'chat.quickThanks': 'Thank you!',
     'chat.firstMessage': 'Write the first message!',
     'chat.loading': 'Loading...',
     'chat.messagesTitle': 'Messages',
@@ -573,6 +608,11 @@ const TRANSLATIONS = {
     'becomeHost.locationFailed': 'Could not get your location. Check your browser permissions.',
     'becomeHost.saveChanges': 'Save changes',
     'becomeHost.saveFailed': 'Could not save: ',
+    'becomeHost.spacePhotosLabel': 'Photos of the space',
+    'becomeHost.spacePhotosHint': 'Show exactly where the plant will stay (up to 4 photos).',
+    'host.spacePhotosTitle': 'Photos of the space',
+    'becomeHost.priceInvalid': 'Please enter a reasonable price (0.50 – 1000 zł).',
+    'becomeHost.capacityInvalid': 'Please enter a reasonable capacity (1 – 50).',
     'sun.full': 'Full sun',
     'sun.partial': 'Partial shade',
     'sun.shade': 'Shade',
@@ -628,6 +668,9 @@ const TRANSLATIONS = {
     'profile.payoutConnected': 'Payout account connected',
     'profile.pending': 'Pending',
     'profile.terms': 'Terms and Privacy Policy',
+    'profile.darkMode': 'Dark mode',
+    'profile.lightMode': 'Light mode',
+    'profile.toggleTheme': 'Toggle theme',
     'profile.yourHostProfile': 'Your host profile',
     'profile.confirmCancelPaid': 'Cancel this booking? The {amount} zł you paid will be fully refunded.',
     'weather.loading': 'Loading weather for your location...',
@@ -662,10 +705,13 @@ const TRANSLATIONS = {
     'notif.booking_cancelled.body': 'The request for "{plant}" was cancelled by the renter.',
     'notif.booking_cancelled_refund.title': 'Booking cancelled',
     'notif.booking_cancelled_refund.body': 'Booking "{plant}" was cancelled and refunded — the funds will be withdrawn from your account.',
+    'notif.host_spot_available.title': 'A spot opened up!',
+    'notif.host_spot_available.body': 'A spot just opened up at {host} — check it before someone else takes it.',
     'notif.booking_reminder_renter.title': 'Your booking starts tomorrow',
     'notif.booking_reminder_renter.body': 'Remember to bring the plant "{plant}" to {host} ({date}).',
     'notif.booking_reminder_host.title': 'You are taking in plants tomorrow',
     'notif.booking_reminder_host.body': '{name} will bring you the plant "{plant}"{qtySuffix} ({date}).',
+    'rail.referralText': 'For every referral, you and your friend get a discount on Premium.',
     'weather.clear': 'Clear',
     'weather.partlyCloudy': 'Partly cloudy',
     'weather.cloudy': 'Cloudy',
@@ -768,6 +814,7 @@ const TRANSLATIONS = {
     'home.perPlantPerDay': '/рослина/день',
     'home.acceptsPlants': 'приймає {n} рослин',
     'home.away': '{km} км',
+    'home.recentlyViewed': 'Нещодавно переглянуті',
 
     // Деталі господаря
     'host.reviewsCount': '{n} відгуків',
@@ -779,6 +826,11 @@ const TRANSLATIONS = {
     'host.loading': 'Завантаження...',
     'host.noReviews': 'Цей господар ще не має відгуків.',
     'host.anonymousGuest': 'Анонімний гість',
+    'host.watchOff': 'Повідомте мене, коли зʼявиться місце',
+    'host.watchingOn': 'Ви стежите — натисніть, щоб зупинити',
+    'host.respondsHour': '⚡ Зазвичай відповідає протягом години',
+    'host.respondsFewHours': 'Зазвичай відповідає протягом кількох годин',
+    'host.respondsDay': 'Зазвичай відповідає протягом доби',
 
     // Форма бронювання
     'booking.requestSent': 'Запит надіслано!',
@@ -858,6 +910,10 @@ const TRANSLATIONS = {
     'support.errConnection': "Вибачте, виникла проблема зі з'єднанням. Спробуйте ще раз.",
 
     // Чат
+    'chat.quickAccept': 'Так, охоче прийму! 🌿',
+    'chat.quickBusy': 'На жаль, у ці дати не вийде.',
+    'chat.quickWhen': 'О котрій годині вам зручно?',
+    'chat.quickThanks': 'Дякую!',
     'chat.firstMessage': 'Напишіть перше повідомлення!',
     'chat.loading': 'Завантаження...',
     'chat.messagesTitle': 'Повідомлення',
@@ -901,6 +957,11 @@ const TRANSLATIONS = {
     'becomeHost.locationFailed': 'Не вдалося отримати геолокацію. Перевірте дозволи браузера.',
     'becomeHost.saveChanges': 'Зберегти зміни',
     'becomeHost.saveFailed': 'Не вдалося зберегти: ',
+    'becomeHost.spacePhotosLabel': 'Фото приміщення',
+    'becomeHost.spacePhotosHint': 'Покажіть, де саме стоятиме рослина (до 4 фото).',
+    'host.spacePhotosTitle': 'Фото приміщення',
+    'becomeHost.priceInvalid': 'Вкажіть коректну ціну в розумних межах (0,50 – 1000 zł).',
+    'becomeHost.capacityInvalid': 'Вкажіть коректну кількість місць в розумних межах (1 – 50).',
     'sun.full': 'Повне сонце',
     'sun.partial': 'Півтінь',
     'sun.shade': 'Тінь',
@@ -956,6 +1017,9 @@ const TRANSLATIONS = {
     'profile.payoutConnected': 'Рахунок для виплат підключено',
     'profile.pending': 'Очікує',
     'profile.terms': 'Правила та Політика конфіденційності',
+    'profile.darkMode': 'Темна тема',
+    'profile.lightMode': 'Світла тема',
+    'profile.toggleTheme': 'Перемкнути тему',
     'profile.yourHostProfile': 'Ваш профіль господаря',
     'profile.confirmCancelPaid': 'Справді скасувати? Сплачені {amount} zł буде повністю повернено.',
     'weather.loading': 'Завантаження погоди для вашої локації...',
@@ -990,10 +1054,13 @@ const TRANSLATIONS = {
     'notif.booking_cancelled.body': 'Запит на «{plant}» скасовано орендарем.',
     'notif.booking_cancelled_refund.title': 'Бронювання скасовано',
     'notif.booking_cancelled_refund.body': 'Бронювання «{plant}» скасовано та повернуто кошти — їх буде списано з вашого рахунку.',
+    'notif.host_spot_available.title': 'Звільнилося місце!',
+    'notif.host_spot_available.body': 'У господаря {host} звільнилося місце — перевірте, поки хтось інший його не зайняв.',
     'notif.booking_reminder_renter.title': 'Ваше бронювання починається завтра',
     'notif.booking_reminder_renter.body': 'Не забудьте привезти рослину «{plant}» до {host} ({date}).',
     'notif.booking_reminder_host.title': 'Завтра ви приймаєте рослини',
     'notif.booking_reminder_host.body': '{name} привезе вам рослину «{plant}»{qtySuffix} ({date}).',
+    'rail.referralText': 'За кожну рекомендацію ви й ваш друг отримуєте знижку на Premium.',
     'weather.clear': 'Ясно',
     'weather.partlyCloudy': 'Мінлива хмарність',
     'weather.cloudy': 'Хмарно',
@@ -1106,6 +1173,16 @@ function sunlightKey(value) {
   if (value === 'Półcień') return 'sun.partial';
   if (value === 'Cień') return 'sun.shade';
   return 'sun.full';
+}
+
+// Zwraca klucz tlumaczenia dla "typowego czasu odpowiedzi" hosta, albo null
+// (brak danych lub odpowiada zbyt wolno - wtedy po prostu nie pokazujemy odznaki, zamiast kogos zawstydzac).
+function responseTimeKey(avgMinutes) {
+  if (avgMinutes == null) return null;
+  if (avgMinutes <= 60) return 'host.respondsHour';
+  if (avgMinutes <= 60 * 6) return 'host.respondsFewHours';
+  if (avgMinutes <= 60 * 24) return 'host.respondsDay';
+  return null;
 }
 
 function sunlightInfo(value) {
@@ -1265,6 +1342,25 @@ async function setupPushNotifications(userId) {
 }
 
 
+// Powiadamia wszystkich, ktorzy obserwuja danego hosta (bo byl pelny), ze zwolnilo sie miejsce.
+// To jednorazowy "ping" - po wyslaniu obserwacja jest usuwana, zeby nie spamowac wielokrotnie.
+async function notifyHostWatchers(hostId, hostName) {
+  try {
+    const { data: watches } = await supabase
+      .from('host_watches')
+      .select('id, user_id')
+      .eq('host_id', hostId);
+
+    if (!watches || watches.length === 0) return;
+
+    await Promise.all(watches.map(w =>
+      createNotification(w.user_id, 'host_spot_available', { host: hostName || '' }, null, null)
+    ));
+
+    await supabase.from('host_watches').delete().eq('host_id', hostId);
+  } catch (e) { /* powiadomienie o wolnym miejscu nie jest krytyczne dla dzialania apki */ }
+}
+
 async function createNotification(userId, type, params = {}, bookingId = null, recipientEmail = null) {
   if (!userId) return;
 
@@ -1332,22 +1428,119 @@ function Avatar({ photoUrl, name, size = 56, radius = 14 }) {
 function Screen({ children }) {
   return (
     <div className="app-screen" style={{
-      width: 390, height: 780, background: colors.bg, borderRadius: 40,
-      overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column',
-      fontFamily: "'Fraunces', Georgia, serif", boxShadow: '0 20px 60px rgba(35,32,23,0.25)',
-      border: `8px solid ${colors.ink}`
+      width: '100%', maxWidth: 480, minHeight: '100vh', boxSizing: 'border-box',
+      margin: '0 auto', background: colors.bg, display: 'flex', flexDirection: 'column',
+      fontFamily: "'Fraunces', Georgia, serif",
     }}>
       {children}
     </div>
   );
 }
 
-function StatusBar() {
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 1080 : false
+  );
+  useEffect(() => {
+    function onResize() { setIsDesktop(window.innerWidth >= 1080); }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return isDesktop;
+}
+
+function Sidebar({ active, onNav, user, theme, toggleTheme }) {
+  const t = useT();
+  const tabs = [
+    { id: 'home', icon: Home, label: t('tab.home') },
+    { id: 'add', icon: PlusCircle, label: t('tab.add') },
+    { id: 'scan', icon: Camera, label: t('tab.scan') },
+    { id: 'profile', icon: User, label: t('tab.profile') },
+  ];
+  const name = displayNameOf(user);
+  const initial = (name || user.email || '?').charAt(0).toUpperCase();
+
   return (
-    <div className="app-statusbar" style={{ height: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', fontSize: 12, fontFamily: 'Inter, sans-serif', color: colors.ink, fontWeight: 600 }}>
-      <span>9:41</span>
-      <span>●●●●</span>
-    </div>
+    <aside style={{
+      background: colors.fernDark, color: '#EDE7DA', padding: '28px 18px',
+      display: 'flex', flexDirection: 'column', position: 'sticky', top: 0,
+      height: '100vh', width: 240, flexShrink: 0, boxSizing: 'border-box'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 10px 24px', marginBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <img src="/logo-mark.png" alt="Leafsit" style={{ width: 32, height: 32 }} />
+        <div style={{ fontFamily: 'Cambria, Georgia, serif', fontSize: 19, fontWeight: 600 }}>Leafsit</div>
+      </div>
+
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 }}>
+        {tabs.map(item => {
+          const Icon = item.icon;
+          const isActive = active === item.id;
+          return (
+            <button key={item.id} onClick={() => onNav(item.id)} style={{
+              display: 'flex', alignItems: 'center', gap: 14, padding: '12px 12px',
+              borderRadius: 12, cursor: 'pointer', position: 'relative', border: 'none',
+              background: 'none', textAlign: 'left', width: '100%',
+              color: isActive ? '#fff' : '#C9C2AE', fontFamily: 'Inter, sans-serif',
+              fontSize: 15, fontWeight: isActive ? 700 : 500,
+            }}>
+              {isActive && <span style={{ position: 'absolute', left: -18, top: '50%', transform: 'translateY(-50%)', width: 4, height: 22, background: colors.gold, borderRadius: '0 6px 6px 0' }} />}
+              <Icon size={20} strokeWidth={isActive ? 2.4 : 1.8} />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <div style={{
+        marginTop: 'auto', background: `linear-gradient(155deg, ${colors.fern} 0%, #2f4a35 100%)`,
+        border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 18
+      }}>
+        <p style={{ fontFamily: 'Cambria, Georgia, serif', fontSize: 15, fontWeight: 600, margin: '0 0 6px', color: '#fff' }}>{t('profile.becomeHostTitle')}</p>
+        <p style={{ fontSize: 12, color: '#C9C2AE', lineHeight: 1.5, margin: '0 0 14px' }}>{t('profile.becomeHostText')}</p>
+        <button onClick={() => onNav('profile')} style={{
+          display: 'block', width: '100%', textAlign: 'center', background: colors.gold, color: '#2A1F0E',
+          fontSize: 12.5, fontWeight: 700, padding: 10, borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif'
+        }}>{t('profile.hostPanel')}</button>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 18, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: '50%', background: colors.gold, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2A1F0E',
+          fontFamily: 'Cambria, Georgia, serif', fontWeight: 700, fontSize: 13
+        }}>{initial}</div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#EDE7DA', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name || user.email}</div>
+          <div style={{ fontSize: 11, color: '#8C8570', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email}</div>
+        </div>
+        <button
+          onClick={toggleTheme}
+          aria-label={t('profile.toggleTheme')}
+          style={{
+            width: 30, height: 30, borderRadius: 8, border: 'none', cursor: 'pointer', flexShrink: 0,
+            background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}
+        >
+          {theme === 'dark' ? <Sun size={15} color={colors.gold} /> : <Moon size={15} color="#C9C2AE" />}
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+function RightRail({ onNav }) {
+  const t = useT();
+  return (
+    <aside style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: 20, width: '100%', boxSizing: 'border-box' }}>
+      <WeatherWidget />
+      <div
+        onClick={() => onNav('profile')}
+        style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 16, padding: 18, cursor: 'pointer' }}
+      >
+        <p style={{ fontFamily: 'Cambria, Georgia, serif', fontSize: 15.5, fontWeight: 600, margin: '0 0 6px', color: colors.ink }}>{t('profile.referralTitle')}</p>
+        <p style={{ fontSize: 12, color: '#8A8574', lineHeight: 1.5, margin: 0 }}>{t('rail.referralText')}</p>
+      </div>
+    </aside>
   );
 }
 
@@ -1371,7 +1564,7 @@ function TabBar({ active, onNav }) {
           <button key={item.id} onClick={() => onNav(item.id)} style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
             background: 'none', border: 'none', cursor: 'pointer',
-            color: isActive ? colors.fern : '#A9A08B', fontFamily: 'Inter, sans-serif'
+            color: isActive ? colors.fern : colors.muted, fontFamily: 'Inter, sans-serif'
           }}>
             <Icon size={22} strokeWidth={isActive ? 2.4 : 1.8} />
             <span style={{ fontSize: 10, fontWeight: isActive ? 700 : 500 }}>{item.label}</span>
@@ -1383,7 +1576,7 @@ function TabBar({ active, onNav }) {
 }
 
 function Pill({ children, tone = 'fern', active, onClick }) {
-  const bg = tone === 'fern' ? colors.fern : tone === 'clay' ? colors.clay : tone === 'gray' ? '#A9A08B' : colors.gold;
+  const bg = tone === 'fern' ? colors.fern : tone === 'clay' ? colors.clay : tone === 'gray' ? colors.muted : colors.gold;
   return (
     <span
       onClick={onClick}
@@ -1429,7 +1622,7 @@ function TermsScreen({ onBack }) {
         <h2 style={{ fontSize: 16, color: colors.ink, fontWeight: 600, margin: 0 }}>Regulamin i Polityka Prywatności</h2>
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginBottom: 16 }}>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted, marginBottom: 16 }}>
           Usługodawcą jest Krystian Kędra, ul. Marywilska 60c/89, 03-042 Warszawa.
         </div>
 
@@ -1470,7 +1663,7 @@ function TermsScreen({ onBack }) {
           Masz prawo do dostępu, sprostowania, usunięcia, ograniczenia przetwarzania, przenoszenia danych oraz sprzeciwu wobec przetwarzania, a także wniesienia skargi do Prezesa UODO.
         </p>
 
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginTop: 10 }}>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted, marginTop: 10 }}>
           Pełna, prawnicza wersja obu dokumentów dostępna jest na życzenie u Usługodawcy.
         </div>
       </div>
@@ -1534,7 +1727,7 @@ function OnboardingScreen({ onFinish }) {
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <button onClick={onFinish} style={{
           background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-          fontSize: 12.5, color: '#A9A08B', fontWeight: 600
+          fontSize: 12.5, color: colors.muted, fontWeight: 600
         }}>{t('onb.skip')}</button>
       </div>
 
@@ -1645,7 +1838,7 @@ function AuthScreen({ referralCodeFromUrl }) {
           width: 72, height: 72, margin: '0 auto 14px', display: 'block'
         }} />
         <h1 style={{ fontSize: 24, color: colors.ink, fontWeight: 600, margin: 0 }}>Leafsit</h1>
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginTop: 4 }}>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted, marginTop: 4 }}>
           {mode === 'login' ? t('auth.loginSubtitle') : t('auth.signupSubtitle')}
         </div>
       </div>
@@ -1725,8 +1918,78 @@ function AuthScreen({ referralCodeFromUrl }) {
   );
 }
 
+// Ostatnio ogladani hostowie - trzymane w pamieci przegladarki (localStorage),
+// bez zadnej nowej tabeli w bazie danych. Max 8 pozycji, najnowsze pierwsze.
+function recordHostView(hostId) {
+  try {
+    const raw = localStorage.getItem('leafsit_recent_hosts');
+    let ids = raw ? JSON.parse(raw) : [];
+    ids = ids.filter(id => id !== hostId);
+    ids.unshift(hostId);
+    ids = ids.slice(0, 8);
+    localStorage.setItem('leafsit_recent_hosts', JSON.stringify(ids));
+  } catch (e) { /* localStorage moze byc niedostepne - nic sie nie stanie */ }
+}
+
+function getRecentHostIds() {
+  try {
+    const raw = localStorage.getItem('leafsit_recent_hosts');
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+
+function RecentlyViewedRow({ onSelectHost }) {
+  const t = useT();
+  const [recentHosts, setRecentHosts] = useState([]);
+
+  useEffect(() => {
+    const ids = getRecentHostIds();
+    if (ids.length === 0) return;
+    (async () => {
+      const { data } = await supabase.from('hosts').select('*').in('id', ids);
+      if (data) {
+        // Zachowujemy kolejnosc "najnowiej ogladany pierwszy"
+        const byId = {};
+        data.forEach(h => { byId[h.id] = h; });
+        setRecentHosts(ids.map(id => byId[id]).filter(Boolean));
+      }
+    })();
+  }, []);
+
+  if (recentHosts.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
+        {t('home.recentlyViewed')}
+      </div>
+      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
+        {recentHosts.map(h => (
+          <div
+            key={h.id}
+            onClick={() => onSelectHost(h)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, cursor: 'pointer',
+              background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 999,
+              padding: '6px 14px 6px 6px'
+            }}
+          >
+            <Avatar photoUrl={h.photo_url} name={h.name} size={30} radius={15} />
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, fontWeight: 600, color: colors.ink, whiteSpace: 'nowrap' }}>{h.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HomeScreen({ onSelectHost, userId }) {
   const t = useT();
+  const isDesktop = useIsDesktop();
+  const handleSelectHost = (h) => {
+    recordHostView(h.id);
+    onSelectHost(h);
+  };
   const [hosts, setHosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -1875,7 +2138,7 @@ function HomeScreen({ onSelectHost, userId }) {
       </div>
 
       {locStatus === 'denied' && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginBottom: 14 }}>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.muted, marginBottom: 14 }}>
           {t('home.locationDenied')}
         </div>
       )}
@@ -1890,7 +2153,7 @@ function HomeScreen({ onSelectHost, userId }) {
           placeholder={t('home.searchPlaceholder')}
           value={query}
           onChange={e => setQuery(e.target.value)}
-          style={{ border: 'none', outline: 'none', flex: 1, fontFamily: 'Inter, sans-serif', fontSize: 14, background: 'transparent', color: colors.ink }}
+          style={{ border: 'none', outline: 'none', flex: 1, minWidth: 0, fontFamily: 'Inter, sans-serif', fontSize: 14, background: 'transparent', color: colors.ink }}
         />
         {query && (
           <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
@@ -1899,7 +2162,7 @@ function HomeScreen({ onSelectHost, userId }) {
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 12, overflowX: 'auto' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: isDesktop ? 'wrap' : 'nowrap', overflowX: isDesktop ? 'visible' : 'auto', minWidth: 0 }}>
         <Pill tone="fern" active={activeFilter === 'near'} onClick={() => toggleFilter('near')}>{t('home.filterNear')}</Pill>
         <Pill tone="gold" active={activeFilter === 'top'} onClick={() => toggleFilter('top')}>{t('home.filterTop')}</Pill>
         <Pill tone="clay" active={activeFilter === 'available'} onClick={() => toggleFilter('available')}>{t('home.filterAvailable')}</Pill>
@@ -1916,7 +2179,7 @@ function HomeScreen({ onSelectHost, userId }) {
           <input type="number" placeholder={t('home.priceFrom')} value={priceMin} onChange={e => setPriceMin(e.target.value)} style={{
             flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
           }} />
-          <span style={{ color: '#A9A08B', fontFamily: 'Inter, sans-serif' }}>—</span>
+          <span style={{ color: colors.muted, fontFamily: 'Inter, sans-serif' }}>—</span>
           <input type="number" placeholder={t('home.priceTo')} value={priceMax} onChange={e => setPriceMax(e.target.value)} style={{
             flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
           }} />
@@ -1933,7 +2196,7 @@ function HomeScreen({ onSelectHost, userId }) {
           <input type="date" value={filterStartDate} onChange={e => setFilterStartDate(e.target.value)} style={{
             flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink, boxSizing: 'border-box'
           }} />
-          <span style={{ color: '#A9A08B', fontFamily: 'Inter, sans-serif' }}>—</span>
+          <span style={{ color: colors.muted, fontFamily: 'Inter, sans-serif' }}>—</span>
           <input type="date" value={filterEndDate} onChange={e => setFilterEndDate(e.target.value)} style={{
             flex: 1, border: `1.5px solid ${colors.line}`, borderRadius: 10, padding: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink, boxSizing: 'border-box'
           }} />
@@ -1957,12 +2220,14 @@ function HomeScreen({ onSelectHost, userId }) {
         </div>
       )}
 
+      <RecentlyViewedRow onSelectHost={handleSelectHost} />
+
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>
         {loading ? t('home.loading') : t('home.hostsFound', { n: list.length, suffix: q ? t('home.suffixMatching') : t('home.suffixNearby') })}
       </div>
 
       {!loading && list.length === 0 && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>
           {q ? t('home.noHostsQuery', { q: query }) : t('home.noHostsCriteria')}
         </div>
       )}
@@ -1981,7 +2246,7 @@ function HomeScreen({ onSelectHost, userId }) {
             {list.filter(h => h.latitude != null && h.longitude != null).map(h => (
               <Marker key={h.id} position={[h.latitude, h.longitude]} icon={hostMapIcon}>
                 <Popup>
-                  <div onClick={() => onSelectHost(h)} style={{ cursor: 'pointer', fontFamily: 'sans-serif' }}>
+                  <div onClick={() => handleSelectHost(h)} style={{ cursor: 'pointer', fontFamily: 'sans-serif' }}>
                     <b>{h.name}</b><br />
                     {h.price} zł{t('home.perPlantPerDay')}<br />
                     <span style={{ color: '#3A5A40', textDecoration: 'underline' }}>Zobacz profil</span>
@@ -1993,55 +2258,99 @@ function HomeScreen({ onSelectHost, userId }) {
         </div>
       )}
 
-      {viewMode === 'list' && list.map((h) => {
-        const si = sunlightInfo(h.sunlight);
-        const SIcon = si.Icon;
-        return (
-          <div key={h.id} onClick={() => onSelectHost(h)} style={{
-            background: colors.card, borderRadius: 18, padding: 16, marginBottom: 12,
-            border: `1px solid ${colors.line}`, cursor: 'pointer'
-          }}>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <div style={{ position: 'relative' }}>
-                <Avatar photoUrl={h.photo_url} name={h.name} size={56} radius={14} />
-                <button onClick={(e) => toggleFavorite(h.id, e)} style={{
-                  position: 'absolute', top: -6, left: -6, width: 22, height: 22, borderRadius: 11,
-                  background: colors.card, border: `1px solid ${colors.line}`, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
-                }}>
-                  <Heart size={11} fill={favoriteIds.has(h.id) ? colors.clay : 'none'} color={colors.clay} />
-                </button>
+      {viewMode === 'list' && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: 12, minWidth: 0,
+        }}>
+          {list.map((h) => {
+            const si = sunlightInfo(h.sunlight);
+            const SIcon = si.Icon;
+            return (
+              <div key={h.id} onClick={() => handleSelectHost(h)} style={{
+                background: colors.card, borderRadius: 18, padding: 16, minWidth: 0,
+                border: `1px solid ${colors.line}`, cursor: 'pointer'
+              }}>
+                <div style={{ display: 'flex', gap: 12, minWidth: 0 }}>
+                  <div style={{ position: 'relative' }}>
+                    <Avatar photoUrl={h.photo_url} name={h.name} size={56} radius={14} />
+                    <button onClick={(e) => toggleFavorite(h.id, e)} style={{
+                      position: 'absolute', top: -6, left: -6, width: 22, height: 22, borderRadius: 11,
+                      background: colors.card, border: `1px solid ${colors.line}`, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
+                    }}>
+                      <Heart size={11} fill={favoriteIds.has(h.id) ? colors.clay : 'none'} color={colors.clay} />
+                    </button>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
+                      <span style={{ fontWeight: 600, color: colors.ink, fontSize: 16, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.name}</span>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: colors.clay, fontSize: 14, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 90 }}>{h.price} zł</span>
+                    </div>
+                    <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, color: colors.muted, textAlign: 'right', marginTop: 1 }}>{t('home.perPlantPerDay')}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap', fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}><Star size={12} fill={colors.gold} color={colors.gold} /> {h.rating ?? '—'} ({h.reviews ?? 0})</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <MapPin size={12} style={{ flexShrink: 0 }} /> {h.__dist != null ? `${h.__dist < 1 ? Math.round(h.__dist * 1000) + ' m' : h.__dist.toFixed(1) + ' km'}` : h.location}
+                      </span>
+                    </div>
+                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, fontWeight: 600 }}>
+                      <SIcon size={13} color={si.tone} /> {t(sunlightKey(h.sunlight))} · {t('home.acceptsPlants', { n: h.plants_capacity })}
+                    </div>
+                    {responseTimeKey(h.avg_response_minutes) && (
+                      <div style={{ marginTop: 4, fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted }}>
+                        {t(responseTimeKey(h.avg_response_minutes))}
+                      </div>
+                    )}
+                    <div style={{ marginTop: 6 }}>
+                      <HostBadges host={h} size="small" />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontWeight: 600, color: colors.ink, fontSize: 16 }}>{h.name}</span>
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: colors.clay, fontSize: 14 }}>{h.price} zł<span style={{ fontSize: 11, color: '#A9A08B', fontWeight: 500 }}>{t('home.perPlantPerDay')}</span></span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#7A7261' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={12} fill={colors.gold} color={colors.gold} /> {h.rating ?? '—'} ({h.reviews ?? 0})</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <MapPin size={12} /> {h.__dist != null ? `${h.__dist < 1 ? Math.round(h.__dist * 1000) + ' m' : h.__dist.toFixed(1) + ' km'}` : h.location}
-                  </span>
-                </div>
-                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.fern, fontWeight: 600 }}>
-                  <SIcon size={13} color={si.tone} /> {t(sunlightKey(h.sunlight))} · {t('home.acceptsPlants', { n: h.plants_capacity })}
-                </div>
-                <div style={{ marginTop: 6 }}>
-                  <HostBadges host={h} size="small" />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
-function HostDetailScreen({ host, onBack, onBook, onMessage }) {
+function HostDetailScreen({ host, userId, onBack, onBook, onMessage }) {
   const t = useT();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [watching, setWatching] = useState(false);
+  const [watchLoading, setWatchLoading] = useState(false);
+
+  useEffect(() => {
+    if (!userId || !host) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('host_watches')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('host_id', host.id)
+        .maybeSingle();
+      if (!cancelled) setWatching(!!data);
+    })();
+    return () => { cancelled = true; };
+  }, [userId, host?.id]);
+
+  const toggleWatch = async () => {
+    if (!userId || !host) return;
+    setWatchLoading(true);
+    if (watching) {
+      await supabase.from('host_watches').delete().eq('user_id', userId).eq('host_id', host.id);
+      setWatching(false);
+    } else {
+      await supabase.from('host_watches').upsert({ user_id: userId, host_id: host.id });
+      setWatching(true);
+    }
+    setWatchLoading(false);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -2096,17 +2405,27 @@ function HostDetailScreen({ host, onBack, onBook, onMessage }) {
         <div style={{ display: 'flex', gap: 20, marginBottom: 20, fontFamily: 'Inter, sans-serif' }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink, display: 'flex', alignItems: 'center', gap: 4 }}><Star size={16} fill={colors.gold} color={colors.gold}/> {host.rating ?? '—'}</div>
-            <div style={{ fontSize: 11, color: '#A9A08B' }}>{t('host.reviewsCount', { n: host.reviews ?? 0 })}</div>
+            <div style={{ fontSize: 11, color: colors.muted }}>{t('host.reviewsCount', { n: host.reviews ?? 0 })}</div>
           </div>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink }}>{host.plants_capacity}</div>
-            <div style={{ fontSize: 11, color: '#A9A08B' }}>{t('host.freeSpots')}</div>
+            <div style={{ fontSize: 11, color: colors.muted }}>{t('host.freeSpots')}</div>
           </div>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: colors.ink }}>{host.price} zł</div>
-            <div style={{ fontSize: 11, color: '#A9A08B' }}>{t('host.perPlantDay')}</div>
+            <div style={{ fontSize: 11, color: colors.muted }}>{t('host.perPlantDay')}</div>
           </div>
         </div>
+
+        {responseTimeKey(host.avg_response_minutes) && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 16,
+            background: colors.clayLight, color: colors.fernDark, fontFamily: 'Inter, sans-serif',
+            fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 999
+          }}>
+            {t(responseTimeKey(host.avg_response_minutes))}
+          </div>
+        )}
 
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#4A4638', lineHeight: 1.6, marginBottom: 20 }}>
           {host.description}
@@ -2115,6 +2434,27 @@ function HostDetailScreen({ host, onBack, onBook, onMessage }) {
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
           <Pill tone="gold"><SIcon size={13} color="#fff" /> {t(sunlightKey(host.sunlight))}</Pill>
         </div>
+
+        {host.space_photos && host.space_photos.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{
+              fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 700, color: colors.muted,
+              textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8
+            }}>
+              {t('host.spacePhotosTitle')}
+            </div>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+              {host.space_photos.map((src, idx) => (
+                <img
+                  key={idx}
+                  src={src}
+                  alt=""
+                  style={{ width: 110, height: 110, objectFit: 'cover', borderRadius: 14, flexShrink: 0, border: `1px solid ${colors.line}` }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         <div style={{
           background: colors.clayLight, borderRadius: 14, padding: 14, marginBottom: 24,
@@ -2129,6 +2469,13 @@ function HostDetailScreen({ host, onBack, onBook, onMessage }) {
             border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
           }}><MessageCircle size={17} /></button>
+          {userId && (
+            <button onClick={toggleWatch} disabled={watchLoading} title={t(watching ? 'host.watchingOn' : 'host.watchOff')} style={{
+              padding: 16, borderRadius: 16, background: watching ? colors.gold : colors.clayLight,
+              color: watching ? '#fff' : colors.ink, border: 'none', cursor: watchLoading ? 'default' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: watchLoading ? 0.6 : 1
+            }}><Bell size={17} fill={watching ? '#fff' : 'none'} /></button>
+          )}
           <button onClick={onBook} style={{
             flex: 1, padding: 16, borderRadius: 16, background: colors.clay, color: '#fff',
             border: 'none', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer'
@@ -2138,11 +2485,11 @@ function HostDetailScreen({ host, onBack, onBook, onMessage }) {
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('host.reviewsHeader')}</div>
 
         {loading && (
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('host.loading')}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>{t('host.loading')}</div>
         )}
 
         {!loading && reviews.length === 0 && (
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('host.noReviews')}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>{t('host.noReviews')}</div>
         )}
 
         {!loading && reviews.map(r => (
@@ -2153,7 +2500,7 @@ function HostDetailScreen({ host, onBack, onBook, onMessage }) {
                   <Star key={n} size={13} fill={n <= r.rating ? colors.gold : 'none'} color={colors.gold} />
                 ))}
               </div>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, color: '#A9A08B' }}>{formatDate(r.created_at)}</span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, color: colors.muted }}>{formatDate(r.created_at)}</span>
             </div>
             {r.comment && (
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#5A5445', margin: '0 0 6px', fontStyle: 'italic' }}>{r.comment}</p>
@@ -2272,16 +2619,16 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
         }}><ArrowLeft size={18} color={colors.ink} /></button>
         <div>
           <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>Zarezerwuj u {host.name}</h2>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B' }}>{t('booking.priceLine', { price: host.price })}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.muted }}>{t('booking.priceLine', { price: host.price })}</div>
         </div>
       </div>
 
       {plantsLoading && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('booking.loadingPlants')}</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>{t('booking.loadingPlants')}</div>
       )}
 
       {!plantsLoading && plants.length === 0 && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 16 }}>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted, marginBottom: 16 }}>
           {t('booking.noPlants')}
         </div>
       )}
@@ -2324,14 +2671,14 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginTop: 16, marginBottom: 10 }}>Na jakie daty?</div>
           <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginBottom: 4 }}>Od</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted, marginBottom: 4 }}>Od</div>
               <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{
                 width: '100%', border: `1.5px solid ${colors.line}`, borderRadius: 12, padding: 10,
                 fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
               }} />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginBottom: 4 }}>Do</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted, marginBottom: 4 }}>Do</div>
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{
                 width: '100%', border: `1.5px solid ${colors.line}`, borderRadius: 12, padding: 10,
                 fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
@@ -2346,7 +2693,7 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
           )}
 
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10 }}>{t('booking.yourPhone')}</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginBottom: 8 }}>{t('booking.phoneNote')}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.muted, marginBottom: 8 }}>{t('booking.phoneNote')}</div>
           <TextField icon={Phone} type="tel" placeholder="np. 500 100 200" value={renterPhone} onChange={e => setRenterPhone(e.target.value)} />
 
           {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
@@ -2723,7 +3070,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
   return (
     <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
       <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>{t('plant.title')}</h2>
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 20 }}>{t('plant.subtitle')}</div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.muted, marginBottom: 20 }}>{t('plant.subtitle')}</div>
 
       <input
         ref={fileInputRef}
@@ -2758,7 +3105,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
       )}
 
       {identifying && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted, marginBottom: 20 }}>
           <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> {t('plant.identifying')}
         </div>
       )}
@@ -2784,12 +3131,12 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
 
           {!premiumReturn && (
             <>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 8 }}>{t('plant.wrongName')}</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.muted, marginBottom: 8 }}>{t('plant.wrongName')}</div>
               <TextField value={plantName} onChange={e => setPlantName(e.target.value)} />
             </>
           )}
 
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#A9A08B', marginBottom: 8 }}>{t('plant.howManySame')}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.muted, marginBottom: 8 }}>{t('plant.howManySame')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
             <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{
               width: 36, height: 36, borderRadius: 10, background: colors.clayLight, border: 'none',
@@ -2820,7 +3167,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
               </div>
 
               {verifyingPayment && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', padding: '8px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted, padding: '8px 0' }}>
                   <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> {t('plant.checkingPayment')}
                 </div>
               )}
@@ -2837,7 +3184,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
                         border: `1.5px solid ${premiumSunlight === l ? colors.gold : colors.line}`, marginBottom: 8,
                         background: premiumSunlight === l ? '#FFF8EC' : colors.bg, cursor: 'pointer'
                       }}>
-                        <SIcon size={16} color={premiumSunlight === l ? si.tone : '#A9A08B'} />
+                        <SIcon size={16} color={premiumSunlight === l ? si.tone : colors.muted} />
                         <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, fontWeight: premiumSunlight === l ? 700 : 500 }}>{t(sunlightKey(l))}</span>
                       </div>
                     );
@@ -2854,7 +3201,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
                     {checkoutLoading && <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />}
                     {checkoutLoading ? t('plant.redirecting') : t('plant.payButton')}
                   </button>
-                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, color: '#A9A08B', textAlign: 'center', marginTop: 8 }}>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, color: colors.muted, textAlign: 'center', marginTop: 8 }}>
                     {t('plant.testMode')}
                   </div>
                 </>
@@ -2863,7 +3210,7 @@ function AddPlantScreen({ userId, onPlantAdded, premiumReturn, onPremiumReturnHa
           )}
 
           {generatingGuide && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted, marginBottom: 16 }}>
               <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> {t('plant.generating')}
             </div>
           )}
@@ -2949,7 +3296,7 @@ function ScanScreen() {
   return (
     <div style={{ flex: 1, padding: 20, overflow: 'auto' }}>
       <h2 style={{ fontSize: 22, color: colors.ink, fontWeight: 600, marginBottom: 4 }}>{t('scan.title')}</h2>
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>{t('scan.subtitle')}</div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted, marginBottom: 20 }}>{t('scan.subtitle')}</div>
 
       <input
         ref={fileInputRef}
@@ -2979,7 +3326,7 @@ function ScanScreen() {
       </div>
 
       {identifying && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted, marginBottom: 20 }}>
           <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> {t('plant.identifying')}
         </div>
       )}
@@ -3057,7 +3404,7 @@ function WeatherWidget() {
 
   if (state.loading) {
     return (
-      <div style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 18, padding: 20, marginBottom: 20, fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>
+      <div style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 18, padding: 20, marginBottom: 20, fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>
         {t('weather.loading')}
       </div>
     );
@@ -3095,7 +3442,7 @@ function WeatherWidget() {
     <div style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 18, padding: 18, marginBottom: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
         <MapPin size={13} color="#A9A08B" />
-        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', fontWeight: 600 }}>{t('weather.conditionsFor', { place: state.place })}</span>
+        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.muted, fontWeight: 600 }}>{t('weather.conditionsFor', { place: state.place })}</span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '10px 0 16px' }}>
@@ -3113,7 +3460,7 @@ function WeatherWidget() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#5A7BA6', fontWeight: 700, fontSize: 14 }}>
             <Droplets size={14} /> {current.relative_humidity_2m}%
           </div>
-          <div style={{ fontSize: 10.5, color: '#A9A08B' }}>{t('weather.humidity')}</div>
+          <div style={{ fontSize: 10.5, color: colors.muted }}>{t('weather.humidity')}</div>
         </div>
       </div>
 
@@ -3127,7 +3474,7 @@ function WeatherWidget() {
               flex: '0 0 auto', width: 54, background: colors.bg, borderRadius: 12, padding: '10px 6px',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontFamily: 'Inter, sans-serif'
             }}>
-              <span style={{ fontSize: 10.5, color: '#A9A08B', fontWeight: 600 }}>{i === 0 ? 'Teraz' : `${hour}:00`}</span>
+              <span style={{ fontSize: 10.5, color: colors.muted, fontWeight: 600 }}>{i === 0 ? 'Teraz' : `${hour}:00`}</span>
               <HIcon size={16} color={info.tone} />
               <span style={{ fontSize: 12.5, fontWeight: 700, color: colors.ink }}>{Math.round(h.temp)}°</span>
               <span style={{ fontSize: 9.5, color: '#5A7BA6', display: 'flex', alignItems: 'center', gap: 2 }}><Droplets size={9}/>{h.humidity}%</span>
@@ -3157,8 +3504,30 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
   const [sunlight, setSunlight] = useState(existingHost?.sunlight || 'Pełne słońce');
   const [capacity, setCapacity] = useState(existingHost ? String(existingHost.plants_capacity) : '');
   const [description, setDescription] = useState(existingHost?.description || '');
+  const [spacePhotos, setSpacePhotos] = useState(existingHost?.space_photos || []);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  const handleAddSpacePhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (spacePhotos.length >= 4) return;
+    setUploadingPhoto(true);
+    try {
+      const resized = await resizeImage(file, 800);
+      setSpacePhotos(prev => [...prev, resized]);
+    } catch (err) {
+      // niepowodzenie kompresji zdjecia nie jest krytyczne - po prostu nic sie nie doda
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveSpacePhoto = (idx) => {
+    setSpacePhotos(prev => prev.filter((_, i) => i !== idx));
+  };
 
   const [coords, setCoords] = useState(
     existingHost?.latitude != null ? { lat: existingHost.latitude, lon: existingHost.longitude } : null
@@ -3189,18 +3558,31 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
   };
 
   const handleSave = async () => {
+    const priceNum = Number(price);
+    const capacityNum = Number(capacity);
+
+    if (!Number.isFinite(priceNum) || priceNum < 0.5 || priceNum > 1000) {
+      setError(t('becomeHost.priceInvalid'));
+      return;
+    }
+    if (!Number.isFinite(capacityNum) || !Number.isInteger(capacityNum) || capacityNum < 1 || capacityNum > 50) {
+      setError(t('becomeHost.capacityInvalid'));
+      return;
+    }
+
     setSaving(true);
     setError(null);
     const payload = {
       name,
-      price: Number(price),
+      price: priceNum,
       location,
       address: address || null,
       phone: phone || null,
       sunlight,
-      plants_capacity: Number(capacity),
+      plants_capacity: capacityNum,
       description,
       photo_url: userAvatarUrl || null,
+      space_photos: spacePhotos,
       latitude: coords ? coords.lat : null,
       longitude: coords ? coords.lon : null,
     };
@@ -3229,15 +3611,15 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
         <Avatar photoUrl={userAvatarUrl} name={name || 'H'} size={64} radius={16} />
         <div>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink }}>{t('becomeHost.photoFromAccount')}</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: 2 }}>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.muted, marginTop: 2 }}>
             {t('becomeHost.changePhotoHint')}
           </div>
         </div>
       </div>
 
       <TextField placeholder={t('becomeHost.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} />
-      <TextField icon={DollarSign} type="number" placeholder={t('becomeHost.pricePlaceholder')} value={price} onChange={e => setPrice(e.target.value)} />
-      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', marginTop: -6, marginBottom: 14 }}>
+      <TextField icon={DollarSign} type="number" min="0.5" max="1000" step="0.5" placeholder={t('becomeHost.pricePlaceholder')} value={price} onChange={e => setPrice(e.target.value)} />
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.muted, marginTop: -6, marginBottom: 14 }}>
         {t('becomeHost.priceHint')}
       </div>
       {Number(price) > 10 && (
@@ -3260,7 +3642,7 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
       </button>
       {locError && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.clay, marginBottom: 12 }}>{locError}</div>}
 
-      <TextField type="number" placeholder={t('becomeHost.capacityPlaceholder')} value={capacity} onChange={e => setCapacity(e.target.value)} />
+      <TextField type="number" min="1" max="50" step="1" placeholder={t('becomeHost.capacityPlaceholder')} value={capacity} onChange={e => setCapacity(e.target.value)} />
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: 4 }}>{t('becomeHost.sunlightLabel')}</div>
       {SUNLIGHT_OPTIONS.map((l) => {
@@ -3272,7 +3654,7 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
             border: `1.5px solid ${sunlight === l ? colors.gold : colors.line}`, marginBottom: 10,
             background: sunlight === l ? '#FFF8EC' : colors.card, cursor: 'pointer'
           }}>
-            <SIcon size={18} color={sunlight === l ? si.tone : '#A9A08B'} />
+            <SIcon size={18} color={sunlight === l ? si.tone : colors.muted} />
             <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: colors.ink, fontWeight: sunlight === l ? 700 : 500 }}>{t(sunlightKey(l))}</span>
           </div>
         );
@@ -3289,6 +3671,42 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
           resize: 'none', boxSizing: 'border-box'
         }}
       />
+
+      <div style={{
+        fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.muted,
+        textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8
+      }}>
+        {t('becomeHost.spacePhotosLabel')}
+      </div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.muted, marginBottom: 10 }}>
+        {t('becomeHost.spacePhotosHint')}
+      </div>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+        {spacePhotos.map((src, idx) => (
+          <div key={idx} style={{ position: 'relative', width: 76, height: 76, flexShrink: 0 }}>
+            <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12, border: `1px solid ${colors.line}` }} />
+            <button
+              onClick={() => handleRemoveSpacePhoto(idx)}
+              style={{
+                position: 'absolute', top: -6, right: -6, width: 22, height: 22, borderRadius: 11,
+                background: colors.card, border: `1px solid ${colors.line}`, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
+              }}
+            >
+              <X size={12} color={colors.clay} />
+            </button>
+          </div>
+        ))}
+        {spacePhotos.length < 4 && (
+          <label style={{
+            width: 76, height: 76, flexShrink: 0, borderRadius: 12, border: `1.5px dashed ${colors.line}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: colors.muted
+          }}>
+            {uploadingPhoto ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <PlusCircle size={20} />}
+            <input type="file" accept="image/*" onChange={handleAddSpacePhoto} style={{ display: 'none' }} disabled={uploadingPhoto} />
+          </label>
+        )}
+      </div>
 
       {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
 
@@ -3406,16 +3824,16 @@ function SupportScreen({ userId, userEmail, onBack }) {
         }}><ArrowLeft size={18} color={colors.ink} /></button>
         <div>
           <h2 style={{ fontSize: 16, color: colors.ink, fontWeight: 600, margin: 0 }}>{t('support.title')}</h2>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>{t('support.subtitle')}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted }}>{t('support.subtitle')}</div>
         </div>
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
         {loading && (
-          <div style={{ textAlign: 'center', color: '#A9A08B', fontFamily: 'Inter, sans-serif', fontSize: 13, marginTop: 20 }}>{t('chat.loading')}</div>
+          <div style={{ textAlign: 'center', color: colors.muted, fontFamily: 'Inter, sans-serif', fontSize: 13, marginTop: 20 }}>{t('chat.loading')}</div>
         )}
         {!loading && messages.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#A9A08B', fontFamily: 'Inter, sans-serif', fontSize: 13, marginTop: 20, padding: '0 20px' }}>
+          <div style={{ textAlign: 'center', color: colors.muted, fontFamily: 'Inter, sans-serif', fontSize: 13, marginTop: 20, padding: '0 20px' }}>
             {t('support.welcome')}
           </div>
         )}
@@ -3544,9 +3962,9 @@ function ChatScreen({ conversationId, myUserId, otherName, otherUserId, onBack }
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
-        {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('chat.loading')}</div>}
+        {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>{t('chat.loading')}</div>}
         {!loading && messages.length === 0 && (
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', textAlign: 'center', marginTop: 30 }}>{t('chat.firstMessage')}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted, textAlign: 'center', marginTop: 30 }}>{t('chat.firstMessage')}</div>
         )}
         {messages.map(m => {
           const mine = m.sender_id === myUserId;
@@ -3565,6 +3983,24 @@ function ChatScreen({ conversationId, myUserId, otherName, otherUserId, onBack }
         })}
         <div ref={scrollRef} />
       </div>
+
+      {!text.trim() && (
+        <div style={{ display: 'flex', gap: 8, padding: '0 16px 4px', overflowX: 'auto' }}>
+          {['chat.quickAccept', 'chat.quickBusy', 'chat.quickWhen', 'chat.quickThanks'].map(key => (
+            <button
+              key={key}
+              onClick={() => setText(t(key))}
+              style={{
+                flexShrink: 0, background: colors.card, border: `1.5px solid ${colors.line}`,
+                borderRadius: 999, padding: '7px 13px', cursor: 'pointer',
+                fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.ink, whiteSpace: 'nowrap'
+              }}
+            >
+              {t(key)}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 10, padding: 16, borderTop: `1px solid ${colors.line}` }}>
         <input
@@ -3636,9 +4072,9 @@ function ConversationsListScreen({ myUserId, onOpenConversation, onBack }) {
         <h2 style={{ fontSize: 18, color: colors.ink, fontWeight: 600, margin: 0 }}>{t('chat.messagesTitle')}</h2>
       </div>
 
-      {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('chat.loading')}</div>}
+      {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>{t('chat.loading')}</div>}
       {!loading && conversations.length === 0 && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('chat.noConversations')}</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>{t('chat.noConversations')}</div>
       )}
       {!loading && conversations.map(c => {
         const isHostSide = c.hosts?.user_id === myUserId;
@@ -3659,7 +4095,7 @@ function ConversationsListScreen({ myUserId, onOpenConversation, onBack }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, color: colors.ink }}>{otherName}</span>
                 {c.last_message_at && (
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, color: '#A9A08B', flexShrink: 0 }}>{formatDate(c.last_message_at)}</span>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 10.5, color: colors.muted, flexShrink: 0 }}>{formatDate(c.last_message_at)}</span>
                 )}
               </div>
               <div style={{
@@ -3729,24 +4165,24 @@ function HostDashboardScreen({ myHost, onBack }) {
       <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
         <div style={{ flex: 1, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, textAlign: 'center' }}>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 20, fontWeight: 700, color: colors.ink }}>{completedCount}</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>{t('dash.completed')}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted }}>{t('dash.completed')}</div>
         </div>
         <div style={{ flex: 1, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, textAlign: 'center' }}>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 20, fontWeight: 700, color: colors.ink }}>{pendingCount}</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>{t('dash.pending')}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted }}>{t('dash.pending')}</div>
         </div>
         <div style={{ flex: 1, background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 14, padding: 14, textAlign: 'center' }}>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 20, fontWeight: 700, color: colors.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
             <Star size={14} fill={colors.gold} color={colors.gold} /> {myHost.rating ?? '—'}
           </div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>{t('dash.rating')}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted }}>{t('dash.rating')}</div>
         </div>
       </div>
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('dash.historyTitle')}</div>
 
-      {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('chat.loading')}</div>}
-      {!loading && bookings.length === 0 && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('dash.noHistory')}</div>}
+      {loading && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>{t('chat.loading')}</div>}
+      {!loading && bookings.length === 0 && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>{t('dash.noHistory')}</div>}
       {!loading && bookings.map(b => {
         const si = statusInfo(b.status);
         return (
@@ -3810,14 +4246,14 @@ function FullListScreen({ title, items, renderItem, statusOptions, getStatus, ge
       </div>
 
       {list.length === 0 && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{emptyText || t('list.noResults')}</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>{emptyText || t('list.noResults')}</div>
       )}
       {list.map(renderItem)}
     </div>
   );
 }
 
-function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectReturn, onConnectReturnHandled, bookingPaymentReturn, onBookingPaymentReturnHandled, onOpenConversation }) {
+function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectReturn, onConnectReturnHandled, bookingPaymentReturn, onBookingPaymentReturnHandled, onOpenConversation, theme, toggleTheme }) {
   const t = useT();
   const { lang } = useLang();
   const [plants, setPlants] = useState([]);
@@ -4193,7 +4629,26 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       }
     }
 
-    await supabase.from('bookings').update({ status: newStatus }).eq('id', bookingId);
+    await supabase.from('bookings').update({ status: newStatus, responded_at: new Date().toISOString() }).eq('id', bookingId);
+
+    // Przeliczamy sredni czas odpowiedzi hosta na podstawie WSZYSTKICH jego dotychczasowych
+    // odpowiedzi - prosciej i bezpieczniej niz probowac aktualizowac srednia "na biezaco".
+    if (myHost) {
+      const { data: responded } = await supabase
+        .from('bookings')
+        .select('created_at, responded_at')
+        .eq('host_id', myHost.id)
+        .not('responded_at', 'is', null);
+      if (responded && responded.length > 0) {
+        const totalMinutes = responded.reduce((sum, r) => {
+          const diffMs = new Date(r.responded_at) - new Date(r.created_at);
+          return sum + Math.max(0, diffMs) / 60000;
+        }, 0);
+        const avgMinutes = Math.round(totalMinutes / responded.length);
+        await supabase.from('hosts').update({ avg_response_minutes: avgMinutes }).eq('id', myHost.id);
+      }
+    }
+
     if (b) {
       const qtyLabel = b.quantity > 1 ? ` (×${b.quantity} szt.)` : '';
       await createNotification(
@@ -4241,6 +4696,11 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         bookingId,
         b.hosts.email || null
       );
+    }
+
+    // Zwolnilo sie realne miejsce (rezerwacja BYLA zaakceptowana) - powiadamiamy obserwatorow tego hosta.
+    if (b?.status === 'accepted' && b?.host_id) {
+      notifyHostWatchers(b.host_id, b.hosts?.name);
     }
     setCancellingBookingId(null);
     setBookingsRefresh(k => k + 1);
@@ -4433,7 +4893,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
           <CheckCircle size={13} /> {t('profile.paidWithShare', { total: b.amount_total, share: Math.round(b.amount_total * 0.9 * 100) / 100 })}
         </div>
       ) : (
-        <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B' }}>
+        <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.muted }}>
           {t('profile.awaitingPayment')}
         </div>
       )}
@@ -4500,7 +4960,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         )}
 
         {needsPayment && verifyingBookingPayment && (
-          <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>
+          <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.muted }}>
             <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> {t('profile.checkingPayment')}
           </div>
         )}
@@ -4520,7 +4980,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         )}
 
         {needsPayment && !verifyingBookingPayment && !hostReady && (
-          <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B' }}>
+          <div style={{ marginTop: 10, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.muted }}>
             {t('profile.hostNoPayout')}
           </div>
         )}
@@ -4600,7 +5060,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
                   {t('profile.currentlyAt', { name: active.hosts?.name })}
                 </div>
               ) : (
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>{t('profile.atYourHome')}</div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted }}>{t('profile.atYourHome')}</div>
               )}
             </div>
           </div>
@@ -4624,10 +5084,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
               {t('profile.hostHistory')}
             </div>
             {loadingPlantHistory === p.id && (
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>{t('profile.loading')}</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.muted }}>{t('profile.loading')}</div>
             )}
             {loadingPlantHistory !== p.id && history.length === 0 && (
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>{t('profile.neverAtHost')}</div>
+              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.muted }}>{t('profile.neverAtHost')}</div>
             )}
             {loadingPlantHistory !== p.id && history.map(h => (
               <div key={h.id} style={{ background: colors.bg, borderRadius: 10, padding: 10, marginBottom: 6 }}>
@@ -4713,7 +5173,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: colors.ink, wordBreak: 'break-word' }}>{displayNameOf(user)}</div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', wordBreak: 'break-all' }}>{user.email}</div>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.muted, wordBreak: 'break-all' }}>{user.email}</div>
         </div>
         <button onClick={() => setShowSupport(true)} style={{
           background: colors.clayLight, border: 'none', borderRadius: 12, padding: 10,
@@ -4769,9 +5229,9 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
             </button>
           </div>
           <div style={{ maxHeight: 300, overflow: 'auto' }}>
-            {notifLoading && <div style={{ padding: 14, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>{t('profile.loading')}</div>}
+            {notifLoading && <div style={{ padding: 14, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.muted }}>{t('profile.loading')}</div>}
             {!notifLoading && notifications.length === 0 && (
-              <div style={{ padding: 14, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>{t('profile.noNotifications')}</div>
+              <div style={{ padding: 14, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.muted }}>{t('profile.noNotifications')}</div>
             )}
             {!notifLoading && notifications.map(n => {
               // Nowe powiadomienia maja params -> tlumaczymy na biezaco.
@@ -4789,7 +5249,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
                   <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12.5, color: colors.ink }}>{nt.title}</span>
                 </div>
                 {nt.body && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#7A7261', marginTop: 3 }}>{nt.body}</div>}
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#A9A08B', marginTop: 4 }}>{formatDate(n.created_at)}</div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: colors.muted, marginTop: 4 }}>{formatDate(n.created_at)}</div>
               </div>
               );
             })}
@@ -4814,7 +5274,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       )}
 
       {myHost && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B', marginBottom: 20 }}>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted, marginBottom: 20 }}>
           {t('profile.photoAlsoOnListing')}
         </div>
       )}
@@ -4831,7 +5291,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       {hasName && !editingName && (
         <div onClick={() => setEditingName(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 20, cursor: 'pointer' }}>
           <Pencil size={11} color="#A9A08B" />
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>{t('profile.changeName')}</span>
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted }}>{t('profile.changeName')}</span>
         </div>
       )}
       {editingName && (
@@ -4893,10 +5353,10 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: (myHost && (pendingIncoming.length > 0 || acceptedIncoming.length > 0)) ? 20 : 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('profile.yourBookings')}</div>
       {myBookingsLoading && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>{t('profile.loading')}</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted, marginBottom: 20 }}>{t('profile.loading')}</div>
       )}
       {!myBookingsLoading && myBookings.length === 0 && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B', marginBottom: 20 }}>{t('profile.noBookings')}</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted, marginBottom: 20 }}>{t('profile.noBookings')}</div>
       )}
       {!myBookingsLoading && myBookings.length > 0 && renderBookingCard([...myBookings].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])}
       {!myBookingsLoading && myBookings.length > 1 && (
@@ -4906,11 +5366,11 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, marginTop: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('profile.yourPlants')}</div>
 
       {loading && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('profile.loading')}</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>{t('profile.loading')}</div>
       )}
 
       {!loading && plants.length === 0 && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('profile.noPlants')}</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>{t('profile.noPlants')}</div>
       )}
 
       {!loading && plants.length > 0 && renderPlantCard([...plants].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])}
@@ -4934,14 +5394,14 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
               background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: 0
             }}>
               <Pencil size={11} color="#A9A08B" />
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#A9A08B' }}>Edytuj</span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted }}>Edytuj</span>
             </button>
           </div>
         )}
       </div>
 
       {hostLoading && (
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#A9A08B' }}>{t('profile.loading')}</div>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.muted }}>{t('profile.loading')}</div>
       )}
 
       {!hostLoading && myHost && (
@@ -4960,7 +5420,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${colors.line}` }}>
             {connectChecking ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: '#A9A08B' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.muted }}>
                 <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> {t('profile.checkingPayoutAccount')}
               </div>
             ) : myHost.stripe_charges_enabled ? (
@@ -4995,7 +5455,7 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
 
       <div style={{ marginTop: 28, paddingTop: 20, borderTop: `1px solid ${colors.line}` }}>
         <div style={{
-          fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 700, color: '#A9A08B',
+          fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 700, color: colors.muted,
           textTransform: 'uppercase', letterSpacing: 0.4, textAlign: 'center', marginBottom: 10
         }}>
           {t('auth.languageLabel')}
@@ -5003,11 +5463,34 @@ function ProfileScreen({ user, refreshKey, onSignOut, onUserUpdated, connectRetu
         <LanguagePicker compact />
       </div>
 
+      <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${colors.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink, fontWeight: 600 }}>
+          {theme === 'dark' ? t('profile.darkMode') : t('profile.lightMode')}
+        </span>
+        <button
+          onClick={toggleTheme}
+          aria-label={t('profile.toggleTheme')}
+          style={{
+            width: 44, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
+            background: theme === 'dark' ? colors.fern : colors.line, position: 'relative',
+            transition: 'background 0.2s', padding: 0, flexShrink: 0
+          }}
+        >
+          <span style={{
+            position: 'absolute', top: 3, left: theme === 'dark' ? 21 : 3,
+            width: 20, height: 20, borderRadius: '50%', background: colors.card,
+            transition: 'left 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {theme === 'dark' ? <Moon size={12} color={colors.fern} /> : <Sun size={12} color={colors.gold} />}
+          </span>
+        </button>
+      </div>
+
       <div
         onClick={() => setShowTermsInProfile(true)}
         style={{ textAlign: 'center', marginTop: 20, cursor: 'pointer' }}
       >
-        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: '#A9A08B', textDecoration: 'underline' }}>
+        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.muted, textDecoration: 'underline' }}>
           {t('profile.terms')}
         </span>
       </div>
@@ -5066,6 +5549,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [tab, setTab] = useState('home');
+  const isDesktop = useIsDesktop();
   const [view, setView] = useState('list');
   const [selectedHost, setSelectedHost] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -5088,6 +5572,29 @@ export default function App() {
   }, []);
 
   const langValue = React.useMemo(() => ({ lang, setLang }), [lang, setLang]);
+
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem('leafsit_theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch (e) { /* ignore */ }
+    try {
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+    } catch (e) { /* ignore */ }
+    return 'light';
+  });
+
+  const toggleTheme = React.useCallback(() => {
+    setTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem('leafsit_theme', next); } catch (e) { /* ignore */ }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     if (!session) { setOnboardingChecked(false); return; }
@@ -5197,7 +5704,7 @@ export default function App() {
 
     if (tab === 'home') {
       if (view === 'detail') {
-        return <HostDetailScreen host={selectedHost} onBack={() => setView('list')} onBook={() => setView('booking')} onMessage={() => openConversationWithHost(selectedHost)} />;
+        return <HostDetailScreen host={selectedHost} userId={session.user.id} onBack={() => setView('list')} onBook={() => setView('booking')} onMessage={() => openConversationWithHost(selectedHost)} />;
       }
       if (view === 'booking') {
         return (
@@ -5236,35 +5743,54 @@ export default function App() {
           bookingPaymentReturn={bookingPaymentReturn}
           onBookingPaymentReturnHandled={() => setBookingPaymentReturn(null)}
           onOpenConversation={(conv) => setActiveConversation(conv)}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
       );
     }
   };
 
+  const showMainApp = !authLoading && session && onboardingChecked && !showOnboarding;
+
   return (
     <LanguageContext.Provider value={langValue}>
-      <div className="app-outer" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#EDE7DA', padding: 40 }}>
-        <Screen>
-          <StatusBar />
-          {authLoading ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Loader2 size={28} color={colors.fern} style={{ animation: 'spin 1s linear infinite' }} />
-            </div>
-          ) : !session ? (
-            <AuthScreen referralCodeFromUrl={referralCodeFromUrl} />
-          ) : !onboardingChecked ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Loader2 size={28} color={colors.fern} style={{ animation: 'spin 1s linear infinite' }} />
-            </div>
-          ) : showOnboarding ? (
-            <OnboardingScreen onFinish={finishOnboarding} />
-          ) : (
-            <>
+      <div className="app-outer" style={{ minHeight: '100vh', background: colors.bg }}>
+        {showMainApp && isDesktop ? (
+          <div style={{
+            display: 'grid', gridTemplateColumns: '240px 1fr 320px',
+            justifyContent: 'center', minHeight: '100vh'
+          }}>
+            <Sidebar active={tab} onNav={(t) => { setTab(t); setView('list'); }} user={session.user} theme={theme} toggleTheme={toggleTheme} />
+            <main style={{
+              padding: '32px 32px 60px', borderLeft: `1px solid ${colors.line}`, borderRight: `1px solid ${colors.line}`,
+              background: colors.bg, display: 'flex', flexDirection: 'column', minWidth: 0
+            }}>
               {renderTab()}
-              <TabBar active={tab} onNav={(t) => { setTab(t); setView('list'); }} />
-            </>
-          )}
-        </Screen>
+            </main>
+            <RightRail onNav={(t) => { setTab(t); setView('list'); }} />
+          </div>
+        ) : (
+          <Screen>
+            {authLoading ? (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Loader2 size={28} color={colors.fern} style={{ animation: 'spin 1s linear infinite' }} />
+              </div>
+            ) : !session ? (
+              <AuthScreen referralCodeFromUrl={referralCodeFromUrl} />
+            ) : !onboardingChecked ? (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Loader2 size={28} color={colors.fern} style={{ animation: 'spin 1s linear infinite' }} />
+              </div>
+            ) : showOnboarding ? (
+              <OnboardingScreen onFinish={finishOnboarding} />
+            ) : (
+              <>
+                {renderTab()}
+                <TabBar active={tab} onNav={(t) => { setTab(t); setView('list'); }} />
+              </>
+            )}
+          </Screen>
+        )}
         <CookieBanner />
       </div>
     </LanguageContext.Provider>

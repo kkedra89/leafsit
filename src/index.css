@@ -1,4 +1,30 @@
 :root {
+  --lf-bg: #F7F4EC;
+  --lf-ink: #232017;
+  --lf-fern: #3A5A40;
+  --lf-fern-dark: #28402C;
+  --lf-clay: #C1652F;
+  --lf-clay-light: #E8DCC8;
+  --lf-gold: #D4A24C;
+  --lf-line: #DDD5C0;
+  --lf-card: #FFFFFF;
+  --lf-muted: #7A7261;
+}
+
+[data-theme="dark"] {
+  --lf-bg: #1B1F1A;
+  --lf-ink: #EDE7DA;
+  --lf-fern: #5A8563;
+  --lf-fern-dark: #16211A;
+  --lf-clay: #E08148;
+  --lf-clay-light: #332C22;
+  --lf-gold: #E3B966;
+  --lf-line: #3A3A30;
+  --lf-card: #242920;
+  --lf-muted: #A9A08B;
+}
+
+:root {
   --text: #6b6375;
   --text-h: #08060d;
   --bg: #fff;
@@ -18,8 +44,6 @@
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
   color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -55,11 +79,9 @@ body {
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
+  width: 100%;
+  margin: 0;
+  text-align: left;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
@@ -113,14 +135,5 @@ code {
   .app-outer {
     padding: 0 !important;
     min-height: 100dvh !important;
-  }
-  .app-screen {
-    width: 100vw !important;
-    height: 100dvh !important;
-    border-radius: 0 !important;
-    border: none !important;
-  }
-  .app-statusbar {
-    display: none !important;
   }
 }
