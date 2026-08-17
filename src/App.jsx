@@ -141,6 +141,12 @@ const TRANSLATIONS = {
     'booking.backToList': 'Wróć do listy',
     'booking.loadingPlants': 'Ładowanie Twoich roślin...',
     'booking.noPlants': 'Nie masz jeszcze żadnych roślin. Dodaj pierwszą w zakładce "Dodaj", żeby móc zarezerwować hosta.',
+    'booking.whichDates': 'Na jakie daty?',
+    'booking.from': 'Od',
+    'booking.to': 'Do',
+    'calendar.legendUnavailable': 'Niedostępny',
+    'calendar.legendSelected': 'Wybrane',
+    'calendar.rangeBlocked': 'W tym zakresie jest niedostępny dzień — wybierz inne daty.',
     'booking.whichPlant': 'Która roślina?',
     'booking.howMany': 'Ile sztuk? (masz {max})',
     'booking.estimatedCost': 'Szacowany koszt: {total} zł ({days} {dayWord}) — płatność dopiero po akceptacji przez hosta',
@@ -228,8 +234,9 @@ const TRANSLATIONS = {
     // Panel hosta
     'dash.title': 'Panel hosta',
     'calendar.title': 'Kalendarz dostępności',
-    'calendar.hint': 'Kliknij dzień, aby oznaczyć go jako niedostępny dla nowych rezerwacji.',
+    'calendar.hint': 'Dni z zaakceptowanymi rezerwacjami blokują się same. Kliknij dzień, aby dodatkowo zablokować go ręcznie (np. urlop).',
     'calendar.legendFree': 'Wolny',
+    'calendar.legendOccupied': 'Zajęte (rezerwacje)',
     'calendar.legendBlocked': 'Zablokowany',
     'calendar.jan': 'Styczeń', 'calendar.feb': 'Luty', 'calendar.mar': 'Marzec', 'calendar.apr': 'Kwiecień',
     'calendar.may': 'Maj', 'calendar.jun': 'Czerwiec', 'calendar.jul': 'Lipiec', 'calendar.aug': 'Sierpień',
@@ -502,6 +509,12 @@ const TRANSLATIONS = {
     'booking.backToList': 'Back to list',
     'booking.loadingPlants': 'Loading your plants...',
     'booking.noPlants': 'You have no plants yet. Add your first one in the "Add" tab to book a host.',
+    'booking.whichDates': 'Which dates?',
+    'booking.from': 'From',
+    'booking.to': 'To',
+    'calendar.legendUnavailable': 'Unavailable',
+    'calendar.legendSelected': 'Selected',
+    'calendar.rangeBlocked': 'This range includes an unavailable day — please choose different dates.',
     'booking.whichPlant': 'Which plant?',
     'booking.howMany': 'How many? (you have {max})',
     'booking.estimatedCost': 'Estimated cost: {total} zł ({days} {dayWord}) — payment only after the host accepts',
@@ -589,8 +602,9 @@ const TRANSLATIONS = {
     // Host dashboard
     'dash.title': 'Host dashboard',
     'calendar.title': 'Availability calendar',
-    'calendar.hint': 'Tap a day to mark it unavailable for new bookings.',
+    'calendar.hint': 'Days with accepted bookings block themselves automatically. Tap a day to also block it manually (e.g. for time off).',
     'calendar.legendFree': 'Free',
+    'calendar.legendOccupied': 'Occupied (bookings)',
     'calendar.legendBlocked': 'Blocked',
     'calendar.jan': 'January', 'calendar.feb': 'February', 'calendar.mar': 'March', 'calendar.apr': 'April',
     'calendar.may': 'May', 'calendar.jun': 'June', 'calendar.jul': 'July', 'calendar.aug': 'August',
@@ -863,6 +877,12 @@ const TRANSLATIONS = {
     'booking.backToList': 'Назад до списку',
     'booking.loadingPlants': 'Завантаження ваших рослин...',
     'booking.noPlants': 'У вас ще немає рослин. Додайте першу у вкладці «Додати», щоб забронювати господаря.',
+    'booking.whichDates': 'На які дати?',
+    'booking.from': 'Від',
+    'booking.to': 'До',
+    'calendar.legendUnavailable': 'Недоступно',
+    'calendar.legendSelected': 'Обрано',
+    'calendar.rangeBlocked': 'У цьому періоді є недоступний день — оберіть інші дати.',
     'booking.whichPlant': 'Яка рослина?',
     'booking.howMany': 'Скільки штук? (у вас {max})',
     'booking.estimatedCost': 'Орієнтовна вартість: {total} zł ({days} {dayWord}) — оплата лише після підтвердження господарем',
@@ -950,8 +970,9 @@ const TRANSLATIONS = {
     // Панель господаря
     'dash.title': 'Панель господаря',
     'calendar.title': 'Календар доступності',
-    'calendar.hint': 'Натисніть на день, щоб позначити його недоступним для нових бронювань.',
+    'calendar.hint': 'Дні з підтвердженими бронюваннями блокуються самі. Натисніть на день, щоб заблокувати його вручну (напр. на відпустку).',
     'calendar.legendFree': 'Вільно',
+    'calendar.legendOccupied': 'Зайнято (бронювання)',
     'calendar.legendBlocked': 'Заблоковано',
     'calendar.jan': 'Січень', 'calendar.feb': 'Лютий', 'calendar.mar': 'Березень', 'calendar.apr': 'Квітень',
     'calendar.may': 'Травень', 'calendar.jun': 'Червень', 'calendar.jul': 'Липень', 'calendar.aug': 'Серпень',
@@ -1485,7 +1506,7 @@ function useIsDesktop() {
   return isDesktop;
 }
 
-function Sidebar({ active, onNav, user, theme, toggleTheme }) {
+function Sidebar({ active, onNav, user, theme, toggleTheme, unreadCount = 0 }) {
   const t = useT();
   const tabs = [
     { id: 'home', icon: Home, label: t('tab.home') },
@@ -1522,6 +1543,11 @@ function Sidebar({ active, onNav, user, theme, toggleTheme }) {
               {isActive && <span style={{ position: 'absolute', left: -18, top: '50%', transform: 'translateY(-50%)', width: 4, height: 22, background: colors.gold, borderRadius: '0 6px 6px 0' }} />}
               <Icon size={20} strokeWidth={isActive ? 2.4 : 1.8} />
               <span>{item.label}</span>
+              {item.id === 'profile' && unreadCount > 0 && (
+                <span style={{
+                  width: 8, height: 8, borderRadius: 4, background: colors.clay, marginLeft: 'auto', flexShrink: 0
+                }} />
+              )}
             </button>
           );
         })}
@@ -1580,7 +1606,7 @@ function RightRail({ onNav }) {
   );
 }
 
-function TabBar({ active, onNav }) {
+function TabBar({ active, onNav, unreadCount = 0 }) {
   const t = useT();
   const tabs = [
     { id: 'home', icon: Home, label: t('tab.home') },
@@ -1599,10 +1625,18 @@ function TabBar({ active, onNav }) {
         return (
           <button key={item.id} onClick={() => onNav(item.id)} style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-            background: 'none', border: 'none', cursor: 'pointer',
+            background: 'none', border: 'none', cursor: 'pointer', position: 'relative',
             color: isActive ? colors.fern : colors.muted, fontFamily: 'Inter, sans-serif'
           }}>
-            <Icon size={22} strokeWidth={isActive ? 2.4 : 1.8} />
+            <span style={{ position: 'relative' }}>
+              <Icon size={22} strokeWidth={isActive ? 2.4 : 1.8} />
+              {item.id === 'profile' && unreadCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: -3, right: -5, width: 9, height: 9, borderRadius: 5,
+                  background: colors.clay, border: `1.5px solid ${colors.card}`
+                }} />
+              )}
+            </span>
             <span style={{ fontSize: 10, fontWeight: isActive ? 700 : 500 }}>{item.label}</span>
           </button>
         );
@@ -2583,6 +2617,158 @@ function HostDetailScreen({ host, userId, onBack, onBook, onMessage }) {
   );
 }
 
+// Kalendarz dla WYNAJMUJACEGO - pokazuje realna dostepnosc hosta (na podstawie
+// zaakceptowanych rezerwacji i recznych blokad hosta) i pozwala wybrac zakres dat klikaniem.
+function BookingCalendar({ hostId, capacity, startDate, endDate, onSelectStart, onSelectEnd }) {
+  const t = useT();
+  const [viewMonth, setViewMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [blockedDates, setBlockedDates] = useState(new Set());
+  const [acceptedBookings, setAcceptedBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [rangeError, setRangeError] = useState(false);
+
+  useEffect(() => {
+    if (!hostId) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const [blockedRes, bookingsRes] = await Promise.all([
+        supabase.from('host_blocked_dates').select('date').eq('host_id', hostId),
+        supabase.from('bookings').select('start_date, end_date, quantity').eq('host_id', hostId).eq('status', 'accepted'),
+      ]);
+      if (!cancelled) {
+        setBlockedDates(new Set((blockedRes.data || []).map(d => d.date)));
+        setAcceptedBookings(bookingsRes.data || []);
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hostId]);
+
+  const occupiedOn = (dateStr) => acceptedBookings.reduce((sum, b) => {
+    if (dateStr >= b.start_date && dateStr <= b.end_date) return sum + (b.quantity || 1);
+    return sum;
+  }, 0);
+  const isDayUnavailable = (dateStr) => blockedDates.has(dateStr) || (capacity != null && occupiedOn(dateStr) >= capacity);
+
+  const handleDayClick = (dateStr) => {
+    setRangeError(false);
+    if (!startDate || (startDate && endDate)) {
+      onSelectStart(dateStr);
+      onSelectEnd('');
+      return;
+    }
+    if (dateStr < startDate) {
+      onSelectStart(dateStr);
+      return;
+    }
+    // Sprawdzamy, czy w calym wybranym zakresie nie ma dnia niedostepnego.
+    let cursor = new Date(startDate);
+    const endD = new Date(dateStr);
+    let hasBlocked = false;
+    while (cursor <= endD) {
+      const cStr = cursor.toISOString().slice(0, 10);
+      if (isDayUnavailable(cStr)) { hasBlocked = true; break; }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    if (hasBlocked) {
+      setRangeError(true);
+      onSelectStart(dateStr);
+      onSelectEnd('');
+      return;
+    }
+    onSelectEnd(dateStr);
+  };
+
+  const year = viewMonth.getFullYear();
+  const month = viewMonth.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startWeekday = (firstDay.getDay() + 6) % 7;
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const cells = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    cells.push({
+      day, dateStr,
+      isPast: dateStr < todayStr,
+      isUnavailable: isDayUnavailable(dateStr),
+      isSelected: (startDate && dateStr === startDate) || (endDate && dateStr === endDate) ||
+        (startDate && endDate && dateStr > startDate && dateStr < endDate),
+    });
+  }
+
+  const monthKeys = ['calendar.jan', 'calendar.feb', 'calendar.mar', 'calendar.apr', 'calendar.may', 'calendar.jun', 'calendar.jul', 'calendar.aug', 'calendar.sep', 'calendar.oct', 'calendar.nov', 'calendar.dec'];
+  const weekdayKeys = ['calendar.mon', 'calendar.tue', 'calendar.wed', 'calendar.thu', 'calendar.fri', 'calendar.sat', 'calendar.sun'];
+
+  return (
+    <div style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 16, padding: 14, marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <button onClick={() => setViewMonth(new Date(year, month - 1, 1))} style={{
+          background: colors.clayLight, border: 'none', borderRadius: 8, width: 26, height: 26, cursor: 'pointer', fontSize: 14, color: colors.ink
+        }}>‹</button>
+        <div style={{ fontFamily: 'Cambria, Georgia, serif', fontWeight: 600, fontSize: 13.5, color: colors.ink }}>
+          {t(monthKeys[month])} {year}
+        </div>
+        <button onClick={() => setViewMonth(new Date(year, month + 1, 1))} style={{
+          background: colors.clayLight, border: 'none', borderRadius: 8, width: 26, height: 26, cursor: 'pointer', fontSize: 14, color: colors.ink
+        }}>›</button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginBottom: 3 }}>
+        {weekdayKeys.map(k => (
+          <div key={k} style={{ textAlign: 'center', fontFamily: 'Inter, sans-serif', fontSize: 9.5, fontWeight: 700, color: colors.muted }}>{t(k)}</div>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginBottom: 8 }}>
+        {cells.map((c, idx) => c === null ? <div key={'empty' + idx} /> : (
+          <button
+            key={c.dateStr}
+            disabled={c.isPast || c.isUnavailable || loading}
+            onClick={() => handleDayClick(c.dateStr)}
+            style={{
+              aspectRatio: '1', borderRadius: 7, border: 'none', fontFamily: 'Inter, sans-serif', fontSize: 11.5,
+              cursor: (c.isPast || c.isUnavailable) ? 'default' : 'pointer',
+              background: c.isPast ? colors.line
+                : c.isUnavailable ? colors.gold
+                : c.isSelected ? colors.fern
+                : colors.clayLight,
+              color: c.isPast ? colors.muted
+                : (c.isUnavailable || c.isSelected) ? '#fff'
+                : colors.ink,
+              opacity: c.isPast ? 0.5 : 1,
+            }}
+          >{c.day}</button>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontFamily: 'Inter, sans-serif', fontSize: 10.5, color: colors.muted }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: colors.clayLight, display: 'inline-block' }} /> {t('calendar.legendFree')}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: colors.gold, display: 'inline-block' }} /> {t('calendar.legendUnavailable')}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: colors.fern, display: 'inline-block' }} /> {t('calendar.legendSelected')}
+        </span>
+      </div>
+
+      {rangeError && (
+        <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.clay, fontWeight: 600 }}>
+          {t('calendar.rangeBlocked')}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) {
   const t = useT();
   const [plants, setPlants] = useState([]);
@@ -2631,17 +2817,34 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
     setSaving(true);
     setError(null);
 
-    // Sprawdzamy, czy host nie zablokowal ktoregos dnia w wybranym zakresie dat.
-    const { data: blocked } = await supabase
-      .from('host_blocked_dates')
-      .select('date')
-      .eq('host_id', host.id)
-      .gte('date', startDate)
-      .lte('date', endDate);
-    if (blocked && blocked.length > 0) {
+    // Sprawdzamy zarowno reczne blokady hosta, jak i realna zajetosc (zaakceptowane rezerwacje).
+    const [blockedRes, acceptedRes] = await Promise.all([
+      supabase.from('host_blocked_dates').select('date').eq('host_id', host.id).gte('date', startDate).lte('date', endDate),
+      supabase.from('bookings').select('start_date, end_date, quantity').eq('host_id', host.id).eq('status', 'accepted'),
+    ]);
+
+    if (blockedRes.data && blockedRes.data.length > 0) {
       setSaving(false);
       setError(t('booking.datesBlocked'));
       return;
+    }
+
+    const capacity = host.plants_capacity;
+    if (capacity != null && acceptedRes.data) {
+      let cursor = new Date(startDate);
+      const endD = new Date(endDate);
+      let exceeded = false;
+      while (cursor <= endD) {
+        const cStr = cursor.toISOString().slice(0, 10);
+        const occupied = acceptedRes.data.reduce((sum, b) => (cStr >= b.start_date && cStr <= b.end_date) ? sum + (b.quantity || 1) : sum, 0);
+        if (occupied + quantity > capacity) { exceeded = true; break; }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      if (exceeded) {
+        setSaving(false);
+        setError(t('booking.datesBlocked'));
+        return;
+      }
     }
 
     const { data, error } = await supabase.from('bookings').insert([{
@@ -2752,21 +2955,25 @@ function BookingForm({ host, userId, userEmail, userName, onCancel, onBooked }) 
             </>
           )}
 
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginTop: 16, marginBottom: 10 }}>Na jakie daty?</div>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 700, color: colors.ink, marginTop: 16, marginBottom: 10 }}>{t('booking.whichDates')}</div>
+
+          <BookingCalendar
+            hostId={host.id}
+            capacity={host.plants_capacity}
+            startDate={startDate}
+            endDate={endDate}
+            onSelectStart={setStartDate}
+            onSelectEnd={setEndDate}
+          />
+
+          <div style={{ display: 'flex', gap: 10, marginBottom: 8, fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.ink }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted, marginBottom: 4 }}>Od</div>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{
-                width: '100%', border: `1.5px solid ${colors.line}`, borderRadius: 12, padding: 10,
-                fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
-              }} />
+              <span style={{ color: colors.muted }}>{t('booking.from')}: </span>
+              <strong>{startDate || '—'}</strong>
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted, marginBottom: 4 }}>Do</div>
-              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{
-                width: '100%', border: `1.5px solid ${colors.line}`, borderRadius: 12, padding: 10,
-                fontFamily: 'Inter, sans-serif', fontSize: 13, color: colors.ink, boxSizing: 'border-box'
-              }} />
+              <span style={{ color: colors.muted }}>{t('booking.to')}: </span>
+              <strong>{endDate || '—'}</strong>
             </div>
           </div>
 
@@ -4203,13 +4410,14 @@ function ConversationsListScreen({ myUserId, onOpenConversation, onBack }) {
   );
 }
 
-function AvailabilityCalendar({ hostId }) {
+function AvailabilityCalendar({ hostId, capacity }) {
   const t = useT();
   const [viewMonth, setViewMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const [blockedDates, setBlockedDates] = useState(new Set());
+  const [acceptedBookings, setAcceptedBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -4217,14 +4425,24 @@ function AvailabilityCalendar({ hostId }) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase.from('host_blocked_dates').select('date').eq('host_id', hostId);
+      const [blockedRes, bookingsRes] = await Promise.all([
+        supabase.from('host_blocked_dates').select('date').eq('host_id', hostId),
+        supabase.from('bookings').select('start_date, end_date, quantity').eq('host_id', hostId).eq('status', 'accepted'),
+      ]);
       if (!cancelled) {
-        setBlockedDates(new Set((data || []).map(d => d.date)));
+        setBlockedDates(new Set((blockedRes.data || []).map(d => d.date)));
+        setAcceptedBookings(bookingsRes.data || []);
         setLoading(false);
       }
     })();
     return () => { cancelled = true; };
   }, [hostId]);
+
+  // Ile roslin jest juz zajetych danego dnia, na podstawie ZAAKCEPTOWANYCH rezerwacji.
+  const occupiedOn = (dateStr) => acceptedBookings.reduce((sum, b) => {
+    if (dateStr >= b.start_date && dateStr <= b.end_date) return sum + (b.quantity || 1);
+    return sum;
+  }, 0);
 
   const toggleDate = async (dateStr) => {
     const wasBlocked = blockedDates.has(dateStr);
@@ -4251,7 +4469,8 @@ function AvailabilityCalendar({ hostId }) {
   for (let i = 0; i < startWeekday; i++) cells.push(null);
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    cells.push({ day, dateStr, isPast: dateStr < todayStr });
+    const isFull = capacity != null && occupiedOn(dateStr) >= capacity;
+    cells.push({ day, dateStr, isPast: dateStr < todayStr, isFull });
   }
 
   const monthKeys = ['calendar.jan', 'calendar.feb', 'calendar.mar', 'calendar.apr', 'calendar.may', 'calendar.jun', 'calendar.jul', 'calendar.aug', 'calendar.sep', 'calendar.oct', 'calendar.nov', 'calendar.dec'];
@@ -4297,20 +4516,29 @@ function AvailabilityCalendar({ hostId }) {
             key={c.dateStr}
             disabled={c.isPast || loading}
             onClick={() => toggleDate(c.dateStr)}
+            title={c.isFull && !blockedDates.has(c.dateStr) ? t('calendar.legendOccupied') : undefined}
             style={{
               aspectRatio: '1', borderRadius: 8, border: 'none', fontFamily: 'Inter, sans-serif', fontSize: 12,
               cursor: c.isPast ? 'default' : 'pointer',
-              background: c.isPast ? colors.line : blockedDates.has(c.dateStr) ? colors.clay : colors.clayLight,
-              color: c.isPast ? colors.muted : blockedDates.has(c.dateStr) ? '#fff' : colors.ink,
+              background: c.isPast ? colors.line
+                : blockedDates.has(c.dateStr) ? colors.clay
+                : c.isFull ? colors.gold
+                : colors.clayLight,
+              color: c.isPast ? colors.muted
+                : (blockedDates.has(c.dateStr) || c.isFull) ? '#fff'
+                : colors.ink,
               opacity: c.isPast ? 0.5 : 1,
             }}
           >{c.day}</button>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 14, fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.muted }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontFamily: 'Inter, sans-serif', fontSize: 11.5, color: colors.muted }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 12, height: 12, borderRadius: 4, background: colors.clayLight, display: 'inline-block' }} /> {t('calendar.legendFree')}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 12, height: 12, borderRadius: 4, background: colors.gold, display: 'inline-block' }} /> {t('calendar.legendOccupied')}
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 12, height: 12, borderRadius: 4, background: colors.clay, display: 'inline-block' }} /> {t('calendar.legendBlocked')}
@@ -4381,7 +4609,7 @@ function HostDashboardScreen({ myHost, onBack }) {
       </div>
 
       <div style={{ background: colors.card, border: `1px solid ${colors.line}`, borderRadius: 16, padding: 16, marginBottom: 20 }}>
-        <AvailabilityCalendar hostId={myHost.id} />
+        <AvailabilityCalendar hostId={myHost.id} capacity={myHost.plants_capacity} />
       </div>
 
       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('dash.historyTitle')}</div>
@@ -5758,6 +5986,22 @@ export default function App() {
   const [view, setView] = useState('list');
   const [selectedHost, setSelectedHost] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+
+  const refreshUnreadCount = React.useCallback(async () => {
+    if (!session?.user?.id) { setUnreadNotifCount(0); return; }
+    const { count } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', session.user.id)
+      .eq('read', false);
+    setUnreadNotifCount(count || 0);
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    refreshUnreadCount();
+  }, [refreshUnreadCount, tab, refreshKey]);
+
   const [premiumReturn, setPremiumReturn] = useState(null);
   const [connectReturn, setConnectReturn] = useState(false);
   const [bookingPaymentReturn, setBookingPaymentReturn] = useState(null);
@@ -5965,7 +6209,7 @@ export default function App() {
             display: 'grid', gridTemplateColumns: '240px 1fr 320px',
             justifyContent: 'center', minHeight: '100vh'
           }}>
-            <Sidebar active={tab} onNav={(t) => { setTab(t); setView('list'); }} user={session.user} theme={theme} toggleTheme={toggleTheme} />
+            <Sidebar active={tab} onNav={(t) => { setTab(t); setView('list'); }} user={session.user} theme={theme} toggleTheme={toggleTheme} unreadCount={unreadNotifCount} />
             <main style={{
               padding: '32px 32px 60px', borderLeft: `1px solid ${colors.line}`, borderRight: `1px solid ${colors.line}`,
               background: colors.bg, display: 'flex', flexDirection: 'column', minWidth: 0
@@ -5991,7 +6235,7 @@ export default function App() {
             ) : (
               <>
                 {renderTab()}
-                <TabBar active={tab} onNav={(t) => { setTab(t); setView('list'); }} />
+                <TabBar active={tab} onNav={(t) => { setTab(t); setView('list'); }} unreadCount={unreadNotifCount} />
               </>
             )}
           </Screen>
