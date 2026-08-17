@@ -99,6 +99,8 @@ const TRANSLATIONS = {
     'home.filterNear': 'W pobliżu',
     'home.filterTop': 'Najwyżej oceniani',
     'home.filterAvailable': 'Dostępni teraz',
+    'home.filterMatched': 'Dopasowani',
+    'home.matchesPlant': 'Pasuje do: {plant}',
     'home.filterFavorites': 'Ulubione',
     'home.filterPrice': 'Cena',
     'home.filterDates': 'Terminy',
@@ -448,6 +450,8 @@ const TRANSLATIONS = {
     'home.filterNear': 'Nearby',
     'home.filterTop': 'Top rated',
     'home.filterAvailable': 'Available now',
+    'home.filterMatched': 'Matched',
+    'home.matchesPlant': 'Matches: {plant}',
     'home.filterFavorites': 'Favourites',
     'home.filterPrice': 'Price',
     'home.filterDates': 'Dates',
@@ -797,6 +801,8 @@ const TRANSLATIONS = {
     'home.filterNear': 'Поблизу',
     'home.filterTop': 'Найкращі оцінки',
     'home.filterAvailable': 'Доступні зараз',
+    'home.filterMatched': 'Підходять',
+    'home.matchesPlant': 'Підходить для: {plant}',
     'home.filterFavorites': 'Улюблені',
     'home.filterPrice': 'Ціна',
     'home.filterDates': 'Дати',
@@ -1998,6 +2004,24 @@ function HomeScreen({ onSelectHost, userId }) {
   const [activeFilter, setActiveFilter] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [showFilters, setShowFilters] = useState(false);
+  // Rosliny uzytkownika z ZNANYM wymaganiem nasłonecznienia (tylko te z wykupionym
+  // przewodnikiem Premium maja to pole wypelnione) - do inteligentnego dopasowania hostow.
+  const [plantsWithSunlight, setPlantsWithSunlight] = useState([]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('plants')
+        .select('name, sunlight')
+        .eq('user_id', userId)
+        .not('sunlight', 'is', null);
+      if (!cancelled && data) setPlantsWithSunlight(data);
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
+
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [showDateFilter, setShowDateFilter] = useState(false);
@@ -2106,6 +2130,10 @@ function HomeScreen({ onSelectHost, userId }) {
     list = list.filter(h => favoriteIds.has(h.id));
   }
 
+  if (activeFilter === 'matched') {
+    list = list.filter(h => plantsWithSunlight.some(p => p.sunlight === h.sunlight));
+  }
+
   if (priceMin !== '') {
     list = list.filter(h => h.price >= Number(priceMin));
   }
@@ -2167,6 +2195,9 @@ function HomeScreen({ onSelectHost, userId }) {
         <Pill tone="gold" active={activeFilter === 'top'} onClick={() => toggleFilter('top')}>{t('home.filterTop')}</Pill>
         <Pill tone="clay" active={activeFilter === 'available'} onClick={() => toggleFilter('available')}>{t('home.filterAvailable')}</Pill>
         <Pill tone="gold" active={activeFilter === 'favorites'} onClick={() => toggleFilter('favorites')}>❤️ {t('home.filterFavorites')}</Pill>
+        {plantsWithSunlight.length > 0 && (
+          <Pill tone="fern" active={activeFilter === 'matched'} onClick={() => toggleFilter('matched')}>🌿 {t('home.filterMatched')}</Pill>
+        )}
         <Pill tone="gray" active={showFilters || priceMin !== '' || priceMax !== ''} onClick={() => setShowFilters(s => !s)}>{t('home.filterPrice')}</Pill>
         <Pill tone="gray" active={showDateFilter || (filterStartDate && filterEndDate)} onClick={() => setShowDateFilter(s => !s)}>{t('home.filterDates')}</Pill>
         <Pill tone="fern" active={viewMode === 'map'} onClick={() => setViewMode(v => v === 'map' ? 'list' : 'map')}>
@@ -2301,6 +2332,15 @@ function HomeScreen({ onSelectHost, userId }) {
                     {responseTimeKey(h.avg_response_minutes) && (
                       <div style={{ marginTop: 4, fontFamily: 'Inter, sans-serif', fontSize: 11, color: colors.muted }}>
                         {t(responseTimeKey(h.avg_response_minutes))}
+                      </div>
+                    )}
+                    {plantsWithSunlight.find(p => p.sunlight === h.sunlight) && (
+                      <div style={{
+                        marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 4,
+                        background: colors.clayLight, color: colors.fernDark, fontFamily: 'Inter, sans-serif',
+                        fontSize: 10.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999
+                      }}>
+                        🌿 {t('home.matchesPlant', { plant: plantsWithSunlight.find(p => p.sunlight === h.sunlight).name })}
                       </div>
                     )}
                     <div style={{ marginTop: 6 }}>
