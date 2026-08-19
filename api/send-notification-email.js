@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     }
 
     const { error } = await resend.emails.send({
-      from: 'Leafsit <onboarding@resend.dev>',
+      from: 'Leafsit <noreply@leafsit.com>',
       to: [to],
       subject: title,
       html: `
