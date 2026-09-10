@@ -283,6 +283,12 @@ const TRANSLATIONS = {
     'becomeHost.spacePhotosLabel': 'Zdjęcia miejsca',
     'becomeHost.spacePhotosHint': 'Pokaż, gdzie dokładnie będzie stała roślina (maks. 4 zdjęcia).',
     'host.spacePhotosTitle': 'Zdjęcia miejsca',
+    'becomeHost.peselLabel': 'Numer PESEL',
+    'becomeHost.peselHint': 'Wymagane przepisami UE (dyrektywa DAC7) — jako platforma jesteśmy zobowiązani zbierać dane hostów, których przychody przekroczą ustawowy próg raportowania. Twój PESEL jest przechowywany osobno, zaszyfrowany i widoczny tylko dla Ciebie.',
+    'becomeHost.peselInvalid': 'Podaj poprawny numer PESEL (11 cyfr z prawidłową sumą kontrolną).',
+    'becomeHost.peselLabel': 'Numer PESEL',
+    'becomeHost.peselHint': 'Wymagane przepisami UE (dyrektywa DAC7) — jako platforma jesteśmy zobowiązani zbierać dane hostów, których przychody przekroczą ustawowy próg raportowania. Twój PESEL jest przechowywany osobno, zaszyfrowany i widoczny tylko dla Ciebie.',
+    'becomeHost.peselInvalid': 'Podaj poprawny numer PESEL (11 cyfr z prawidłową sumą kontrolną).',
     'becomeHost.priceInvalid': 'Podaj poprawną cenę, w rozsądnym przedziale (0,50 – 1000 zł).',
     'becomeHost.capacityInvalid': 'Podaj poprawną liczbę miejsc, w rozsądnym przedziale (1 – 50).',
     'sun.full': 'Pełne słońce',
@@ -653,6 +659,9 @@ const TRANSLATIONS = {
     'becomeHost.spacePhotosLabel': 'Photos of the space',
     'becomeHost.spacePhotosHint': 'Show exactly where the plant will stay (up to 4 photos).',
     'host.spacePhotosTitle': 'Photos of the space',
+    'becomeHost.peselLabel': 'PESEL (Polish national ID number)',
+    'becomeHost.peselHint': 'Required under EU rules (DAC7 directive) — as a platform we must collect host data once earnings cross the statutory reporting threshold. Your PESEL is stored separately and only visible to you.',
+    'becomeHost.peselInvalid': 'Please enter a valid PESEL number (11 digits with a valid checksum).',
     'becomeHost.priceInvalid': 'Please enter a reasonable price (0.50 – 1000 zł).',
     'becomeHost.capacityInvalid': 'Please enter a reasonable capacity (1 – 50).',
     'sun.full': 'Full sun',
@@ -1023,6 +1032,9 @@ const TRANSLATIONS = {
     'becomeHost.spacePhotosLabel': 'Фото приміщення',
     'becomeHost.spacePhotosHint': 'Покажіть, де саме стоятиме рослина (до 4 фото).',
     'host.spacePhotosTitle': 'Фото приміщення',
+    'becomeHost.peselLabel': 'Номер PESEL',
+    'becomeHost.peselHint': 'Вимагається правилами ЄС (директива DAC7) — як платформа ми зобов’язані збирати дані господарів, чиї доходи перевищать встановлений поріг звітності. Ваш PESEL зберігається окремо і видимий лише вам.',
+    'becomeHost.peselInvalid': 'Введіть правильний номер PESEL (11 цифр з правильною контрольною сумою).',
     'becomeHost.priceInvalid': 'Вкажіть коректну ціну в розумних межах (0,50 – 1000 zł).',
     'becomeHost.capacityInvalid': 'Вкажіть коректну кількість місць в розумних межах (1 – 50).',
     'sun.full': 'Повне сонце',
@@ -1230,6 +1242,16 @@ function LanguagePicker({ compact = false }) {
 }
 
 const SUNLIGHT_OPTIONS = ['Pełne słońce', 'Półcień', 'Cień'];
+
+// Sprawdza poprawnosc numeru PESEL (11 cyfr + prawdziwa suma kontrolna, nie tylko dlugosc).
+function isValidPesel(value) {
+  if (!/^\d{11}$/.test(value)) return false;
+  const weights = [1, 3, 7, 9, 1, 3, 7, 9, 1, 3];
+  const digits = value.split('').map(Number);
+  const sum = weights.reduce((acc, w, i) => acc + w * digits[i], 0);
+  const checksum = (10 - (sum % 10)) % 10;
+  return checksum === digits[10];
+}
 
 function sunlightKey(value) {
   if (value === 'Pełne słońce') return 'sun.full';
@@ -1896,7 +1918,22 @@ function AuthScreen({ referralCodeFromUrl }) {
             language: lang,
             phone: phone,
           });
+          // Zdarzenie dla Meta Pixel - pozwala kampaniom optymalizowac sie pod
+          // rzeczywiste rejestracje, nie tylko kliknieca. Bezpieczne, jesli
+          // pixel nie jest jeszcze zaladowany (np. w trybie deweloperskim).
+          if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+            window.fbq('track', 'CompleteRegistration');
+          }
         }
+        // Po udanej rejestracji przelaczamy na widok logowania i czyscimy pola
+        // formularza rejestracji - zostawiamy tylko email, zeby uzytkownik nie
+        // musial wpisywac go ponownie po potwierdzeniu skrzynki.
+        setMode('login');
+        setPassword('');
+        setName('');
+        setPhone('');
+        setReferralInput('');
+        setTermsAccepted(false);
         setInfo(t('auth.checkEmailToConfirm'));
       }
     }
@@ -3807,9 +3844,20 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
   const [capacity, setCapacity] = useState(existingHost ? String(existingHost.plants_capacity) : '');
   const [description, setDescription] = useState(existingHost?.description || '');
   const [spacePhotos, setSpacePhotos] = useState(existingHost?.space_photos || []);
+  const [pesel, setPesel] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!existingHost?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from('host_tax_info').select('pesel').eq('host_id', existingHost.id).maybeSingle();
+      if (!cancelled && data?.pesel) setPesel(data.pesel);
+    })();
+    return () => { cancelled = true; };
+  }, [existingHost?.id]);
 
   const handleAddSpacePhoto = async (e) => {
     const file = e.target.files?.[0];
@@ -3837,7 +3885,7 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
   const [locLoading, setLocLoading] = useState(false);
   const [locError, setLocError] = useState(null);
 
-  const canSave = name && price && location && capacity;
+  const canSave = name && price && location && capacity && pesel;
 
   const handleUseLocation = () => {
     if (!navigator.geolocation) {
@@ -3871,6 +3919,10 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
       setError(t('becomeHost.capacityInvalid'));
       return;
     }
+    if (!isValidPesel(pesel)) {
+      setError(t('becomeHost.peselInvalid'));
+      return;
+    }
 
     setSaving(true);
     setError(null);
@@ -3888,12 +3940,23 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
       latitude: coords ? coords.lat : null,
       longitude: coords ? coords.lon : null,
     };
-    const { error } = isEdit
-      ? await supabase.from('hosts').update(payload).eq('id', existingHost.id)
-      : await supabase.from('hosts').insert([{ ...payload, user_id: userId, rating: null, reviews: 0 }]);
-    setSaving(false);
+    const { data: savedHost, error } = isEdit
+      ? await supabase.from('hosts').update(payload).eq('id', existingHost.id).select().single()
+      : await supabase.from('hosts').insert([{ ...payload, user_id: userId, rating: null, reviews: 0 }]).select().single();
+
     if (error) {
+      setSaving(false);
       setError(t('becomeHost.saveFailed') + error.message);
+      return;
+    }
+
+    // PESEL zapisujemy osobno, do tabeli z restrykcyjna regula bezpieczenstwa (RLS) -
+    // niepowodzenie tego kroku nie powinno cofac juz zapisanego profilu hosta.
+    const { error: taxError } = await supabase.from('host_tax_info').upsert({ host_id: savedHost.id, pesel });
+
+    setSaving(false);
+    if (taxError) {
+      setError(t('becomeHost.saveFailed') + taxError.message);
     } else {
       onSaved();
     }
@@ -4009,6 +4072,17 @@ function BecomeHostForm({ userId, existingHost, userAvatarUrl, onCancel, onSaved
           </label>
         )}
       </div>
+
+      <div style={{
+        fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, color: colors.muted,
+        textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8
+      }}>
+        {t('becomeHost.peselLabel')}
+      </div>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: colors.muted, marginBottom: 10, lineHeight: 1.5 }}>
+        {t('becomeHost.peselHint')}
+      </div>
+      <TextField type="text" inputMode="numeric" maxLength={11} placeholder="00000000000" value={pesel} onChange={e => setPesel(e.target.value.replace(/\D/g, '').slice(0, 11))} />
 
       {error && <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12.5, color: colors.clay, marginBottom: 12 }}>{error}</div>}
 
