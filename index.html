@@ -20,12 +20,14 @@
       fbq('init', '1234862762156988');
       fbq('track', 'PageView');
     </script>
-    <noscript><img height="1" width="1" style="display:none"
-      src="https://www.facebook.com/tr?id=1234862762156988&ev=PageView&noscript=1"
-    /></noscript>
     <!-- End Meta Pixel Code -->
   </head>
   <body>
+    <!-- Meta Pixel - wersja zapasowa dla przegladarek z wylaczonym JavaScript.
+         Musi byc w <body>, nie w <head> - obrazek w <head> to niepoprawny HTML. -->
+    <noscript><img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=1234862762156988&ev=PageView&noscript=1"
+      alt="" /></noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
